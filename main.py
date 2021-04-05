@@ -10,6 +10,8 @@ import trimesh
 import matplotlib.pyplot as plt
 import matplotlib.tri as tri
 from matplotlib import cm
+from mayavi import mlab
+from scipy.spatial import Delaunay
 
 # relative path to the sample dataset
 # Main MAT File - userdata
@@ -54,12 +56,24 @@ print('size_of_T:',len(data_tri_T_lst))
 x = data_tri_X[:,0]
 y = data_tri_X[:,1]
 z = data_tri_X[:,2]
-t = data_tri_T
+t = data_tri_T-1
+
+
+# # sample input
+# vertices=[[0, 0, 0], [0, 0, 1], [0, 1, 0]]
+# faces=[[0, 1, 2]]
 
 print('x:',x)
 print('y:',y)
 print('z:',z)
 print('t',t)
+print(type(t))
+print('length_of_T:', len(t))
+print('max_value_x_in_T:',t.max())
+print('min value of x in T:',t.min())
+print('lenghth_of_x:', len(x))
+
+
 # print(data_tri_X[:,0])
 # triang = tri.Triangulation(x,y)
 
@@ -68,20 +82,29 @@ print('t',t)
 
 #
 # ax = plt.figure().add_subplot(projection='3d')
-
+#
 fig = plt.figure()
 ax = fig.gca(projection='3d')
-
-
-
-
-p = ax.plot_trisurf(x, y, z, linewidth=0.2, antialiased=True,cmap=cm.coolwarm)
+p = ax.plot_trisurf(x,y,z, triangles=t, linewidth=0.2, antialiased=True,cmap=cm.RdYlGn)
 ax.set_title('OpenEP TriRep Anatomy Data')
 fig.colorbar(p,ax=ax)
 plt.show()
 
 
 
+#
+#
+#
+#
+# p = ax.plot_trisurf([0, 0, 0], [0, 0, 1], [0, 1, 0], triangles=faces, linewidth=0.2, antialiased=True,cmap=cm.coolwarm)
+# ax.set_title('OpenEP TriRep Anatomy Data')
+# fig.colorbar(p,ax=ax)
+# plt.show()
+
+
+
+# mlab.triangular_mesh(x,y,z,t)
+# mlab.show()
 # Voltage plots
 
 
