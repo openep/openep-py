@@ -13,6 +13,10 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 file_path = '../openep/openep-examples-main/openep_dataset_1.mat'
 data_tri_X_lst = list()
 data_tri_T_lst = list()
+# voltage threshold to split the colorbar by solid and JET
+volt_threshold = 2
+
+
 
 # Load the file
 # Main MAT File - userdata
@@ -29,9 +33,8 @@ z = data_tri_X[:,2]
 
 # Triangulation/faces - .T
 data_tri_T = main_file['userdata']['surface_triRep_Triangulation'][0][0]
-# Resolving indexing issue
+# Resolving indexing issue - matlab to python
 t = data_tri_T-1
-# print(t.shape)
 
 
 data_act_bip = main_file['userdata']['surface'][0][0]['act_bip'][0][0]
@@ -49,21 +52,14 @@ voltage_new = np.asarray(list(map(lambda x:0 if np.isnan(x) else x, voltage_data
 # coloring the shell by the voltage value rather than z-axis height
 min_volt = min(voltage_new)
 max_volt = max(voltage_new)
-print('minimum Voltage value:',min_volt)
-print('maximum voltage value:',max_volt)
 
-
-# scaling the z - values to the voltage values
-# z_scaled = np.asarray(list(map(lambda x: x-)))cm.get_cmap('jet')
-
-
-# normalisation
+# normalisation - normalising the voltage - values
 norm = mp.colors.Normalize(vmin=min_volt, vmax=max_volt)
 
-# Plot the Mesh= plt.cm.ge
+# Plot the Mesh
 # Create a new fig window
 fig = plt.figure()
-# ax1 = fig.add_subplot(111, projection='3d')
+# get the current 3d axis on the current fig
 ax1 = fig.gca(projection='3d')
 
 
@@ -71,151 +67,51 @@ ax1 = fig.gca(projection='3d')
 # if only nodal values are known, then the signal need to be averaged by the triangles
 color = np.mean(voltage_new[t], axis=1)
 
-# print('colorshape:',color.shape )
-# print('voltage\n',voltage_new)
-# print('voltage_new[t]\n',voltage_new[t])
-# print('t\n',t)
-# print('color\n',color)
-
-
-
-
-# Define Colormap
-cm_jet = plt.cm.get_cmap('jet_r',42)
-newcolors = cm_jet(np.linspace(0,1,256))
-# print('newcolors array\n',newcolors.shape)
-magenta = np.array([255/255, 0/255, 255/255, 1])
-
-newcolors[50:100,:] = magenta
-newcmp = ListedColormap(newcolors)
-
-threshold = 2
-
-tAboveCAxis = np.linspace(0,1,256)
-tbelowCAxis = np.linspace(0,1,256)
-
+# Voltage Threshold - to split the colorbar axis
+# determining the size of the voltage values
 diff_volt = max_volt - min_volt
-d_below_threshold = threshold - min_volt
-d_above_threshold = max_volt - threshold
 
-scale_below_threshold = (d_below_threshold/diff_volt)*256
-scale_above_threshold = 256 - scale_below_threshold
-print('scale-below_threshold',type(round(scale_below_threshold)))
-print('scale-above-threshold',round(scale_above_threshold))
+dist_below_threshold = volt_threshold - min_volt
+dist_above_threshold = max_volt - volt_threshold
 
-scale = round((d_below_threshold/diff_volt),2)
-print(scale)
+# splitting the colorbar
+# color below threshold - size
+size_below_threshold = round((dist_below_threshold/diff_volt)*256)
+# color above threshold - size
+size_above_threshold = 256 - size_below_threshold
 
+# Define Colormap - Reverse JET
+cm_jet = plt.cm.get_cmap('jet_r',size_below_threshold)
+newcolors = cm_jet(np.linspace(0,1,256))
+# Magenta - RGBA array
+magenta = np.array([255/255, 0/255, 255/255, 1])
+# Gray - RGBA array
+gray = np.array([128/255, 128/255, 128/255, 1])
+
+# Creating new colormap columns
+# Col 1 - Jet
 col1 = cm_jet(np.linspace(0,1,42))
-
-print(col1.shape)
-
-# newcol = cm_jet(col1)
-# col22 = np.array(magenta)
-# print('col22\n',col22)
-
-# col2 = np.linspace(0.3,1,214)
+# Col2 - Magenta
 col2 = np.zeros((214,4)) + magenta
-print(col2.shape)
-col33 = np.concatenate((col1,col2))
-# print('magenta\n',magenta)
-
-# col3 = np.linspace(0,1,256)
-print(col1)
-print(col1.shape)
-print('col2\n',col2)
-print(col33)
-print(col33.shape)
-newcmp1 = ListedColormap(col33)
-# newcmp2 = newcmp1.colors[::-1]
-
-
-
-# tAboveCAxis = np.linspace(0,1,scale__threshold)
-
-
-
-# cm_jet = plt.cm.get_cmap('jet',256)
-# print('jet colors\n',cm_jet(range(256)))
-# print(voltage_new.size)
-# newcolors = cm_jet(voltage_new)
-# magenta = np.array([255, 0, 255, 1])
-# for item in newcolors:
-#     print(item)
-
-
-# newcolors[:25, :] = pink
-# newcmp = ListedColormap(newcolors)
-
-# cmap = plt.get_cmap('jet')
-# triang = mp.tri.Triangulation(x,y,t)
-# surf = ax1.plot_trisurf(triang,z,antialiased=True,cmap=plt.cm.jet)
-# surf.set_array(color)
-
-
-# Fill Threshold - 0.5mV
-# Qualitative color map - JET
-
-# mycmap = mp.cm.get_cmap('viridis',12)
-# mycmap = mp.cm.get_cmap('jet')
-# print('cmap size:',mycmap)
-# print('mycmap.colors\n', mycmap.colors)
-# print('mycmap(range(12))\n', mycmap(range(12)))
-# print('mycmap(np.linspace(0, 1, 12))\n', mycmap(np.linspace(0, 1, 12)))
-
-
-
-
-
-
-
-
-
-
-
+# Combining Col1 + Col2
+final_col = np.concatenate((col1,col2))
+# NewColormap
+newcmp = ListedColormap(final_col)
 
 # - Tri-Surface Plot with a rainbow color map
-surf1 = ax1.plot_trisurf(x,y,z,triangles=t,linewidth=5, edgecolor=[0,0,0,0],antialiased=True,cmap=newcmp1)
-# surf1 = ax1.plot_surface(x,y,z,traingles=t,linewidth=0.2,antialiased=True,cmap=plt.cm.jet)
+surf1 = ax1.plot_trisurf(x,y,z,triangles=t,linewidth=5, edgecolor=[0,0,0,0],antialiased=True,cmap=newcmp)
 surf1.set_array(color)
-
-
-# surf1.set_edgecolor([0,0,0,1])
-
-
 ax1.set_title('OpenEP TriRep Anatomy Data')
 plt.axis('off')
+
 # Colour Pallette, Position Left
-# cb = plt.colorbar(surf1,ax=[ax1],location='left',label='Voltage (mV)')
-cb = plt.colorbar(mp.cm.ScalarMappable(norm=norm, cmap=newcmp1),ax=[ax1],location='left',label='Voltage (mV)')
-
-# # Thresholding
-# tAboveCAxis = zeros(size(d));
-# tBelowCAxis = zeros(size(d));
-
-# taboveaxis is >2mv
-# tbelowaxis is <2mv
-
-
-
-# cl.LightSource(azdeg=-60,altdeg=30)
-
-
-# fix color scale according to the logic in colorshell.m
-
-# interpolated shading of faces
-
-# drawing the free boundary
-
+cb = plt.colorbar(mp.cm.ScalarMappable(norm=norm, cmap=newcmp),ax=[ax1],location='left',label='Voltage (mV)')
 
 # Show plot
 plt.show()
 
 
 
-
-
-# Voltage threshold
 
 
 
