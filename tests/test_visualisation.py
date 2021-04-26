@@ -1,6 +1,6 @@
 import unittest
 
-class TestVisualisation(unitest.TestCase):
+class TestVisualisation(unittest.TestCase):
     def test_01(self):
         pass
 
