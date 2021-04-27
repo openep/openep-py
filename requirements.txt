@@ -1,5 +1,0 @@
-numpy
-trimesh
-matplotlib
-scipy
-
