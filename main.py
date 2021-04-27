@@ -63,8 +63,11 @@ norm = mp.colors.Normalize(vmin=min_volt, vmax=max_volt)
 # Plot the Mesh
 # Create a new fig window
 fig = plt.figure()
+
+# first plot
 # get the current 3d axis on the current fig
-ax1 = fig.gca(projection='3d')
+# ax1 = fig.gca(projection='3d')
+ax1 = fig.add_subplot(1,2,1, projection='3d')
 
 
 # defining a custom color scalar field
@@ -110,6 +113,11 @@ print('x-y-z points\n',points.shape)
 # Trimesh object
 mesh = tm.Trimesh(vertices=points,faces=t)
 
+for item in mesh.bounds:
+    print(item)
+print(dir(mesh))
+
+
 # All edges
 print('total number of edges:\n',mesh.edges.shape)
 
@@ -130,7 +138,7 @@ for item in unshared_edges:
     else:
         pass
 unique_edges_in_unshared = np.array(unique_edges_in_unshared)
-print('unique edges in unshared:\n',unique_edges_in_unshared)
+print('unique edges in unshared:\n',unique_edges_in_unshared.shape)
 
 # Identify the unique unshared edges
 uniques = {}
@@ -192,21 +200,6 @@ print('border_points:\n',unique_unshared_edge_points.shape)
 
 # tri = Triangulation(x_values_array,y_values_array,z_values_array)
 
-surf = ax1.plot_trisurf(xx[0],
-                       yy[0],
-                       zz[0],
-                       linewidth=0.1)
-
-# mesh1 = tm.Trimesh(vertices=unique_unshared_edge_points,faces=t)
-# #
-# mesh1.show()
-
-# Plotting the border to the axis
-# ax1.plot_trisurf(xx[0],
-#                  yy[0],
-#                  zz[0],
-#                  triangles=t,
-#                  linewidth=0.5)
 
 surf1 = ax1.plot_trisurf(x,
                          y,
@@ -218,19 +211,28 @@ surf1 = ax1.plot_trisurf(x,
 
 
 # print('dir:\n',dir(surf1))
-# print('typeofsurf',type(surf1))
 # surf1.set_edgecolor([0,0,0,1])
 surf1.set_array(color)
 # surf1.set_markeredgecolor([0,0,0,1])
 # surf1.set_fc([0.0,1,0])
 ax1.set_title('OpenEP TriRep Anatomy Data')
-plt.axis('off')
+plt.axis('on')
 
 # Colour Pallette, Position Left
 cb = plt.colorbar(mp.cm.ScalarMappable(norm=norm, cmap=newcmp),
                   ax=[ax1],
                   location='left',
                   label='Voltage (mV)')
+
+
+
+ax1 = fig.add_subplot(1,2,2, projection='3d')
+surf2 = ax1.plot_trisurf(xx[0],
+                 yy[0],
+                 zz[0],
+                 triangles=t,
+                 linewidth=0.5)
+surf2.set_edgecolor([0,0,0,1])
 
 # Show plot
 plt.show()
