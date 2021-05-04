@@ -7,16 +7,16 @@ import scipy.io as sio
 import matplotlib as mp
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
-
-
+from mpl_toolkits.mplot3d import Axes3D
+from scipy.interpolate import make_interp_spline, BSpline
 
 # Declarations
 file_path = '../openep/openep-examples-main/openep_dataset_1.mat'
 data_tri_X_lst = []
 data_tri_T_lst = []
 x_values = []
-y_values = list()
-z_values = list()
+y_values = []
+z_values = []
 # voltage threshold to split the colorbar by solid and JET
 volt_threshold = 2
 
@@ -100,56 +100,206 @@ points = data_tri_X
 
 # Trimesh object
 mesh = tm.Trimesh(vertices=points,faces=t)
+# print(dir(mesh))
 
+# print(dir(mesh.as_open3d))
 # Outline Index nodes
-freeboundary = mesh.outline().vertex_nodes
+# mesh.outline().show()
+freeboundary = mesh.outline().to_dict()
+vertex_index = mesh.outline().vertex_nodes
+# freeboundary = mesh.outline().show()
+# freeboundary
+
+# print('freeboundary\n',freeboundary["entities"][0]['points'])
+# print('freebounary\n',freeboundary)
+
+# for item in vertex_index:
+#     print('vertex_index\n',item)
+
+# print(dir(mesh.outline()))
+# print(dir(mesh.outline().entities))
+
+mesh_outline_entities = mesh.outline().entities
+# print('mesh_outline_entities\n',len(mesh_outline_entities))
+freeboundary_vertex_nodes = list()
+freeboundary_points = list()
+for i in range(len(mesh_outline_entities)):
+    freeboundary_vertex_nodes.append(freeboundary["entities"][i]['points'])
+
+# print('freeboundary-vertex-nodes',freeboundary_vertex_nodes)
+
+
+
+# print(vertex_index)
+
+# freeboundary_vertex = vertex_index[0:len(freeboundary_vertex_nodes)]
+
+
+
+
+# print(dir(freeboundary.show()))
+# freeboundary = mesh.outline().vertex_nodes
+# freeBoundary_vertices = mesh.outline().vertices
+
+# print('mesh outline \n',mesh.outline())
+# print(mesh.outline().vertices)
+# print(dir(mesh.outline()))
 
 # mesh Vertices
 trimesh_points = mesh.vertices
+print('freeboundary-vertex-nodes\n',freeboundary_vertex_nodes)
 
+for i in freeboundary_vertex_nodes:
+    # print('list',trimesh_points[i])
+    # np.array(x_values.append(trimesh_points[i][:,0]))
+    # np.array(y_values.append(trimesh_points[i][:,0]))
+    # np.array(z_values.append(trimesh_points[i][:,0]))
+    x_values.append(trimesh_points[i][:,0])
+    print(x_values)
+    y_values.append(trimesh_points[i][:,1])
+    print(y_values)
+    z_values.append(trimesh_points[i][:,2])
+    print(z_values)
+
+
+# x_values = np.array(x_values)
+# y_values = np.array(y_values)
+# z_values = np.array(z_values)
+
+
+    # x_values_array = np.array(x_values).reshape(len(x_values),1)
+    # y_values_array = np.array(y_values).reshape(len(y_values),1)
+    # z_values_array = np.array(z_values).reshape(len(z_values),1)
+
+    # freeboundary_points.append(np.concatenate((x_values,
+    #                                       y_values,
+    #                                       z_values),
+    #                                       axis=1))
+
+# print('x-values\n',z_values)
+# print('x-values\n',x_values[0][:,0])
+# print('x-values\n',np.array(x_values[0]).reshape(118,1))
+
+freeboundary_points = []
+x_values_array = []
+y_values_array = []
+z_values_array = []
+
+
+for i in range(len(mesh_outline_entities)):
+    x_values_array.append(x_values[i].reshape(len(x_values[i]),1))
+    print('x-values',x_values_array)
+    y_values_array.append(y_values[i].reshape(len(y_values[i]),1))
+    print('y-values',y_values_array)
+    z_values_array.append(z_values[i].reshape(len(z_values[i]),1))
+    print('z-values',z_values_array)
+    freeboundary_points.append(np.concatenate((x_values_array[i],
+                                         y_values_array[i],
+                                         z_values_array[i]),
+                                         axis=1))
+    # freeboundary_points = np.hstack((x_values[i],y_values[i],z_values[i]))
+    #
+    # freeboundary_points = [x_values[i],y_values[i],z_values[i]]
+    # print('free-boundary-points\n',freeboundary_points)
+
+
+for item in freeboundary_points:
+    print('freeboundary-points-set\n',item)
+    freeboundary_plot = ax1.plot(item[:,0],
+                                 item[:,1],
+                                 item[:,2],
+                                 c='black',
+                                 linewidth=2,
+                                 alpha=1,
+                                 zorder=10)
+
+
+
+    # print('x-values\n',x_values[i])
+
+# print('freeboudary-points\n',freeboundary_points)
 # extract the ponts/vertices of the freeBoundary
-for item in freeboundary:
-    for i in item:
-        x_values.append(trimesh_points[i][0])
-        y_values.append(trimesh_points[i][1])
-        z_values.append(trimesh_points[i][2])
+# for item in freeboundary.vertex_nodes:
+# for item in freeboundary_vertex:
+#     for i in item:
+#         x_values.append(trimesh_points[i][0])
+#         y_values.append(trimesh_points[i][1])
+#         z_values.append(trimesh_points[i][2])
 
 # Reshape the x,y,z points in size  - (n x 1)
-x_values_array = np.array(x_values).reshape(len(x_values),1)
-y_values_array = np.array(y_values).reshape(len(y_values),1)
-z_values_array = np.array(z_values).reshape(len(z_values),1)
+# x_values_array = list()
+# print(len(x_values))
+# for i in range(len(x_values)):
+#     x_values_array[i] = np.array(x_values).reshape(len(x_values),1)
+#
+# x_values_array = np.array(x_values).reshape(len(x_values),1)
+# y_values_array = np.array(y_values).reshape(len(y_values),1)
+# z_values_array = np.array(z_values).reshape(len(z_values),1)
+
+
+
+
+
+# xnew = np.linspace(x_values_array.min(),x_values_array.max(),len(x_values_array))
+# ynew = np.linspace(y_values_array.min(),y_values_array.max(),len(y_values_array))
+# znew = np.linspace(z_values_array.min(),z_values_array.max(),len(z_values_array))
+#
+# sp1 =make_interp_spline(xnew,ynew,znew,k=3)
+# y_s
+
+
 
 # # Join the unique edges together
-freeboundary_points = np.concatenate((x_values_array,
-                              y_values_array,
-                              z_values_array),
-                              axis=1)
-# Trisurface 3-D Mesh Plot
+# freeboundary_points = np.concatenate((x_values_array,
+#                                       y_values_array,
+#                                       z_values_array),
+#                                       axis=1)
+# print('freeboundary-points\n',freeboundary_points)
+
+
+# FreeBoundary Edge Plot
+
+# freeboundary_plot = ax1.plot(freeBoundary_vertices[:,0],
+#                                 freeBoundary_vertices[:,1],
+#                                 freeBoundary_vertices[:,2],
+#                                 c='black',
+#                                 linewidth=5,
+#                                 alpha=0.9,
+#                                 # marker='_'),
+#                                 linestyle='-')
+
+# freeboundary_plot = ax1.plot(freeboundary_points[:,0],
+#                              freeboundary_points[:,1],
+#                              freeboundary_points[:,2],
+#                              c='black',
+#                              linewidth=5,
+                                # alpha=0.5,
+                                # marker='_'),
+                                # linestyle='-'
+                              # )
+# print(dir(freeboundary_plot))
+# # Trisurface 3-D Mesh Plot
 surf1 = ax1.plot_trisurf(x,
                          y,
                          z,
                          triangles=t,
-                         linewidth=0.5,
+                         linewidth=0.1,
                          antialiased=True,
-                         cmap=newcmp)
+                         cmap=newcmp,
+                         alpha=0.9,
+                         )
 surf1.set_array(color)
 ax1.set_title('OpenEP TriRep Anatomy Data')
 plt.axis('off')
 
-# FreeBoundary Edge Plot
-ax1.scatter(freeboundary_points[:,0],
-            freeboundary_points[:,1],
-            freeboundary_points[:,2],
-            c='black',
-            linewidth=5,
-            alpha=0.5,
-            marker='.')
-
-# Colour Pallette, Position Left
-cb = plt.colorbar(mp.cm.ScalarMappable(norm=norm, cmap=newcmp),
-                  ax=[ax1],
-                  location='left',
-                  label='Voltage (mV)')
+#
+# # plt.axis('off')
+# # print(dir(freeboundary_plot))
+# # Colour Pallette, Position Left
+# cb = plt.colorbar(mp.cm.ScalarMappable(norm=norm, cmap=newcmp),
+#                   ax=[ax1],
+#                   location='left',
+#                   label='Voltage (mV)')
 
 # Show plot
 plt.show()
@@ -159,4 +309,10 @@ plt.show()
 # userdata is a Carto data structure
 def draw_map(
         userdata, *arg):
+    pass
+
+
+# Function to read the file
+# return the userdata
+def load():
     pass
