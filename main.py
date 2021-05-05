@@ -11,7 +11,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy.interpolate import make_interp_spline, BSpline
 
 # Declarations
-file_path = '../openep/openep-examples-main/openep_dataset_1.mat'
+file_path = '../openep-py/tests/data/openep_dataset_1.mat'
 data_tri_X_lst = []
 data_tri_T_lst = []
 x_values = []
@@ -101,6 +101,7 @@ points = data_tri_X
 
 # Trimesh object
 mesh = tm.Trimesh(vertices=points,faces=t)
+# mesh.show()
 freeboundary = mesh.outline().to_dict()
 vertex_index = mesh.outline().vertex_nodes
 mesh_outline_entities = mesh.outline().entities
@@ -139,7 +140,8 @@ for item in freeboundary_points:
                                  item[:,2],
                                  c='black',
                                  linewidth=2,
-                                 zorder=3)
+                                 # zorder=3
+                                 )
 
 # # Trisurface 3-D Mesh Plot
 surf1 = ax1.plot_trisurf(x,
