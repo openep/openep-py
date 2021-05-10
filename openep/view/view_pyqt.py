@@ -4,7 +4,9 @@ GUI code for OpenEp
 import sys
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
+from PyQt5.QtCore import *
+import scipy.io as sio
+# from ui_imagedialog import Ui_ImageDialog
 
 class App(QWidget):
 
@@ -31,6 +33,14 @@ class App(QWidget):
         button1.clicked.connect(self.on_click)
         main_layout.addWidget(button1)
 
+        # Dialog = QDialog(self)
+        # ui = Ui_ImageDialog()
+        # ui.setupUi(Dialog)
+        # Dialog.show()
+
+
+
+
         button2 = QPushButton('Plot Voltage Map', self)
         button2.setGeometry(200,150,100,40)
         button2.clicked.connect(self.on_click2)
@@ -50,6 +60,24 @@ class App(QWidget):
 
     def on_click(self):
         print('Loading Data ... ')
+        dlg = QFileDialog()
+        dlg.setFileMode(QFileDialog.AnyFile)
+        # dlg.setFilter("Text files (*.txt)")
+        # filenames = QStringList()
+
+        if dlg.exec_():
+            filenames = dlg.selectedFiles()
+            print(filenames[0])
+            main_file = sio.loadmat(filenames[0])
+            data_tri_X = main_file['userdata']['surface_triRep_X'][0][0]
+            x = data_tri_X[:,0]
+            y = data_tri_X[:,1]
+            z = data_tri_X[:,2]
+            print('x\n',x)
+            print('y\n',y)
+            print('z\n',z)
+
+
 
     def on_click2(self):
         print('Loading Voltage Map ... ')
