@@ -140,7 +140,7 @@ for item in freeboundary_points:
                                  item[:,2],
                                  c='black',
                                  linewidth=2,
-                                 # zorder=3
+                                 zorder=3
                                  )
 
 # # Trisurface 3-D Mesh Plot
@@ -177,27 +177,3 @@ plt.show()
 def draw_map(
         userdata, *arg):
     pass
-
-
-# Function to read the file
-# return the userdata
-def load_mat(file_path):
-    '''
-    Function to read MAT file
-
-    Parameters
-    -----------
-    file_path : str
-        absolute or relative path to the MAT file
-
-    Returns
-    ------------
-    main_file : dict
-        dictionary with variable names as keys and loaded matrices as values
-    '''
-
-    try:
-        main_file = sio.loadmat(file_path)
-    except:
-        print('Error: Unable to read file. Check MAT file')
-    return main_file
