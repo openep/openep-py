@@ -6,6 +6,8 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 import scipy.io as sio
+import pyqtgraph as pg
+import numpy as np
 # from ui_imagedialog import Ui_ImageDialog
 
 class App(QWidget):
@@ -33,6 +35,9 @@ class App(QWidget):
         button1.clicked.connect(self.on_click)
         main_layout.addWidget(button1)
 
+
+
+
         # Dialog = QDialog(self)
         # ui = Ui_ImageDialog()
         # ui.setupUi(Dialog)
@@ -45,6 +50,12 @@ class App(QWidget):
         button2.setGeometry(200,150,100,40)
         button2.clicked.connect(self.on_click2)
         main_layout.addWidget(button2)
+
+
+        self.graphWidget = pg.PlotWidget()
+        # self.setCentralWidget(self.graphWidget)
+
+
 
 
 
@@ -81,6 +92,13 @@ class App(QWidget):
 
     def on_click2(self):
         print('Loading Voltage Map ... ')
+        hour = [1,2,3,4,5,6,7,8,9,10]
+        temperature = [30,32,34,32,33,31,29,32,35,45]
+        print('hour\n',hour)
+        print('temperature\n',temperature)
+        self.graphWidget.plot(hour, temperature)
+
+
 
 
 
