@@ -1,10 +1,9 @@
 import numpy as np
 from typing import Any, Dict
+import os
+import trimesh
 
-
-# # Print the current working directory
-# print("Current working directory: {0}".format(cwd))
-
+from io import load_mat
 
 
 class Case:
