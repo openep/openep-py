@@ -8,7 +8,6 @@ from PyQt5.QtCore import *
 import scipy.io as sio
 import pyqtgraph as pg
 import numpy as np
-# from ui_imagedialog import Ui_ImageDialog
 
 class App(QWidget):
 
@@ -30,51 +29,30 @@ class App(QWidget):
         mainLabel2 = QLabel('''The Open Source solution for electrophysiology data analysis''')
         main_layout.addWidget(mainLabel2)
 
+        # Button 1
         button1 = QPushButton('Load OpenEp Data', self)
         button1.setGeometry(200,150,100,40)
         button1.clicked.connect(self.on_click)
         main_layout.addWidget(button1)
 
-
-
-
-        # Dialog = QDialog(self)
-        # ui = Ui_ImageDialog()
-        # ui.setupUi(Dialog)
-        # Dialog.show()
-
-
-
-
+        # Button 2
         button2 = QPushButton('Plot Voltage Map', self)
         button2.setGeometry(200,150,100,40)
         button2.clicked.connect(self.on_click2)
         main_layout.addWidget(button2)
 
-
+        # Plot
         self.graphWidget = pg.PlotWidget()
-        # self.setCentralWidget(self.graphWidget)
-
-
-
-
-
-        # mainLabel.setAlignment(Qt.Qt.AlignCenter)
-        # print(dir(mainLabel))
-
-
-
-
 
 
         self.show()
 
     def on_click(self):
         print('Loading Data ... ')
+
+        # Loading file from a Dialog Box
         dlg = QFileDialog()
         dlg.setFileMode(QFileDialog.AnyFile)
-        # dlg.setFilter("Text files (*.txt)")
-        # filenames = QStringList()
 
         if dlg.exec_():
             filenames = dlg.selectedFiles()
@@ -97,9 +75,6 @@ class App(QWidget):
         print('hour\n',hour)
         print('temperature\n',temperature)
         self.graphWidget.plot(hour, temperature)
-
-
-
 
 
 
