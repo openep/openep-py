@@ -3,13 +3,8 @@ Module containing functions to load OpenEP dataset
 '''
 
 import numpy as np
-import matplotlib.pyplot as plt
 import scipy.io as sio
 import re
-import os
-from typing import Any, Dict
-
-import trimesh
 import h5py
 
 
