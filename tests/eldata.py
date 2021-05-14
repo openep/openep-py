@@ -1,8 +1,9 @@
 
 import scipy.io as sio
+from scipy.interpolate import Rbf
+from scipy.stats import gaussian_kde
 import numpy as np
 import matplotlib.pyplot as plt
-
 
 # interpolation function
 '''
@@ -15,8 +16,34 @@ x1 – the locations at which you want data (mesh nodes)
 Return:
 interpolated values (voltage values at each mesh node)
 '''
-def interpolate(x0, d0, x1):
-    pass
+def interpolate(method,x0, d0, x1):
+
+
+    # remove any data with NaNs
+    # d0 = d0[~np.isnan(d0)]
+    print('inside interpolate',d0.shape)
+    # x0 = x0[~np.isnan(x0)]
+    print('inside interpolate x0',x0[:,0].shape)
+    # print('do:',x0[0:10,0])
+    # perform interpolation - scatteredinterpolant
+    rbfi = Rbf(x0[:,0],x0[:,1],x0[:,2],d0,function='gaussian')
+
+    # rbfi = Rbf(np.linalg.pinv([x0[:,0],x0[:,1],x0[:,2],d0]))
+    # X, Y, Z = np.meshgrid(x, y, z)
+    # I = RBFInterpolant(x0, d0, sigma=0.1, phi='phs2', order=1)
+
+
+
+        # match method:
+        # case 'scatteredinterpolant':
+        # print('scatteredinterpolant')
+
+
+
+
+
+    d1 = 0
+    return d1
 
 
 
@@ -87,32 +114,49 @@ max_volt=[]
 min_volt=[]
 
 for volt in egm:
-    # print('max-voltage:\n',np.amax(volt))
-    # print('min-voltage:\n',np.amin(volt))
     max_volt.append(np.amax(volt))
     min_volt.append(np.amin(volt))
-    # diff = np.amax(volt) - np.amax(volt)
-    # print('diff\n',diff)
+
 max_volt = np.array(max_volt)
 min_volt = np.array(min_volt)
 
+
+amplitude_volt = max_volt - min_volt
+print(amplitude_volt.shape)
 print('voltage-max\n',max_volt)
 print('voltage-min\n',min_volt)
 
-if amplitude == 'max':
-    amplitude_volt = max_volt
-elif amplitude == 'min':
-    amplitude_volt = min_volt
-else:
-    pass
 
 #  - Set of voltage values with a set of associated x y z values / node indices
 data_set = np.transpose(np.array([amplitude_volt,point_x,point_y,point_z]))
-print(data_set)
+print('dataset\n',data_set)
+
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+
+# plt.plot(egm)
+# plt.plot(amplitude_volt)
+plt.scatter(point_x,point_y,point_z)
+# plt.scatter(,z)
+plt.show()
+
 
 # Interpolate the voltage values across the shell
 
+method = 'scatteredinterpolant'
+# x0 = data_set[:,1:4]
+# d0 = data_set[:,0]
 
+
+x0 = egmSurfX
+d0 = amplitude_volt
+x1 = data_tri_X
+
+print('x0\n',x0)
+print('d0\n',d0)
+print(x1)
+
+out = interpolate(method,x0, d0, x1)
 
 
 
