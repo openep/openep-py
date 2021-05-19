@@ -1,9 +1,10 @@
-from typing import Union
+from typing import Optional, Union
 import numpy as np
 
 from trimesh import Trimesh
 import trimesh.repair
 import pymeshfix
+import networkx as nx
 
 from .case import Case
 
@@ -68,10 +69,31 @@ def repair_mesh(mesh: Trimesh) -> Trimesh:
     return Trimesh(mf.v, mf.f)
 
 
+def create_edge_graph(mesh: Trimesh) -> nx.Graph:
+    """
+    Create a Graph object of the mesh's edges with the length stored as property 'length'.
+    """
+    edges = mesh.edges_unique
+    edge_lengths = mesh.edges_unique_length
+
+    graph = nx.Graph()
+    for edge, length in zip(edges, edge_lengths):
+        graph.add_edge(*edge, length=length)
+
+    return graph
+
+
 def calculate_per_triangle_field(mesh: Trimesh, field: np.ndarray) -> np.ndarray:
     """
     Calculate a per-triangle field from the given per-vertex field. For each triangle the mean of the vertex values is
     calculated as the triangle value.
+
+    Args:
+        mesh: Trimesh object
+        field: per-vertex field to convert
+
+    Returns:
+        np.ndarray per-triangle field
     """
     return field[mesh.faces].mean(axis=1)
 
@@ -100,6 +122,14 @@ def calculate_mesh_volume(mesh_case: Union[Case, Trimesh], fill_holes: bool = Tr
 def calculate_field_area(mesh_case: Union[Case, Trimesh], field: np.ndarray, threshold: float) -> float:
     """
     Calculate the area of triangles whose values are at or below the given threshold.
+
+    Args:
+        mesh_case: Case or Trimesh object
+        field: field used to select triangles
+        threshold: value at or below which triangles are selected to include in calculation
+
+    Returns:
+        Float total area of selected triangles
     """
     mesh = get_mesh(mesh_case)
     areas = mesh.area_faces
@@ -113,6 +143,14 @@ def calculate_field_area(mesh_case: Union[Case, Trimesh], field: np.ndarray, thr
 def calculate_vertex_distance(mesh_case: Union[Case, Trimesh], start_idx: int, end_idx: int) -> float:
     """
     Calculate the euclidean distance from vertex at `start_idx` to `end_idx`.
+
+    Args:
+        mesh_case: Case or Trimesh object
+        start_idx: index of starting vertex
+        end_idx: index of ending vertex
+
+    Returns:
+        Float distance between vertices
     """
     mesh = get_mesh(mesh_case)
     start_vertex = mesh.vertices[start_idx]
@@ -131,8 +169,11 @@ def calculate_vertex_path(mesh_case: Union[Case, Trimesh], start_idx: int, end_i
         end_idx: index of ending vertex
 
     Returns:
-        List of vertex indices defining the path
+        Array of vertex indices defining the path
     """
     mesh = get_mesh(mesh_case)
+    graph = create_edge_graph(mesh)
 
-    raise NotImplementedError("Path calculation not implemented")
+    path = nx.shortest_path(graph, source=start_idx, target=end_idx, weight='length')
+
+    return np.array(path, int)

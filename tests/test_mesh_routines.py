@@ -4,7 +4,9 @@ import numpy as np
 
 import trimesh
 from openep.case import Case
-from openep.mesh_routines import calculate_field_area, calculate_mesh_volume, calculate_vertex_distance
+from openep.mesh_routines import (
+    calculate_field_area, calculate_mesh_volume, calculate_vertex_distance, calculate_vertex_path
+)
 
 
 class TestMeshRoutines(TestCase):
@@ -55,3 +57,8 @@ class TestMeshRoutines(TestCase):
         test_dist = calculate_vertex_distance(self.sphere, start_idx, end_idx)
 
         self.assertAlmostEqual(test_dist, dist, 5)
+
+    def test_calculate_vertex_path(self):
+        path = calculate_vertex_path(self.cube,0,7)
+
+        self.assertListEqual(path.tolist(), [0, 1, 7])

@@ -18,7 +18,7 @@
 
 
 import numpy as np
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 import trimesh
 
 
@@ -59,7 +59,7 @@ class Case:
         else:
             inds = self.indices
 
-        mesh = trimesh.Trimesh(self.nodes, inds, process=False,parent_obj=self)
+        mesh = trimesh.Trimesh(self.nodes, inds, process=False, parent_obj=self)
 
         if vertex_norms:
             _ = mesh.vertex_normals  # compute vertex normals
@@ -69,7 +69,7 @@ class Case:
 
         return mesh
 
-    def get_surface_data(self, copy=False):
+    def get_surface_data(self, copy: bool = False) -> Tuple[np.ndarray, np.ndarray]:
         """
         Returns the node and triangle index matrices, copying them if `copy` is True.
         """
@@ -81,3 +81,17 @@ class Case:
             indices = indices.copy()
 
         return nodes, indices
+
+    def get_field(self, fieldname: str, copy: bool = False) -> np.ndarray:
+        """
+        Returns the named field array, copying if `copy` is True.
+        """
+        if fieldname not in self.fields:
+            raise ValueError(f"Field '{fieldname}' not found")
+
+        field = self.fields[fieldname]
+
+        if copy:
+            field = field.copy()
+
+        return field
