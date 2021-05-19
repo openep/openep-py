@@ -2,6 +2,7 @@
 Module containing functions to load OpenEP dataset
 '''
 
+import os
 import numpy as np
 import scipy.io as sio
 import re
