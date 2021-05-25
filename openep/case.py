@@ -3,7 +3,7 @@ from typing import Any, Dict
 import os
 import trimesh
 
-from io import load_mat
+from parse import load_mat
 
 
 class Case:
@@ -75,5 +75,5 @@ def load_case(filename, name=None, exclude_pattern=".*#.*"):
     return Case(name, nodes, inds, fields, electric, rf, other_data)
 
 
-case = load_case("new_dataset_1.mat")
-print(case, tuple(case.rf))
+# case = load_case("../tests/data/new_dataset_1.mat")
+# print(case, tuple(case.rf))

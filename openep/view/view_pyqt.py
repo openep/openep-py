@@ -1,13 +1,19 @@
 '''
 GUI code for OpenEp
 '''
-import sys
+
+
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 import scipy.io as sio
 import pyqtgraph as pg
 import numpy as np
+import trimesh as tm
+
+import sys
+sys.path.append('../openep')
+import case
 
 class App(QWidget):
 
@@ -19,31 +25,68 @@ class App(QWidget):
         self.width = 840
         self.height = 480
         self.initUI()
+        self.mesh_obj = None
+        self.voltage_new = None
+
 
     def initUI(self):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
-        main_layout = QFormLayout(self)
-        mainLabel1 = QLabel('OpenEp Tool')
-        main_layout.addWidget(mainLabel1)
-        mainLabel2 = QLabel('''The Open Source solution for electrophysiology data analysis''')
-        main_layout.addWidget(mainLabel2)
+
+        # Defining the Vertical & Horizontal Box layout
+        vbox = QFormLayout(self)
+        hbox = QHBoxLayout(self)
+
+        # Main Label
+        mainLabel1 = QLabel('OpenEp Tool',self)
+        mainLabel2 = QLabel( 'The Open Source solution for electrophysiology data analysis',self)
+
+        vbox.addWidget(mainLabel1)
+        vbox.addWidget(mainLabel2)
+
 
         # Button 1
         button1 = QPushButton('Load OpenEp Data', self)
         button1.setGeometry(200,150,100,40)
-        button1.clicked.connect(self.on_click)
-        main_layout.addWidget(button1)
+        a = button1.clicked.connect(self.on_click)
+
 
         # Button 2
         button2 = QPushButton('Plot Voltage Map', self)
         button2.setGeometry(200,150,100,40)
         button2.clicked.connect(self.on_click2)
-        main_layout.addWidget(button2)
+
+        # Adding buttons to the horizontal layout
+        hbox.addWidget(button1)
+        hbox.addWidget(button2)
+
+        vbox.addRow(hbox)
 
         # Plot
-        self.graphWidget = pg.PlotWidget()
+        vbox.addRow(QLabel('Plot'))
+        vbox.addRow(pg.PlotWidget())
 
+        # create a mesh object,
+        # display the mesh
+
+        # vbox hidden once data is loaded, self.vbox so you have access to it later on.
+
+
+
+
+
+
+
+        # # Plot
+        # # self.graphWidget = pg.PlotWidget()
+        # self.graph = pg.PlotWidget()
+        # # self.setCentralWidget(self.graph)
+        # hour = [1,2,3,4,5,6,7,8,9,10]
+        # temperature = [30,32,34,32,33,31,29,32,35,45]
+        # print('hour\n',hour)
+        # print('temperature\n',temperature)
+        # self.graph.plot(hour, temperature)
+        #
 
         self.show()
 
@@ -56,25 +99,67 @@ class App(QWidget):
 
         if dlg.exec_():
             filenames = dlg.selectedFiles()
+            load_data(filenames)
+            # mesh_obj = case.Case()
+            # case_file = case.load_case(filenames[0])
+            #
+            # print(case_file('nodes'))
+
+
+
+
             print(filenames[0])
             main_file = sio.loadmat(filenames[0])
             data_tri_X = main_file['userdata']['surface_triRep_X'][0][0]
+            t = main_file['userdata']['surface_triRep_Triangulation'][0][0] - 1
+            data_act_bip = main_file['userdata']['surface'][0][0]['act_bip'][0][0]
+            voltage_data = data_act_bip[:,1]
             x = data_tri_X[:,0]
             y = data_tri_X[:,1]
             z = data_tri_X[:,2]
-            print('x\n',x)
-            print('y\n',y)
-            print('z\n',z)
+            print('Nodes\n',data_tri_X)
+            print('tri_data\n',t)
+            print('Data Successfully Loaded')
+            self.mesh_obj = tm.Trimesh(vertices=data_tri_X,faces=t)
+            self.voltage_new = np.asarray(list(map(lambda x:0 if np.isnan(x) else x, voltage_data)))
+
+
+
 
 
 
     def on_click2(self):
-        print('Loading Voltage Map ... ')
-        hour = [1,2,3,4,5,6,7,8,9,10]
-        temperature = [30,32,34,32,33,31,29,32,35,45]
-        print('hour\n',hour)
-        print('temperature\n',temperature)
-        self.graphWidget.plot(hour, temperature)
+        self.mesh_obj
+        self.voltage_new
+
+        # have an if condition if its none, do not run visualisation or have an
+        # advisory in the GUI.
+
+
+
+        pass
+        # print('Loading Voltage Map ... ')
+        # hour = [1,2,3,4,5,6,7,8,9,10]
+        # temperature = [30,32,34,32,33,31,29,32,35,45]
+        # print('hour\n',hour)
+        # print('temperature\n',temperature)
+        # self.graph.plot(hour, temperature)
+
+    # def load_data(filename):
+    #     main_file = sio.loadmat(filenames[0])
+    #     data_tri_X = main_file['userdata']['surface_triRep_X'][0][0]
+    #     t = main_file['userdata']['surface_triRep_Triangulation'][0][0] - 1
+    #     data_act_bip = main_file['userdata']['surface'][0][0]['act_bip'][0][0]
+    #     voltage_data = data_act_bip[:,1]
+    #     x = data_tri_X[:,0]
+    #     y = data_tri_X[:,1]
+    #     z = data_tri_X[:,2]
+    #     print('Nodes\n',data_tri_X)
+    #     print('tri_data\n',t)
+    #     print('Data Successfully Loaded')
+    #     mesh_obj = tm.Trimesh(vertices=data_tri_X,faces=t)
+    #     voltage_new = np.asarray(list(map(lambda x:0 if np.isnan(x) else x, voltage_data)))
+    #     return data_tri_X, data_tri_T, voltage_new
 
 
 
@@ -82,68 +167,3 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = App()
     sys.exit(app.exec_())
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# from PyQt5.QtWidgets import QApplication,QLabel,QWidget,QPushButton,QVBoxLayout
-#
-# # Instance of QApplication
-# # Pass in the command line arguments within the brackets
-# app = QApplication([])
-# app.setStyle('Fusion')
-#
-# # w = 500
-# # h = 300
-#
-#
-# # WINDOW
-# window = QWidget()
-# window.title = 'OpenEp Application'
-# window.height = 300
-# window.width = 500
-#
-# # LAYOUT - ARRANGING THE WIDGETS
-# layout = QVBoxLayout()
-# layout.addWidget(QLabel('OpenEP Tool'))
-# layout.addWidget(QPushButton('LoadDataset'))
-# layout.addWidget(QPushButton('Voltage Plot'))
-#
-# window.setLayout(layout)
-# window.show()
-#
-#
-# # Run the application
-# app.exec()
