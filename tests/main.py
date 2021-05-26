@@ -1,6 +1,7 @@
 # Code written by Jerin Rajan on 18th Mar 2021
 # Functions to support OpenEp visualisation
 
+from enum import Enum, auto
 import numpy as np
 import trimesh as tm
 import scipy.io as sio
@@ -10,6 +11,7 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap, LightSour
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.interpolate import make_interp_spline, BSpline, griddata, interp1d, NearestNDInterpolator
 from matplotlib.cm import jet_r
+import vtk
 
 # DEFINITIONS
 file_path = '../openep_py/tests/data/openep_dataset_1.mat'
@@ -29,6 +31,16 @@ minval=0,
 maxval=1,
 
 color1 = []
+
+
+class VisualisationBackend(Enum):
+    Matplotlib = auto()
+    VTK = auto()
+
+
+# Switch these for matplotlib/VTK comparison
+visualisation_backend = VisualisationBackend.VTK
+# visualisation_backend = VisualisationBackend.Matplotlib
 
 
 # Load the file
@@ -285,39 +297,94 @@ rgb = ls.shade(final_col, cmap=newcmp)
 print('rgb\n',rgb.shape)
 # plt.imshow(rgb)
 
-# Trisurface 3-D Mesh Plot
-surf1 = ax1.plot_trisurf(x,
-                         y,
-                         z,
-                         triangles=t,
-                         linewidth=0.1,
-                         antialiased=True,
-                         # color='gray',
-                         cmap=newcmp,
-                         shade=True
-                         )
+if visualisation_backend == VisualisationBackend.VTK:
+    for q in x, y, z:
+        print(q.min(), q.max(), np.sum(np.isnan(q.flatten())))
 
-# passing the custom color scalar field to point the voltage values not z-values
+    colours = vtk.vtkUnsignedCharArray()
+    colours.SetNumberOfComponents(3)
+    colours.SetName("Colors")
 
-surf1.set_array(color)
+    points = vtk.vtkPoints()
+    polys = vtk.vtkCellArray()
+    vertices = vtk.vtkCellArray()
+    for i in range(0, t.shape[0]):
+        polygon = vtk.vtkPolygon()
+        polygon.GetPointIds().SetNumberOfIds(3)
+        for j in range(3):
+            idx = 3 * i + j
+            point = [q[t[i, j]] for q in (x,y,z)]
+            id = points.InsertNextPoint(point)
+            polygon.GetPointIds().SetId(j, idx)
+            vertices.InsertNextCell(1)
+            vertices.InsertCellPoint(id)
+            colours.InsertNextTuple([q * 255 for q in newcmp(255*(color[i] / color.max()))[:3]])
+        polys.InsertNextCell(polygon)
+    polydata = vtk.vtkPolyData()
+    polydata.SetPoints(points)
+    polydata.SetPolys(polys)
+    polydata.SetVerts(vertices)
+    polydata.GetPointData().SetScalars(colours)
 
-# surf1.set_array(color3d[:,0])
-# surf1.set_array(color3d[:,1])
-# surf1.set_array(color3d[:,2])
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputData(polydata)
+    mapper.SetColorModeToDefault()
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+    actor.GetProperty().SetPointSize(5)
 
-# surf1.set_facecolors(rgb)
-ax1.set_title('OpenEP TriRep Anatomy Data')
-plt.axis('off')
-# Colour Pallette
-cb = plt.colorbar(mp.cm.ScalarMappable(norm=norm, cmap=newcmp),
-                  ax=[ax1],
-                  location='left',
-                  label='Voltage (mV)')
+    # Renderer
+    renderer = vtk.vtkRenderer()
+    renderer.AddActor(actor)
+    renderer.SetBackground(.2, .3, .4)
+    renderer.ResetCamera()
 
-# Show plot
+    # Render Window
+    renderWindow = vtk.vtkRenderWindow()
+    renderWindow.AddRenderer(renderer)
 
-plt.show()
+    # Interactor
+    renderWindowInteractor = vtk.vtkRenderWindowInteractor()
+    renderWindowInteractor.SetRenderWindow(renderWindow)
+
+    # Begin Interaction
+    renderWindow.Render()
+    renderWindowInteractor.Start()
+
+else:  # if visualisation_backend == VisualisationBackend.Matplotlib:
+    # Trisurface 3-D Mesh Plot
+    surf1 = ax1.plot_trisurf(x,
+                            y,
+                            z,
+                            triangles=t,
+                            linewidth=0.1,
+                            antialiased=True,
+                            # color='gray',
+                            cmap=newcmp,
+                            shade=True
+                            )
+
+    # passing the custom color scalar field to point the voltage values not z-values
+
+    surf1.set_array(color)
+
+    # surf1.set_array(color3d[:,0])
+    # surf1.set_array(color3d[:,1])
+    # surf1.set_array(color3d[:,2])
+
+    # surf1.set_facecolors(rgb)
+    ax1.set_title('OpenEP TriRep Anatomy Data')
+    plt.axis('off')
+    # Colour Pallette
+    cb = plt.colorbar(mp.cm.ScalarMappable(norm=norm, cmap=newcmp),
+                    ax=[ax1],
+                    location='left',
+                    label='Voltage (mV)')
+
+    # Show plot
+
+    plt.show()
 
 
 
-# UseCase03
+    # UseCase03
