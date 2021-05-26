@@ -35,12 +35,14 @@ color1 = []
 
 class VisualisationBackend(Enum):
     Matplotlib = auto()
-    VTK = auto()
+    VTKNoInterp = auto()
+    VTKLinInterp = auto()
 
 
-# Switch these for matplotlib/VTK comparison
-visualisation_backend = VisualisationBackend.VTK
-# visualisation_backend = VisualisationBackend.Matplotlib
+# Switch these for matplotlib/VTK comparison (VTK with and without lin. interp.)
+# visualisation_backend = VisualisationBackend.VTKLinInterp
+# visualisation_backend = VisualisationBackend.VTKNoInterp
+visualisation_backend = VisualisationBackend.Matplotlib
 
 
 # Load the file
@@ -232,142 +234,75 @@ col2 = np.zeros(shape=(size_above_threshold,4))+magenta
 # Combining Col1 + Col2
 final_col = np.concatenate((col1,col2))
 print('final_col\n',final_col.shape)
-# NewColormap
-newcmp = ListedColormap(final_col)
 
-# Points - vertices
-points = data_tri_X
-print('points\n',points)
-# Trimesh object
-mesh = tm.Trimesh(vertices=points,faces=t)
-# mesh.show()
-# mesh.visual.base.Visuals(vertex_colors=final_col)
-# mesh.show()
+if visualisation_backend == VisualisationBackend.Matplotlib:
+    # NewColormap
+    newcmp = ListedColormap(final_col)
 
-
-
-freeboundary = mesh.outline().to_dict()
-vertex_index = mesh.outline().vertex_nodes
-mesh_outline_entities = mesh.outline().entities
-
-freeboundary_vertex_nodes = []
-freeboundary_points = []
-for i in range(len(mesh_outline_entities)):
-    freeboundary_vertex_nodes.append(freeboundary["entities"][i]['points'])
-
-# mesh Vertices
-trimesh_points = mesh.vertices
-
-for i in freeboundary_vertex_nodes:
-    x_values.append(trimesh_points[i][:,0])
-    y_values.append(trimesh_points[i][:,1])
-    z_values.append(trimesh_points[i][:,2])
-
-
-x_values_array = []
-y_values_array = []
-z_values_array = []
-
-
-for i in range(len(mesh_outline_entities)):
-    x_values_array.append(x_values[i].reshape(len(x_values[i]),1))
-    y_values_array.append(y_values[i].reshape(len(y_values[i]),1))
-    z_values_array.append(z_values[i].reshape(len(z_values[i]),1))
-    freeboundary_points.append(np.concatenate((x_values_array[i],
-                                         y_values_array[i],
-                                         z_values_array[i]),
-                                         axis=1))
-
-# Plotting the freeboundary edges of the 3-d Mesh
-for item in freeboundary_points:
-    freeboundary_plot = ax1.plot(item[:,0],
-                                 item[:,1],
-                                 item[:,2],
-                                 c='black',
-                                 linewidth=1,
-                                 zorder=3
-                                 )
-
-# create a light source
-
-# Z = jn(0,z)
-ls = LightSource(azdeg=315,altdeg=65)
-# Shade data, creating a rgb array
-rgb = ls.shade(final_col, cmap=newcmp)
-print('rgb\n',rgb.shape)
-# plt.imshow(rgb)
-
-if visualisation_backend == VisualisationBackend.VTK:
-
-    def get_point_idx(triangulation_data, triangle_idx, point_idx):
-        return triangulation_data[triangle_idx, point_idx]
-        # return x[idx], y[idx], z[idx]
-
-    def get_color_from_voltage(v, v_max, lookup_table, nan_color):
-        if not np.isnan(v):
-            idx = int(255 * v / v_max)
-            rgb = lookup_table[idx][:3] # rgb between 0 and 1
-        else:
-            rgb = nan_color
-        return [q * 255 for q in rgb]
+    # Points - vertices
+    points = data_tri_X
+    print('points\n',points)
+    # Trimesh object
+    mesh = tm.Trimesh(vertices=points,faces=t)
+    # mesh.show()
+    # mesh.visual.base.Visuals(vertex_colors=final_col)
+    # mesh.show()
 
 
 
-    colours = vtk.vtkUnsignedCharArray()
-    colours.SetNumberOfComponents(3)
-    colours.SetName("Colors")
+    freeboundary = mesh.outline().to_dict()
+    vertex_index = mesh.outline().vertex_nodes
+    mesh_outline_entities = mesh.outline().entities
 
-    points = vtk.vtkPoints()
-    polys = vtk.vtkCellArray()
-    vertices = vtk.vtkCellArray()
-    max_voltage = np.nanmax(voltage_new)
-    nan_color = (0, 0, 0)
-    for i in range(0, t.shape[0]):
-        polygon = vtk.vtkPolygon()
-        polygon.GetPointIds().SetNumberOfIds(3)
-        for j in range(3):
-            idx = 3 * i + j
-            point_idx = get_point_idx(t, i, j)
-            # point = get_coords_of_point_on_triangle(t, i, j, x, y, z)
-            id = points.InsertNextPoint(x[point_idx], y[point_idx], z[point_idx])
-            polygon.GetPointIds().SetId(j, idx)
-            vertices.InsertNextCell(1)
-            vertices.InsertCellPoint(id)
-            c = get_color_from_voltage(voltage_new[point_idx], max_voltage, final_col, nan_color)
-            colours.InsertNextTuple(c)
-        polys.InsertNextCell(polygon)
-    polydata = vtk.vtkPolyData()
-    polydata.SetPoints(points)
-    polydata.SetPolys(polys)
-    # polydata.SetVerts(vertices)
-    polydata.GetPointData().SetScalars(colours)
+    freeboundary_vertex_nodes = []
+    freeboundary_points = []
+    for i in range(len(mesh_outline_entities)):
+        freeboundary_vertex_nodes.append(freeboundary["entities"][i]['points'])
 
-    mapper = vtk.vtkPolyDataMapper()
-    mapper.SetInputData(polydata)
-    mapper.SetColorModeToDefault()
-    actor = vtk.vtkActor()
-    actor.SetMapper(mapper)
-    actor.GetProperty().SetPointSize(5)
+    # mesh Vertices
+    trimesh_points = mesh.vertices
 
-    # Renderer
-    renderer = vtk.vtkRenderer()
-    renderer.AddActor(actor)
-    renderer.SetBackground(.2, .3, .4)
-    renderer.ResetCamera()
+    for i in freeboundary_vertex_nodes:
+        x_values.append(trimesh_points[i][:,0])
+        y_values.append(trimesh_points[i][:,1])
+        z_values.append(trimesh_points[i][:,2])
 
-    # Render Window
-    renderWindow = vtk.vtkRenderWindow()
-    renderWindow.AddRenderer(renderer)
 
-    # Interactor
-    renderWindowInteractor = vtk.vtkRenderWindowInteractor()
-    renderWindowInteractor.SetRenderWindow(renderWindow)
+    x_values_array = []
+    y_values_array = []
+    z_values_array = []
 
-    # Begin Interaction
-    renderWindow.Render()
-    renderWindowInteractor.Start()
 
-else:  # if visualisation_backend == VisualisationBackend.Matplotlib:
+    for i in range(len(mesh_outline_entities)):
+        x_values_array.append(x_values[i].reshape(len(x_values[i]),1))
+        y_values_array.append(y_values[i].reshape(len(y_values[i]),1))
+        z_values_array.append(z_values[i].reshape(len(z_values[i]),1))
+        freeboundary_points.append(np.concatenate((x_values_array[i],
+                                            y_values_array[i],
+                                            z_values_array[i]),
+                                            axis=1))
+
+    # Plotting the freeboundary edges of the 3-d Mesh
+    for item in freeboundary_points:
+        freeboundary_plot = ax1.plot(item[:,0],
+                                    item[:,1],
+                                    item[:,2],
+                                    c='black',
+                                    linewidth=1,
+                                    zorder=3
+                                    )
+
+    # create a light source
+
+    # Z = jn(0,z)
+    ls = LightSource(azdeg=315,altdeg=65)
+    # Shade data, creating a rgb array
+    rgb = ls.shade(final_col, cmap=newcmp)
+    print('rgb\n',rgb.shape)
+    # plt.imshow(rgb)
+
+
+
     # Trisurface 3-D Mesh Plot
     surf1 = ax1.plot_trisurf(x,
                             y,
@@ -404,3 +339,75 @@ else:  # if visualisation_backend == VisualisationBackend.Matplotlib:
 
 
     # UseCase03
+
+else:  # if visualisation_backend == VisualisationBackend.VTK
+
+    def get_point_idx(triangulation_data, triangle_idx, point_idx):
+        return triangulation_data[triangle_idx, point_idx]
+
+    def get_color_from_voltage(v, v_max, lookup_table, nan_color):
+        if not np.isnan(v):
+            idx = int(255 * v / v_max)
+            rgb = lookup_table[idx][:3] # rgb between 0 and 1
+        else:
+            rgb = nan_color
+        return [q * 255 for q in rgb]
+
+
+
+    colours = vtk.vtkUnsignedCharArray()
+    colours.SetNumberOfComponents(3)
+    colours.SetName("Colors")
+
+    points = vtk.vtkPoints()
+    polys = vtk.vtkCellArray()
+    vertices = vtk.vtkCellArray()
+    max_voltage = np.nanmax(voltage_new)
+    max_color = color.max()
+    for tri_idx in range(0, t.shape[0]):  # loop over all triangles
+        polygon = vtk.vtkPolygon()
+        polygon.GetPointIds().SetNumberOfIds(3)
+        for point_idx in range(3):  # 3 points per triangle
+            idx = get_point_idx(t, tri_idx, point_idx)
+            coord = x[idx], y[idx], z[idx]
+            _id = points.InsertNextPoint(coord)
+            total_num_points = 3 * tri_idx + point_idx
+            polygon.GetPointIds().SetId(point_idx, total_num_points)
+            vertices.InsertNextCell(1)
+            vertices.InsertCellPoint(_id)
+            if visualisation_backend == VisualisationBackend.VTKLinInterp:
+                c = get_color_from_voltage(voltage_new[idx], max_voltage, final_col, nan_color)
+            else:
+                c = get_color_from_voltage(color[tri_idx], max_color, final_col, nan_color)
+            colours.InsertNextTuple(c)
+        polys.InsertNextCell(polygon)
+    polydata = vtk.vtkPolyData()
+    polydata.SetPoints(points)
+    polydata.SetPolys(polys)
+    # polydata.SetVerts(vertices)
+    polydata.GetPointData().SetScalars(colours)
+
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputData(polydata)
+    mapper.SetColorModeToDefault()
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+    actor.GetProperty().SetPointSize(5)
+
+    # Renderer
+    renderer = vtk.vtkRenderer()
+    renderer.AddActor(actor)
+    renderer.SetBackground(.2, .3, .4)
+    renderer.ResetCamera()
+
+    # Render Window
+    renderWindow = vtk.vtkRenderWindow()
+    renderWindow.AddRenderer(renderer)
+
+    # Interactor
+    renderWindowInteractor = vtk.vtkRenderWindowInteractor()
+    renderWindowInteractor.SetRenderWindow(renderWindow)
+
+    # Begin Interaction
+    renderWindow.Render()
+    renderWindowInteractor.Start()
