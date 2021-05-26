@@ -111,7 +111,7 @@ voltage_new = np.reshape(a=voltage_data,newshape=(len(voltage_data),1))
 print('voltage-new\n',voltage_new.shape)
 
 # Checking for NaN values and replacing with 0 in voltage data
-voltage_new = np.asarray(list(map(lambda x:0 if np.isnan(x) else x, voltage_data)))
+# voltage_new = np.asarray(list(map(lambda x:0 if np.isnan(x) else x, voltage_data)))
 
 # ColorShell
 # coloring the shell by the voltage value rather than z-axis height
@@ -298,8 +298,20 @@ print('rgb\n',rgb.shape)
 # plt.imshow(rgb)
 
 if visualisation_backend == VisualisationBackend.VTK:
-    for q in x, y, z:
-        print(q.min(), q.max(), np.sum(np.isnan(q.flatten())))
+
+    def get_point_idx(triangulation_data, triangle_idx, point_idx):
+        return triangulation_data[triangle_idx, point_idx]
+        # return x[idx], y[idx], z[idx]
+
+    def get_color_from_voltage(v, v_max, lookup_table, nan_color):
+        if not np.isnan(v):
+            idx = int(255 * v / v_max)
+            rgb = lookup_table[idx][:3] # rgb between 0 and 1
+        else:
+            rgb = nan_color
+        return [q * 255 for q in rgb]
+
+
 
     colours = vtk.vtkUnsignedCharArray()
     colours.SetNumberOfComponents(3)
@@ -308,22 +320,26 @@ if visualisation_backend == VisualisationBackend.VTK:
     points = vtk.vtkPoints()
     polys = vtk.vtkCellArray()
     vertices = vtk.vtkCellArray()
+    max_voltage = np.nanmax(voltage_new)
+    nan_color = (0, 0, 0)
     for i in range(0, t.shape[0]):
         polygon = vtk.vtkPolygon()
         polygon.GetPointIds().SetNumberOfIds(3)
         for j in range(3):
             idx = 3 * i + j
-            point = [q[t[i, j]] for q in (x,y,z)]
-            id = points.InsertNextPoint(point)
+            point_idx = get_point_idx(t, i, j)
+            # point = get_coords_of_point_on_triangle(t, i, j, x, y, z)
+            id = points.InsertNextPoint(x[point_idx], y[point_idx], z[point_idx])
             polygon.GetPointIds().SetId(j, idx)
             vertices.InsertNextCell(1)
             vertices.InsertCellPoint(id)
-            colours.InsertNextTuple([q * 255 for q in newcmp(255*(color[i] / color.max()))[:3]])
+            c = get_color_from_voltage(voltage_new[point_idx], max_voltage, final_col, nan_color)
+            colours.InsertNextTuple(c)
         polys.InsertNextCell(polygon)
     polydata = vtk.vtkPolyData()
     polydata.SetPoints(points)
     polydata.SetPolys(polys)
-    polydata.SetVerts(vertices)
+    # polydata.SetVerts(vertices)
     polydata.GetPointData().SetScalars(colours)
 
     mapper = vtk.vtkPolyDataMapper()
