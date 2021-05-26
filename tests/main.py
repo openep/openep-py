@@ -40,9 +40,9 @@ class VisualisationBackend(Enum):
 
 
 # Switch these for matplotlib/VTK comparison (VTK with and without lin. interp.)
-# visualisation_backend = VisualisationBackend.VTKLinInterp
+visualisation_backend = VisualisationBackend.VTKLinInterp
 # visualisation_backend = VisualisationBackend.VTKNoInterp
-visualisation_backend = VisualisationBackend.Matplotlib
+# visualisation_backend = VisualisationBackend.Matplotlib
 
 
 # Load the file
@@ -106,6 +106,7 @@ print('t\n',t.shape)
 
 # Voltage Data
 data_act_bip = main_file['userdata']['surface'][0][0]['act_bip'][0][0]
+del main_file
 voltage_data = data_act_bip[:,1]
 print('voltag_bip\n',voltage_data.shape)
 
