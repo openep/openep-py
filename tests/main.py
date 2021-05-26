@@ -113,7 +113,8 @@ voltage_new = np.reshape(a=voltage_data,newshape=(len(voltage_data),1))
 print('voltage-new\n',voltage_new.shape)
 
 # Checking for NaN values and replacing with 0 in voltage data
-# voltage_new = np.asarray(list(map(lambda x:0 if np.isnan(x) else x, voltage_data)))
+if visualisation_backend == VisualisationBackend.Matplotlib:
+    voltage_new = np.asarray(list(map(lambda x:0 if np.isnan(x) else x, voltage_data)))
 
 # ColorShell
 # coloring the shell by the voltage value rather than z-axis height
