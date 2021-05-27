@@ -1,6 +1,7 @@
 # Code written by Jerin Rajan on 18th Mar 2021
 # Functions to support OpenEp visualisation
 
+from enum import Enum, auto
 import numpy as np
 import trimesh as tm
 import scipy.io as sio
@@ -10,6 +11,7 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap, LightSour
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.interpolate import make_interp_spline, BSpline, griddata, interp1d, NearestNDInterpolator
 from matplotlib.cm import jet_r
+import vtk
 
 # DEFINITIONS
 file_path = '../openep_py/tests/data/openep_dataset_1.mat'
@@ -29,6 +31,18 @@ minval=0,
 maxval=1,
 
 color1 = []
+
+
+class VisualisationBackend(Enum):
+    Matplotlib = auto()
+    VTKNoInterp = auto()
+    VTKLinInterp = auto()
+
+
+# Switch these for matplotlib/VTK comparison (VTK with and without lin. interp.)
+visualisation_backend = VisualisationBackend.VTKLinInterp
+# visualisation_backend = VisualisationBackend.VTKNoInterp
+# visualisation_backend = VisualisationBackend.Matplotlib
 
 
 # Load the file
@@ -92,6 +106,7 @@ print('t\n',t.shape)
 
 # Voltage Data
 data_act_bip = main_file['userdata']['surface'][0][0]['act_bip'][0][0]
+del main_file
 voltage_data = data_act_bip[:,1]
 print('voltag_bip\n',voltage_data.shape)
 
@@ -99,7 +114,8 @@ voltage_new = np.reshape(a=voltage_data,newshape=(len(voltage_data),1))
 print('voltage-new\n',voltage_new.shape)
 
 # Checking for NaN values and replacing with 0 in voltage data
-voltage_new = np.asarray(list(map(lambda x:0 if np.isnan(x) else x, voltage_data)))
+if visualisation_backend == VisualisationBackend.Matplotlib:
+    voltage_new = np.asarray(list(map(lambda x:0 if np.isnan(x) else x, voltage_data)))
 
 # ColorShell
 # coloring the shell by the voltage value rather than z-axis height
@@ -220,104 +236,180 @@ col2 = np.zeros(shape=(size_above_threshold,4))+magenta
 # Combining Col1 + Col2
 final_col = np.concatenate((col1,col2))
 print('final_col\n',final_col.shape)
-# NewColormap
-newcmp = ListedColormap(final_col)
 
-# Points - vertices
-points = data_tri_X
-print('points\n',points)
-# Trimesh object
-mesh = tm.Trimesh(vertices=points,faces=t)
-# mesh.show()
-# mesh.visual.base.Visuals(vertex_colors=final_col)
-# mesh.show()
+if visualisation_backend == VisualisationBackend.Matplotlib:
+    # NewColormap
+    newcmp = ListedColormap(final_col)
 
-
-
-freeboundary = mesh.outline().to_dict()
-vertex_index = mesh.outline().vertex_nodes
-mesh_outline_entities = mesh.outline().entities
-
-freeboundary_vertex_nodes = []
-freeboundary_points = []
-for i in range(len(mesh_outline_entities)):
-    freeboundary_vertex_nodes.append(freeboundary["entities"][i]['points'])
-
-# mesh Vertices
-trimesh_points = mesh.vertices
-
-for i in freeboundary_vertex_nodes:
-    x_values.append(trimesh_points[i][:,0])
-    y_values.append(trimesh_points[i][:,1])
-    z_values.append(trimesh_points[i][:,2])
-
-
-x_values_array = []
-y_values_array = []
-z_values_array = []
-
-
-for i in range(len(mesh_outline_entities)):
-    x_values_array.append(x_values[i].reshape(len(x_values[i]),1))
-    y_values_array.append(y_values[i].reshape(len(y_values[i]),1))
-    z_values_array.append(z_values[i].reshape(len(z_values[i]),1))
-    freeboundary_points.append(np.concatenate((x_values_array[i],
-                                         y_values_array[i],
-                                         z_values_array[i]),
-                                         axis=1))
-
-# Plotting the freeboundary edges of the 3-d Mesh
-for item in freeboundary_points:
-    freeboundary_plot = ax1.plot(item[:,0],
-                                 item[:,1],
-                                 item[:,2],
-                                 c='black',
-                                 linewidth=1,
-                                 zorder=3
-                                 )
-
-# create a light source
-
-# Z = jn(0,z)
-ls = LightSource(azdeg=315,altdeg=65)
-# Shade data, creating a rgb array
-rgb = ls.shade(final_col, cmap=newcmp)
-print('rgb\n',rgb.shape)
-# plt.imshow(rgb)
-
-# Trisurface 3-D Mesh Plot
-surf1 = ax1.plot_trisurf(x,
-                         y,
-                         z,
-                         triangles=t,
-                         linewidth=0.1,
-                         antialiased=True,
-                         # color='gray',
-                         cmap=newcmp,
-                         shade=True
-                         )
-
-# passing the custom color scalar field to point the voltage values not z-values
-
-surf1.set_array(color)
-
-# surf1.set_array(color3d[:,0])
-# surf1.set_array(color3d[:,1])
-# surf1.set_array(color3d[:,2])
-
-# surf1.set_facecolors(rgb)
-ax1.set_title('OpenEP TriRep Anatomy Data')
-plt.axis('off')
-# Colour Pallette
-cb = plt.colorbar(mp.cm.ScalarMappable(norm=norm, cmap=newcmp),
-                  ax=[ax1],
-                  location='left',
-                  label='Voltage (mV)')
-
-# Show plot
-
-plt.show()
+    # Points - vertices
+    points = data_tri_X
+    print('points\n',points)
+    # Trimesh object
+    mesh = tm.Trimesh(vertices=points,faces=t)
+    # mesh.show()
+    # mesh.visual.base.Visuals(vertex_colors=final_col)
+    # mesh.show()
 
 
 
-# UseCase03
+    freeboundary = mesh.outline().to_dict()
+    vertex_index = mesh.outline().vertex_nodes
+    mesh_outline_entities = mesh.outline().entities
+
+    freeboundary_vertex_nodes = []
+    freeboundary_points = []
+    for i in range(len(mesh_outline_entities)):
+        freeboundary_vertex_nodes.append(freeboundary["entities"][i]['points'])
+
+    # mesh Vertices
+    trimesh_points = mesh.vertices
+
+    for i in freeboundary_vertex_nodes:
+        x_values.append(trimesh_points[i][:,0])
+        y_values.append(trimesh_points[i][:,1])
+        z_values.append(trimesh_points[i][:,2])
+
+
+    x_values_array = []
+    y_values_array = []
+    z_values_array = []
+
+
+    for i in range(len(mesh_outline_entities)):
+        x_values_array.append(x_values[i].reshape(len(x_values[i]),1))
+        y_values_array.append(y_values[i].reshape(len(y_values[i]),1))
+        z_values_array.append(z_values[i].reshape(len(z_values[i]),1))
+        freeboundary_points.append(np.concatenate((x_values_array[i],
+                                            y_values_array[i],
+                                            z_values_array[i]),
+                                            axis=1))
+
+    # Plotting the freeboundary edges of the 3-d Mesh
+    for item in freeboundary_points:
+        freeboundary_plot = ax1.plot(item[:,0],
+                                    item[:,1],
+                                    item[:,2],
+                                    c='black',
+                                    linewidth=1,
+                                    zorder=3
+                                    )
+
+    # create a light source
+
+    # Z = jn(0,z)
+    ls = LightSource(azdeg=315,altdeg=65)
+    # Shade data, creating a rgb array
+    rgb = ls.shade(final_col, cmap=newcmp)
+    print('rgb\n',rgb.shape)
+    # plt.imshow(rgb)
+
+
+
+    # Trisurface 3-D Mesh Plot
+    surf1 = ax1.plot_trisurf(x,
+                            y,
+                            z,
+                            triangles=t,
+                            linewidth=0.1,
+                            antialiased=True,
+                            # color='gray',
+                            cmap=newcmp,
+                            shade=True
+                            )
+
+    # passing the custom color scalar field to point the voltage values not z-values
+
+    surf1.set_array(color)
+
+    # surf1.set_array(color3d[:,0])
+    # surf1.set_array(color3d[:,1])
+    # surf1.set_array(color3d[:,2])
+
+    # surf1.set_facecolors(rgb)
+    ax1.set_title('OpenEP TriRep Anatomy Data')
+    plt.axis('off')
+    # Colour Pallette
+    cb = plt.colorbar(mp.cm.ScalarMappable(norm=norm, cmap=newcmp),
+                    ax=[ax1],
+                    location='left',
+                    label='Voltage (mV)')
+
+    # Show plot
+
+    plt.show()
+
+
+
+    # UseCase03
+
+else:  # if visualisation_backend == VisualisationBackend.VTK
+
+    def get_point_idx(triangulation_data, triangle_idx, point_idx):
+        return triangulation_data[triangle_idx, point_idx]
+
+    def get_color_from_voltage(v, v_max, lookup_table, nan_color):
+        if not np.isnan(v):
+            idx = int(255 * v / v_max)
+            rgb = lookup_table[idx][:3] # rgb between 0 and 1
+        else:
+            rgb = nan_color
+        return [q * 255 for q in rgb]
+
+
+
+    colours = vtk.vtkUnsignedCharArray()
+    colours.SetNumberOfComponents(3)
+    colours.SetName("Colors")
+
+    points = vtk.vtkPoints()
+    polys = vtk.vtkCellArray()
+    vertices = vtk.vtkCellArray()
+    max_voltage = np.nanmax(voltage_new)
+    max_color = color.max()
+    for tri_idx in range(0, t.shape[0]):  # loop over all triangles
+        polygon = vtk.vtkPolygon()
+        polygon.GetPointIds().SetNumberOfIds(3)
+        for point_idx in range(3):  # 3 points per triangle
+            idx = get_point_idx(t, tri_idx, point_idx)
+            coord = x[idx], y[idx], z[idx]
+            _id = points.InsertNextPoint(coord)
+            total_num_points = 3 * tri_idx + point_idx
+            polygon.GetPointIds().SetId(point_idx, total_num_points)
+            vertices.InsertNextCell(1)
+            vertices.InsertCellPoint(_id)
+            if visualisation_backend == VisualisationBackend.VTKLinInterp:
+                c = get_color_from_voltage(voltage_new[idx], max_voltage, final_col, nan_color)
+            else:
+                c = get_color_from_voltage(color[tri_idx], max_color, final_col, nan_color)
+            colours.InsertNextTuple(c)
+        polys.InsertNextCell(polygon)
+    polydata = vtk.vtkPolyData()
+    polydata.SetPoints(points)
+    polydata.SetPolys(polys)
+    # polydata.SetVerts(vertices)
+    polydata.GetPointData().SetScalars(colours)
+
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputData(polydata)
+    mapper.SetColorModeToDefault()
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+    actor.GetProperty().SetPointSize(5)
+
+    # Renderer
+    renderer = vtk.vtkRenderer()
+    renderer.AddActor(actor)
+    renderer.SetBackground(.2, .3, .4)
+    renderer.ResetCamera()
+
+    # Render Window
+    renderWindow = vtk.vtkRenderWindow()
+    renderWindow.AddRenderer(renderer)
+
+    # Interactor
+    renderWindowInteractor = vtk.vtkRenderWindowInteractor()
+    renderWindowInteractor.SetRenderWindow(renderWindow)
+
+    # Begin Interaction
+    renderWindow.Render()
+    renderWindowInteractor.Start()
