@@ -15,6 +15,7 @@ x_values = []
 y_values = []
 z_values = []
 default_color = 'gray'
+magenta = [255/255, 0/255, 255/255, 255/255]
 
 # Load the file
 # Main MAT File - userdata
@@ -49,54 +50,83 @@ print('voltage-new\n',voltage_new.shape)
 voltage_new = np.asarray(list(map(lambda x:0 if np.isnan(x) else x, voltage_data)))
 
 
+
+
+# Trimesh object
+inds_inverted = t[:, [0, 2, 1]]
+inds = np.vstack([t, inds_inverted])
+
+mesh_3d = tm.Trimesh(vertices=data_tri_X,faces=inds)
+mesh_3d.apply_translation(-mesh_3d.centroid)  # recenter mesh to origin, helps with lighting in default scene
+
+
+mesh_3d.visual.vertex_colors[:] = new_field
+
+
+freeboundary = mesh_3d.outline()
+mesh_scene = tm.scene.Scene(geometry=mesh_3d)
+lighting = tm.scene.lighting.autolight(mesh_scene)
+
+mesh_3d.show()
+
+
+
+
 # DRAW THE SURFACE
 # Create a new fig window
-fig = plt.figure(num=1,
-                 figsize=[10,8],
-                 facecolor='#F0F0F0',
-                 # constrained_layout=True,
-                 frameon=True,
-                 tight_layout=False,
-                 dpi=500)
 
 
 
-# get the current 3d axis on the current fig
-ax1 = fig.add_subplot(1,1,1, projection='3d')
 
-# print(dir(ax1))
-# Trisurface 3-D Mesh Plot
-surf1 = ax1.plot_trisurf(x,
-                         y,
-                         z,
-                         triangles=t,
-                         linewidth=0.1,
-                         antialiased=False,
-                         color=default_color,
-                         # cmap=newcmp,
-                         shade=True,
-                         # Z=voltage_new
-                         )
-print(dir(surf1))
 
-# Trimesh Plot - CENTRE
-# ax1.spines.set_position('centre')
-# ax1.extent=(20,80,20,80)
-# surf1.set_offset_position('data')
 
-# Trimesh - Set default azim and elev
+
+# fig = plt.figure(num=1,
+#                  figsize=[10,8],
+#                  facecolor='#F0F0F0',
+#                  # constrained_layout=True,
+#                  frameon=True,
+#                  tight_layout=False,
+#                  dpi=500)
+#
+#
+#
+# # get the current 3d axis on the current fig
+# ax1 = fig.add_subplot(1,1,1, projection='3d')
+#
+# # print(dir(ax1))
+# # Trisurface 3-D Mesh Plot
+# surf1 = ax1.plot_trisurf(x,
+#                          y,
+#                          z,
+#                          triangles=t,
+#                          linewidth=0.1,
+#                          antialiased=False,
+#                          color=default_color,
+#                          # cmap=newcmp,
+#                          shade=True,
+#                          # Z=voltage_new
+#                          )
+# print(dir(surf1))
+#
+# # Trimesh Plot - CENTRE
+# # ax1.spines.set_position('centre')
+# # ax1.extent=(20,80,20,80)
+# # surf1.set_offset_position('data')
+#
+# # Trimesh - Set default azim and elev
 # ax1.view_init(elev=18,azim=37)
-
-
-# Controls to Zoom Trimesh Plot
+#
+#
+# # Controls to Zoom Trimesh Plot
 # ax1.xaxis.zoom(2.2)
 # ax1.yaxis.zoom(2.2)
 # ax1.zaxis.zoom(2.2)
-
-ax1.set_title('OpenEP TriRep Anatomy Data')
-plt.axis('on')
-plt.show()
-
+#
+# ax1.set_title('OpenEP TriRep Anatomy Data')
+# plt.axis('off')
+# plt.show()
+#
 
 # DRAW THE FREE-BOUNDARY
 
