@@ -200,12 +200,12 @@ print(x1)
 
 
 # INTERPOLATION
-int = openEpDataInterpolator()
-d1 = int.interpolate(x0=egmSurfX,d0=amplitude_volt,x1=data_tri_X)
-print('d1\n',d1)
-# F = LinearNDInterpolatorExt(points=(point_x,point_y,point_z),
-#                             values=d0)
-# d1 = F(x,y,z)
+# int = openEpDataInterpolator()
+# d1 = int.interpolate(x0=egmSurfX,d0=amplitude_volt,x1=data_tri_X)
+# print('d1\n',np.array(d1))
+F = LinearNDInterpolatorExt(points=(point_x,point_y,point_z),
+                            values=d0)
+d1 = F(x,y,z)
 
 # for item in d1:
 #     print(item)
@@ -287,7 +287,7 @@ mesh_scene1 = trimesh.scene.Scene(geometry=freeboundary)
 # mesh_visual = trimesh.visual.color.ColorVisuals(mesh=mesh_3d, face_colors=magenta, vertex_colors=None)
 
 # scene = trimesh.scene(mesh_visual)
-trimesh.viewer.SceneViewer(mesh_scene)
+# trimesh.viewer.SceneViewer(mesh_scene)
 # mesh_scene.show()
 # mesh_scene1.show()
 
@@ -333,6 +333,12 @@ surf1.set_array(color)
 # ax1 = fig.add_subplot(1,2,2, projection='3d')
 # plt.scatter(x,y,z,d1)
 
+# min_volt_d0 = min(d0)
+# print('min-volt-before-interp',min_volt_d0)
+#
+# max_volt_d0 = max(d0)
+# print('max-volt-before-interp',max_volt_d0)
+
 min_volt = min(d1)
 print('min_volt_interp_volt\n',min_volt)
 max_volt = max(d1)
@@ -344,6 +350,6 @@ cb = plt.colorbar(mp.cm.ScalarMappable(norm=norm, cmap=cm.viridis),
                   location='left',
                   label='Voltage (mV)')
 
-
+# plt.clim(0,10)
 
 plt.show()
