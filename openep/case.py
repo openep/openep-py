@@ -21,8 +21,6 @@ import numpy as np
 from typing import Any, Dict, Optional, Tuple
 import trimesh
 
-from parse import load_mat
-
 
 class Case:
     def __init__(
