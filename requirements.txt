@@ -3,3 +3,6 @@ matplotlib
 scipy
 trimesh
 vtk
+pymeshfix
+networkx
+shapely

@@ -1,6 +1,24 @@
+# OpenEP
+# Copyright (c) 2021 OpenEP Collaborators
+#
+# This file is part of OpenEP.
+#
+# OpenEP is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# OpenEP is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
+
+
 import numpy as np
-from typing import Any, Dict
-import os
+from typing import Any, Dict, Optional, Tuple
 import trimesh
 
 from parse import load_mat
@@ -8,72 +26,74 @@ from parse import load_mat
 
 class Case:
     def __init__(
-        self,
-        name: str,
-        nodes: np.array,
-        indices: np.array,
-        fields: Dict[str, np.array],
-        electric: Dict[str, np.array],
-        rf: Dict[str, np.array],
-        other_data: Dict[str, Any] = {},
+            self,
+            name: str,
+            nodes: np.ndarray,
+            indices: np.ndarray,
+            fields: Dict[str, np.ndarray],
+            electric: Dict[str, np.ndarray],
+            rf: Dict[str, np.ndarray],
+            other_data: Optional[Dict[str, Any]] = None,
     ):
         self.name: str = name
-        self.nodes: np.array = nodes
-        self.indices: np.array = indices
-        self.fields: Dict[str, np.array] = dict(fields)
-        self.electric: Dict[str, np.array] = dict(electric)
-        self.rf: Dict[str, np.array] = dict(electric)
-        self.other_data: Dict[str, Any] = dict(other_data)
+        self.nodes: np.ndarray = nodes
+        self.indices: np.ndarray = indices
+        self.fields: Dict[str, np.ndarray] = dict(fields)
+        self.electric: Dict[str, np.ndarray] = dict(electric)
+        self.rf: Dict[str, np.ndarray] = dict(rf)
+        self.other_data: Dict[str, Any] = dict(other_data or {})
 
     def __repr__(self):
         return f"{self.name}( nodes: {self.nodes.shape} indices: {self.indices.shape} fields: {tuple(self.fields)} )"
 
-    def create_mesh(self, vertex_norms=True, recenter=True):
-        inds_inverted = self.indices[:, [0, 2, 1]]
-        inds = np.vstack([self.indices, inds_inverted])  # include each triangle twice for both surfaces
+    def create_mesh(self, vertex_norms: bool = True, recenter: bool = True, back_faces: bool = True):
+        """
+        Create a new mesh object from the stored nodes and indices
 
-        mesh = trimesh.Trimesh(self.nodes, inds, process=False)
-        mesh._kwargs["parent"]=self
+        Args:
+            vertex_norms: if True, calculate vertex normals in the mesh
+            recenter: if True, recenter the mesh on the origin
+            back_faces: if True, calculate back face triangles
+        """
+        if back_faces:
+            inds_inverted = self.indices[:, [0, 2, 1]]
+            inds = np.vstack([self.indices, inds_inverted])  # include each triangle twice for both surfaces
+        else:
+            inds = self.indices
+
+        mesh = trimesh.Trimesh(self.nodes, inds, process=False, parent_obj=self)
 
         if vertex_norms:
-            mesh.vertex_normals  # compute vertex normals
+            _ = mesh.vertex_normals  # compute vertex normals
 
         if recenter:
             mesh.apply_translation(-mesh.centroid)  # recenter mesh to origin, helps with lighting in default scene
 
         return mesh
 
+    def get_surface_data(self, copy: bool = False) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Returns the node and triangle index matrices, copying them if `copy` is True.
+        """
+        nodes = self.nodes
+        indices = self.indices
 
-def load_case(filename, name=None, exclude_pattern=".*#.*"):
-    """
-    Load a Case object from the given file. This assumes a number of names for objects found in the file.
-    """
-    dat = load_mat(filename, exclude_pattern)
+        if copy:
+            nodes = nodes.copy()
+            indices = indices.copy()
 
-    if name is None:
-        name = os.path.basename(filename)
+        return nodes, indices
 
-    nodes = dat["userdata/surface/triRep/X"].T
-    inds = dat["userdata/surface/triRep/Triangulation"].T - 1
-    act, bip = dat["userdata/surface/act_bip"]
-    uni, imp, frc = dat["userdata/surface/uni_imp_frc"]
+    def get_field(self, fieldname: str, copy: bool = False) -> np.ndarray:
+        """
+        Returns the named field array, copying if `copy` is True.
+        """
+        if fieldname not in self.fields:
+            raise ValueError(f"Field '{fieldname}' not found")
 
-    fields = dict(act=act, bip=bip, uni=uni, imp=imp, frc=frc)
-    electric = {}
-    rf = {}
-    other_data = {}
+        field = self.fields[fieldname]
 
-    for k, v in dat.items():
-        _, section, *objname = k.split("/", 2)
+        if copy:
+            field = field.copy()
 
-        if objname and section in ("electric", "rf"):
-            dobj = rf if section == "rf" else electric
-            dobj[objname[0]] = v
-        else:
-            other_data[k] = v
-
-    return Case(name, nodes, inds, fields, electric, rf, other_data)
-
-
-# case = load_case("../tests/data/new_dataset_1.mat")
-# print(case, tuple(case.rf))
+        return field
