@@ -19,10 +19,10 @@ def compute_field(
         color_map=jet_r,
         below_color=(0, 0, 0, 255),
         above_color=(255, 0, 255, 255),
-        nan_color=(50, 50, 50, 255),
+        nan_color=(128, 128, 128, 255),
 ) -> np.ndarray:
     case = mesh._kwargs["parent_obj"]
-    field = case.fields[fieldname]
+    field = fieldname
     new_field = np.zeros((field.shape[0], 4), np.int32)
 
     for idx in range(len(field)):

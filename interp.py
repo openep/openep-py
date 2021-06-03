@@ -142,6 +142,6 @@ for indx in range(amplitude_volt.shape[1]):
     d1[thresholdDistance] = 'nan'
 
 # DRAW Map
-openep_mesh.compute_field(ep_case_mesh,"bip",0,2,jet_r)
+openep_mesh.compute_field(ep_case_mesh,d1,0,0.05,jet_r)
 ep_case_mesh.show()
 
