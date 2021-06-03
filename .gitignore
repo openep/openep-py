@@ -133,6 +133,6 @@ dmypy.json
 *.mat
 
 .idea
-
+*~
 # .VS code
 .vscode
