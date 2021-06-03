@@ -4,8 +4,64 @@ from openep import case as openep_case
 from openep import mesh_routines as openep_mesh
 
 import numpy as np
+from scipy.interpolate import LinearNDInterpolator as linterp
+from scipy.interpolate import NearestNDInterpolator as nearest
+from sklearn.neighbors import NearestNeighbors
+from matplotlib.cm import jet, rainbow, jet_r, seismic
+
+#Usecase 034 - GETTING MAPPING POINT WITHIN WOI
+
+def getMappingPointsWithinWoI(mesh_case):
+    '''
+    GETMAPPINGPOINTSWITHINWOI Returns the indices of the mapping points with
+    annotated local activation time within the window of interest
+
+    Args:
+        mesh_case: Case
+
+    Returns:
+        logical array list of valid points; indexes into mesh_case.electric
+    '''
+    
+    # reference annotation
+    referenceAnnot = mesh_case.electric['annotations/referenceAnnot'].T
+
+    # woi
+    woi = mesh_case.electric['annotations/woi'].T
+
+    # Extract the region of the electrogram of interest for each mapping point, n
+    woi = woi + referenceAnnot
+
+    # MapAnnot
+    mapAnnot = mesh_case.electric['annotations/mapAnnot'].T
+
+    iPoint = np.ones(shape=mapAnnot.shape, dtype=np.bool)
+
+    # Remove the data points that are outside the region of interest
+    for indx in range(mapAnnot.size):
+        if (mapAnnot[indx]<woi[indx,0]) or (mapAnnot[indx]>woi[indx,1]):
+            iPoint[indx] = False
+        else:
+            iPoint[indx] = True
+
+    return iPoint
 
 # Usecase 039 - Creating a voltage map from electroanatomic mapping data
+
+class LinearNDInterpolatorExt(object):
+    def __init__(self, points, values):
+        self.funcinterp = linterp(points, values)
+        self.funcnearest = nearest(points, values)
+
+    def __call__(self, *args):
+        z = self.funcinterp(*args)
+        chk = np.isnan(z)
+        if chk.any():
+            return np.where(chk, self.funcnearest(*args), z)
+        else:
+            return z
+
+
 
 filename = '/home/jra21/work/source/repos/openep_py/tests/data/new_dataset_1.mat'
 interMethod = 'natural'
@@ -16,76 +72,76 @@ distanceThresh = 10
 ep_case = openep_io.load_case(filename)
 ep_case_mesh = ep_case.create_mesh()
 
+# Load EP CASE - MESH Points (trirep.X)
+pts = ep_case.nodes
+
 
 
 # # Load EGMSurfx and EGM voltage values
 coords = ep_case.electric['egmSurfX'].T
 data = ep_case.electric['egm'].T
-print('coords',coords.shape)
-print('data',data.shape)
 
 
+iVp = getMappingPointsWithinWoI(ep_case)
+# macthing the shape of ivp with data
+iVp_data = np.repeat(iVp, repeats=data.shape[1], axis=1)
+# macthing the shape of ivp with coords
+iVp_coords = np.repeat(iVp, repeats=coords.shape[1],axis=1)
+# 
+data[~iVp_data] = np.nan
+coords[~iVp_coords] = np.nan
 
-
-
-# GENERATEINTERPDATA removes any NaN values in data (and their
-# corresponding location(s) in coords) before calling scatteredInterpolant
-# with the interpolation/extrapolation methods specified. Any values greater
-# than distancethresh are removed.
-
-#  Usecase 034 - GETTING MAPPING POINT WITHIN WOI
-
-# reference annotationprint('egm',egm.shape)
-referenceAnnot = ep_case.electric['annotations/referenceAnnot'].T
-
-# woi
-woi = ep_case.electric['annotations/woi'].T
-# print('egm',woi.shape)
-
-# Extract the region of the electrogram of interest for each mapping point, n
-woi = woi + referenceAnnot
-# print('region of interest\n',woi)
-
-# MapAnnot
-mapAnnot = ep_case.electric['annotations/mapAnnot'].T
-# print('mapAnnot\n',mapAnnot.shape)
-
-iPoint = np.ones(shape=mapAnnot.shape, dtype=np.bool8)
-# print(mapAnnot.size)
-
-# Remove the data points that are outside the region of interest
-for indx in range(mapAnnot.size):
-    if (mapAnnot[indx]<woi[indx,0]) or (mapAnnot[indx]>woi[indx,1]):
-        iPoint[indx] = False
-    else:
-        iPoint[indx] = True
-
-# print(np.all(iPoint))
 
 # For each mapping point, n, find the voltage amplitude
-#  - Apply the user defined function (for example max(egm) – min(egm))
-
-print(iPoint)
-
-iPoint = np.where(iPoint==False,'nan',iPoint)
-data[iPoint] = np.where
-for item in iPoint:
-    print(item)
+max_volt = np.amax(a=data,axis=1).reshape(len(data),1)
+min_volt = np.amin(a=data,axis=1).reshape(len(data),1)
 
 
-# print('iPoint-shape',np.where(iPoint=='False','nan',iPoint))
+amplitude_volt = np.subtract(max_volt,min_volt)
+# Remove any data with Nans
+for indx in range(amplitude_volt.shape[1]):
+    tempData = amplitude_volt[:,indx]
+    tempCoords = coords
+    iNaN = np.isnan(tempData)
+    tempData=tempData[~iNaN]
+    tempCoords=tempCoords[~iNaN]
 
+    # USECASE 04 - Interpolation
+    F = LinearNDInterpolatorExt(points=(tempCoords[:,0],tempCoords[:,1],tempCoords[:,2]),
+                            values=tempData)
 
+    d1 = np.array(F(pts[:,0],pts[:,1],pts[:,2])).reshape(pts.shape[0],1)
 
+    # Workout if there are any points on the surface that are < 0
+    d1[d1<0] = 0
 
+    #  work out which points on the surface are too far away from real data
+    # Remove any interpolated values which are outwith the fill threshold 
 
+    neigh = NearestNeighbors(n_neighbors=1, 
+                            radius=1, 
+                            algorithm='auto', 
+                            leaf_size=30,
+                            metric='minkowski',
+                            p=2)
 
-# data[iPoint:,] = np.where(iPoint=='False','nan',data[iPoint:,])
+    neigh.fit(tempCoords)
+    id = neigh.kneighbors(pts,return_distance=False)
+    cPts = tempCoords[id]
+    cPts = np.array(cPts[:,0])
+    
 
-# print(data[np.invert(iPoint)].shape)
-# print(data[np.where(~iPoint):])
+    # USECASE XX - distBetweenPoints
+    # distance between points
+    # calculate the linear distance
+    diffsq = np.square(np.subtract(cPts,pts))
+    d = np.sqrt(np.sum(diffsq,axis=1)).reshape(pts.shape[0],1)
+    
+    thresholdDistance = np.zeros(shape=d.shape,dtype=np.bool)
+    thresholdDistance[d>distanceThresh] = 1
+    d1[thresholdDistance] = 'nan'
 
-# for item in c:
-#     print(item)
+# DRAW Map
+openep_mesh.compute_field(ep_case_mesh,"bip",0,2,jet_r)
+ep_case_mesh.show()
 
-# check for false iPoint and replace the data corresponding to the index of iPoint to False
