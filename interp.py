@@ -4,8 +4,10 @@ from openep import case as openep_case
 from openep import mesh_routines as openep_mesh
 
 import numpy as np
-
-# Usecase 039 - Creating a voltage map from electroanatomic mapping data
+from scipy.interpolate import LinearNDInterpolator as linterp
+from scipy.interpolate import NearestNDInterpolator as nearest
+from sklearn.neighbors import NearestNeighbors
+from matplotlib.cm import jet, rainbow, jet_r, seismic
 
 #Usecase 034 - GETTING MAPPING POINT WITHIN WOI
 
@@ -44,52 +46,7 @@ def getMappingPointsWithinWoI(mesh_case):
 
     return iPoint
 
-
-
-
-class openEpDataInterpolator():
-    def __init__(self):
-        pass
-                 # method,
-                 # interMethod,
-                 # exterMethod,
-                 # distanceThreshold,
-                 # smoothingLength,
-                 # fillWith,
-                 # rbfConstant):
-
-        # self.method = method
-        # self.interMethod = interMethod
-        # self.exterMethod = exterMethod
-        # self.distanceThreshold = distanceThreshold
-        # self.smoothingLength = smoothingLength
-        # self.fillWith = fillWith
-        # self.rbfConstant = rbfConstant
-
-    def interpolate(self,x0,d0,x1,*args):
-        self.x0 = x0
-        self.d0 = d0
-        self.x1 = x1
-        # self.funcinterp = linterp(self.x0, self.d0)
-        # self.funcnearest = nearest(self.x0, self.d0)
-        # print(self.x0.shape)
-        # print(self.d0.shape)
-        # z = self.funcinterp(*args)
-        F = linterp(self.x0,self.d0,*args)
-        self.interp = F(self.x1)
-        print('out-values\n',self.interp)
-
-        # self.F =
-        chk = np.isnan(self.interp)
-        if chk.any():
-            return np.where(chk, nearest(self.x0,self.d0,*args),self.interp)
-        else:
-            return self.interp
-
-        # return self.out
-
-
-
+# Usecase 039 - Creating a voltage map from electroanatomic mapping data
 
 class LinearNDInterpolatorExt(object):
     def __init__(self, points, values):
@@ -115,13 +72,15 @@ distanceThresh = 10
 ep_case = openep_io.load_case(filename)
 ep_case_mesh = ep_case.create_mesh()
 
+# Load EP CASE - MESH Points (trirep.X)
+pts = ep_case.nodes
+
 
 
 # # Load EGMSurfx and EGM voltage values
 coords = ep_case.electric['egmSurfX'].T
 data = ep_case.electric['egm'].T
-print('coords',coords.shape)
-print('data',data.shape)
+
 
 iVp = getMappingPointsWithinWoI(ep_case)
 # macthing the shape of ivp with data
@@ -137,12 +96,8 @@ coords[~iVp_coords] = np.nan
 max_volt = np.amax(a=data,axis=1).reshape(len(data),1)
 min_volt = np.amin(a=data,axis=1).reshape(len(data),1)
 
-# print(max_volt.shape)
-# print(min_volt.shape)
 
 amplitude_volt = np.subtract(max_volt,min_volt)
-# print(amplitude_volt.shape[1])
-
 # Remove any data with Nans
 for indx in range(amplitude_volt.shape[1]):
     tempData = amplitude_volt[:,indx]
@@ -151,76 +106,42 @@ for indx in range(amplitude_volt.shape[1]):
     tempData=tempData[~iNaN]
     tempCoords=tempCoords[~iNaN]
 
+    # USECASE 04 - Interpolation
+    F = LinearNDInterpolatorExt(points=(tempCoords[:,0],tempCoords[:,1],tempCoords[:,2]),
+                            values=tempData)
 
-# Interpolation
+    d1 = np.array(F(pts[:,0],pts[:,1],pts[:,2])).reshape(pts.shape[0],1)
 
+    # Workout if there are any points on the surface that are < 0
+    d1[d1<0] = 0
 
+    #  work out which points on the surface are too far away from real data
+    # Remove any interpolated values which are outwith the fill threshold 
 
+    neigh = NearestNeighbors(n_neighbors=1, 
+                            radius=1, 
+                            algorithm='auto', 
+                            leaf_size=30,
+                            metric='minkowski',
+                            p=2)
 
+    neigh.fit(tempCoords)
+    id = neigh.kneighbors(pts,return_distance=False)
+    cPts = tempCoords[id]
+    cPts = np.array(cPts[:,0])
+    
 
+    # USECASE XX - distBetweenPoints
+    # distance between points
+    # calculate the linear distance
+    diffsq = np.square(np.subtract(cPts,pts))
+    d = np.sqrt(np.sum(diffsq,axis=1)).reshape(pts.shape[0],1)
+    
+    thresholdDistance = np.zeros(shape=d.shape,dtype=np.bool)
+    thresholdDistance[d>distanceThresh] = 1
+    d1[thresholdDistance] = 'nan'
 
+# DRAW Map
+openep_mesh.compute_field(ep_case_mesh,"bip",0,2,jet_r)
+ep_case_mesh.show()
 
-
-
-
-
-
-
-
-
-
-
-# Interpolate the voltage values across the shell 
-
-
-
-
-
-
-
-
-# for volt in egm:
-#     max_volt.append(np.amax(volt))
-#     min_volt.append(np.amin(volt))
-
-# max_volt = np.array(max_volt)
-# min_volt = np.array(min_volt)
-
-# #
-# amplitude_volt = max_volt - min_volt
-
-
-
-
-# # GENERATEINTERPDATA removes any NaN values in data (and their
-# # corresponding location(s) in coords) before calling scatteredInterpolant
-# # with the interpolation/extrapolation methods specified. Any values greater
-# # than distancethresh are removed.
-
-
-# # For each mapping point, n, find the voltage amplitude
-# #  - Apply the user defined function (for example max(egm) – min(egm))
-# print(iPoint)
-
-# iPoint = np.where(iPoint==False,'nan',iPoint)
-# data[iPoint] = np.where
-# for item in iPoint:
-#     print(item)
-
-
-# print('iPoint-shape',np.where(iPoint=='False','nan',iPoint))
-
-
-
-
-
-
-# data[iPoint:,] = np.where(iPoint=='False','nan',data[iPoint:,])
-
-# print(data[np.invert(iPoint)].shape)
-# print(data[np.where(~iPoint):])
-
-# for item in c:
-#     print(item)
-
-# check for false iPoint and replace the data corresponding to the index of iPoint to False
