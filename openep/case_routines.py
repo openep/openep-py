@@ -1,4 +1,5 @@
 
+import numpy as np
 
 def getMappingPointsWithinWoI(mesh_case):
     '''
@@ -34,3 +35,25 @@ def getMappingPointsWithinWoI(mesh_case):
             iPoint[indx] = True
 
     return iPoint
+
+
+def distBetweenPoints(A, B):
+    '''
+    DISTBETWEENPOINTS returns the distance from A to B. A and B are specified
+    as row vectors [x, y, z] or matrices, with rows representing different
+    points. If npoints in A and B are different A must specify one and only 
+    one point.
+
+    Args:
+        A: row vectors of size mx3 
+        B: row vectors of size mx3
+
+    Returns:
+        returns an array of distance between the points in the row vectors 
+
+    '''
+
+    diffsq = np.square(np.subtract(A,B))
+    d = np.sqrt(np.sum(diffsq,axis=1)).reshape(B.shape[0],1)
+
+    return d
