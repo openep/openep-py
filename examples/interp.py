@@ -63,7 +63,7 @@ class LinearNDInterpolatorExt(object):
 
 
 
-filename = '/home/jra21/work/source/repos/openep_py/tests/data/new_dataset_1.mat'
+filename = '/home/jra21/work/source/repos/openep_py/examples/data/new_dataset_1.mat'
 interMethod = 'natural'
 exterMethod = 'nearest'
 distanceThresh = 10
