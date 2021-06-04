@@ -143,12 +143,6 @@ for indx in range(amplitude_volt.shape[1]):
     d1 = d1.flatten()
 
 ep_case.fields['d1'] = d1
-
-print(ep_case.fields['d1'])
-# print(d1.shape)
-# print(d1.min())
-# print(d1.max())
-
     
 # DRAW Map
 
