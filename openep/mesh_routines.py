@@ -177,3 +177,17 @@ def calculate_vertex_path(mesh_case: Union[Case, Trimesh], start_idx: int, end_i
     path = nx.shortest_path(graph, source=start_idx, target=end_idx, weight='length')
 
     return np.array(path, int)
+
+
+def calculate_point_distance_max(points, test_points, max_distance):
+    results = []
+
+    dists = []
+
+    for p in test_points:
+        dist = np.linalg.norm(points - p, axis=1)
+        inds = np.argwhere(dist <= max_distance).flatten()
+        results.append(inds)
+        dists.append(dist)
+
+    return results, dists
