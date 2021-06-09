@@ -69,6 +69,6 @@ for indx in range(amplitude_volt.shape[1]):
 ep_case.fields['d1'] = VertexVoltageData
     
 # DRAW Map
-openep_mesh.compute_field(mesh=ep_case_mesh,fieldname='d1',minval=0,maxval=1,color_map=jet_r)
+openep_mesh.compute_field(mesh=ep_case_mesh,fieldname='d1',minval=0,maxval=2,color_map=jet_r)
 ep_case_mesh.show()
 
