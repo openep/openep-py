@@ -12,7 +12,7 @@ from matplotlib.cm import jet, rainbow, jet_r, seismic
 
 # # Usecase 039 - Creating a voltage map from electroanatomic mapping data
 
-filename = '/home/jra21/work/source/repos/openep_py/examples/data/new_dataset_1.mat'
+filename = '/home/jra21/work/source/repos/openep_py/examples/data/new_dataset_2.mat'
 distanceThresh = 10
 
 
@@ -57,17 +57,18 @@ for indx in range(amplitude_volt.shape[1]):
     tempCoords=tempCoords[~iNaN]
 
 
-    interp = case_routines.openEpDataInterpolator(method='scatteredinterpolant',distanceThreshold=distanceThresh,rbfConstant=1)
+
+    interp = case_routines.openEpDataInterpolator(method='rbf',distanceThreshold=distanceThresh,rbfConstant=1)
     VertexVoltageData = interp.interpolate(x0=tempCoords,d0=tempData,x1=pts)
 
-    print('pts-shape',pts.shape)
-    # c = case_routines.LocalSmoothing(x0=tempCoords,x1=pts,smoothingLength=10)
-    c = case_routines.rbf(x0=tempCoords,d0=tempData,x1=pts,rbfConstant=1)
-    print(c)
+    # print('pts-shape',pts.shape)
+    # # c = case_routines.LocalSmoothing(x0=tempCoords,x1=pts,smoothingLength=10)
+    # # c = case_routines.rbf(x0=tempCoords,d0=tempData,x1=pts,rbfConstant=1)
+    # # print(c)
 
 ep_case.fields['d1'] = VertexVoltageData
     
 # DRAW Map
 openep_mesh.compute_field(mesh=ep_case_mesh,fieldname='d1',minval=0,maxval=1,color_map=jet_r)
-# ep_case_mesh.show()
+ep_case_mesh.show()
 
