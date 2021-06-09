@@ -131,7 +131,7 @@ def rbfAssemble(x, phi, const, smooth):
             A[j, i] = temp
         A[i, i] = A[i, i] - smooth
     # Polynomial part
-    P = np.c_[np.ones(1344), x.T]
+    P = np.c_[np.ones(x.shape[1]), x.T]
     A = np.c_[A, P]
     A = np.r_[A, np.c_[P.T, np.zeros([dim+1, dim+1])]]
     return A   
