@@ -10,6 +10,9 @@ from .case import Case
 
 from matplotlib.cm import jet_r
 
+__all__ = ["compute_field", "calculate_per_triangle_field", "calculate_point_distance_max", "calculate_vertex_path",
+           "calculate_vertex_distance", "calculate_mesh_volume", "calculate_field_area"]
+
 
 def compute_field(
         mesh,
@@ -177,3 +180,17 @@ def calculate_vertex_path(mesh_case: Union[Case, Trimesh], start_idx: int, end_i
     path = nx.shortest_path(graph, source=start_idx, target=end_idx, weight='length')
 
     return np.array(path, int)
+
+
+def calculate_point_distance_max(points, test_points, max_distance):
+    results = []
+
+    dists = []
+
+    for p in test_points:
+        dist = np.linalg.norm(points - p, axis=1)
+        inds = np.argwhere(dist <= max_distance).flatten()
+        results.append(inds)
+        dists.append(dist)
+
+    return results, dists

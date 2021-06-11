@@ -21,6 +21,8 @@ import numpy as np
 from typing import Any, Dict, Optional, Tuple
 import trimesh
 
+__all__ = ["Case"]
+
 
 class Case:
     def __init__(
