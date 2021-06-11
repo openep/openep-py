@@ -1,6 +1,5 @@
-
 import numpy as np
-from sklearn.neighbors import NearestNeighbors
+
 from scipy.interpolate import LinearNDInterpolator as linterp
 from scipy.interpolate import NearestNDInterpolator as nearest
 from scipy.interpolate import Rbf
@@ -398,7 +397,9 @@ class OpenEPDataInterpolator():
         d1[d1 < 0] = 0
 
         #  work out which points on the surface are too far away from real data
-        # Remove any interpolated values which are outwith the fill threshold 
+        # Remove any interpolated values which are outwith the fill threshold
+
+        from sklearn.neighbors import NearestNeighbors
 
         neigh = NearestNeighbors(n_neighbors=1,
                                  radius=1,
