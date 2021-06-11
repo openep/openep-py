@@ -17,9 +17,9 @@ def compute_field(
         minval=0,
         maxval=1,
         color_map=jet_r,
-        below_color=(0, 0, 0, 255),
+        below_color=(180, 180, 180, 255),
         above_color=(255, 0, 255, 255),
-        nan_color=(50, 50, 50, 255),
+        nan_color=(180, 180, 180, 255),
 ) -> np.ndarray:
     case = mesh._kwargs["parent_obj"]
     field = case.fields[fieldname]
