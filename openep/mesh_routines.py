@@ -10,6 +10,9 @@ from .case import Case
 
 from matplotlib.cm import jet_r
 
+__all__ = ["compute_field", "calculate_per_triangle_field", "calculate_point_distance_max", "calculate_vertex_path",
+           "calculate_vertex_distance", "calculate_mesh_volume", "calculate_field_area"]
+
 
 def compute_field(
         mesh,

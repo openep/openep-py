@@ -6,3 +6,4 @@ vtk
 pymeshfix
 networkx
 shapely
+h5py
