@@ -10,7 +10,7 @@ from matplotlib.cm import jet, rainbow, jet_r, seismic
 import trimesh as tm
 
 
-filename = '/home/jra21/work/source/repos/opep/examples/data/new_dataset_2.mat'
+filename = '/home/jra21/work/source/repos/opep/examples/data/new_dataset_1.mat'
 np.set_printoptions(suppress=True)
 
 
@@ -18,6 +18,6 @@ ep_case = openep_io.load_case(filename)
 ep_case_mesh = ep_case.create_mesh()
 
 
-draw.DrawMap(ep_case,surf_color='magenta',freeboundary_color='black',freeboundary_width=5)
-
+hsurf = draw.DrawMap(ep_case,freeboundary_color='black',freeboundary_width=5)
+print(hsurf)
 

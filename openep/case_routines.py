@@ -67,7 +67,6 @@ def distBetweenPoints(A, B):
 
 def calculate_point_distance_max(points, test_points, max_distance):
     results = []
-
     dists = []
 
     for p in test_points:

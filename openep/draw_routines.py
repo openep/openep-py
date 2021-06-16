@@ -6,7 +6,7 @@ from matplotlib.cm import jet, rainbow, jet_r, seismic
 import trimesh as tm
 
 
-def DrawMap(ep_case,surf_color,freeboundary_color,freeboundary_width):
+def DrawMap(ep_case,freeboundary_color,freeboundary_width):
     pts = ep_case.nodes
     tri = ep_case.indices.astype(int)
     volt = ep_case.fields['bip']
@@ -74,7 +74,7 @@ def DrawMap(ep_case,surf_color,freeboundary_color,freeboundary_width):
     p = pv.Plotter()
 
     minval=0
-    maxval=1
+    maxval=2
     color_map = jet_r
     below_color=[149, 85, 0]
     # print('below_color',below_color)
@@ -121,7 +121,7 @@ def DrawMap(ep_case,surf_color,freeboundary_color,freeboundary_width):
     # print(color_array)
 
     # Plot OpenEp mesh
-    p.add_mesh(mesh,color=surf_color,show_edges=False,smooth_shading=True)
+    p.add_mesh(mesh,show_edges=False,smooth_shading=True,scalars=volt,nan_color=nan_color,clim=[minval,maxval],cmap=jet_r,below_color=below_color,above_color=above_color)
 
     # Plot free Boundary - Lines
     for indx in range(len(freeboundary_points)):
@@ -134,7 +134,6 @@ def DrawMap(ep_case,surf_color,freeboundary_color,freeboundary_width):
         # p.add_lines(freeboundary_points[5],color='orange',width=freeboundary_width)
         # p.add_lines(freeboundary_points[6],color='magenta',width=freeboundary_width)
 
-
     p.show()
     
-    return mesh,freeboundary_points
+    return p
