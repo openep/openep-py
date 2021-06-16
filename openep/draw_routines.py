@@ -6,7 +6,7 @@ from matplotlib.cm import jet, rainbow, jet_r, seismic
 import trimesh as tm
 
 
-def DrawMap(ep_case,color,freeboundary_width):
+def DrawMap(ep_case,surf_color,freeboundary_color,freeboundary_width):
     pts = ep_case.nodes
     tri = ep_case.indices.astype(int)
     volt = ep_case.fields['bip']
@@ -121,16 +121,18 @@ def DrawMap(ep_case,color,freeboundary_width):
     # print(color_array)
 
     # Plot OpenEp mesh
-    p.add_mesh(mesh,color=color,show_edges=False,smooth_shading=True)
+    p.add_mesh(mesh,color=surf_color,show_edges=False,smooth_shading=True)
 
     # Plot free Boundary - Lines
-    p.add_lines(freeboundary_points[0],color='blue',width=freeboundary_width)
-    p.add_lines(freeboundary_points[1],color='black',width=freeboundary_width)
-    p.add_lines(freeboundary_points[2],color='pink',width=freeboundary_width)
-    p.add_lines(freeboundary_points[3],color='red',width=freeboundary_width)
-    p.add_lines(freeboundary_points[4],color='green',width=freeboundary_width)
-    p.add_lines(freeboundary_points[5],color='orange',width=freeboundary_width)
-    p.add_lines(freeboundary_points[6],color='magenta',width=freeboundary_width)
+    for indx in range(len(freeboundary_points)):
+        p.add_lines(freeboundary_points[indx],color=freeboundary_color,width=freeboundary_width)
+        # p.show()
+        # p.add_lines(freeboundary_points[indx],color='black',width=freeboundary_width)
+        # p.add_lines(freeboundary_points[2],color='pink',width=freeboundary_width)
+        # p.add_lines(freeboundary_points[3],color='red',width=freeboundary_width)
+        # p.add_lines(freeboundary_points[4],color='green',width=freeboundary_width)
+        # p.add_lines(freeboundary_points[5],color='orange',width=freeboundary_width)
+        # p.add_lines(freeboundary_points[6],color='magenta',width=freeboundary_width)
 
 
     p.show()
