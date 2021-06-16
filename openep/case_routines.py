@@ -122,18 +122,18 @@ def rbfAssemble(x, phi, const, smooth):
     else:
         dim = 1
         n = xShape[0]
-    A = np.zeros([n, n])
+    A = np.zeros([n,n])
     for i in range(n):
-        for j in range(i + 1):
+        for j in range(i+1):
             r = np.linalg.norm(x[:, i] - x[:, j])
             temp, _ = phi(r, const)
             A[i, j] = temp
             A[j, i] = temp
         A[i, i] = A[i, i] - smooth
     # Polynomial part
-    P = np.c_[np.ones(x.shape[1]), x.T]
+    P = np.c_[np.ones(1344), x.T]
     A = np.c_[A, P]
-    A = np.r_[A, np.c_[P.T, np.zeros([dim + 1, dim + 1])]]
+    A = np.r_[A, np.c_[P.T, np.zeros([dim+1, dim+1])]]
     return A
 
 
@@ -148,7 +148,7 @@ class rbfcreate:
         start_time = time.time()
         nargin = 2 + len(args)
 
-        Names = ['RBFFunction      ', 'RBFConstant      ', 'RBFSmooth        ', 'Stats            ']
+        Names=['RBFFunction      ', 'RBFConstant      ', 'RBFSmooth        ', 'Stats            ']
         m = len(Names)
         n = len(Names[0])
         names = []
@@ -181,18 +181,17 @@ class rbfcreate:
 
         # Default values
         self.RBFFunction = 'linear'
-        self.RBFConstant = (functools.reduce(operator.mul, (np.amax(x.T, axis=0) - np.amin(x.T, axis=0)),
-                                             1) / nXCount) ** (1 / nXDim)  # approx. average distance between the nodes
-        self.RBFSmooth = 0
-        self.Stats = 'off'
+        self.RBFConstant = (functools.reduce(operator.mul, (np.amax(x.T, axis=0) - np.amin(x.T, axis=0)), 1) / nXCount) ** (1 / nXDim) #approx. average distance between the nodes
+        self.RBFSmooth   = 0
+        self.Stats       = 'off'
 
         i = 0
-        if np.remainder(nargin - 2, 2) != 0:
+        if np.remainder(nargin-2, 2) != 0:
             sys.exit('Arguments must occur in name-value pairs.')
 
-        expectval = 0  # start expecting a name, not a value
-
-        while i < nargin - 2:
+        expectval = 0                          # start expecting a name, not a value
+        
+        while i < nargin-2:
             arg = args[i]
 
             if not expectval:
@@ -204,9 +203,9 @@ class rbfcreate:
                 for p in range(m):
                     if names[p].startswith(lowArg):
                         j.append(p)
-                if not j:  # if no matches
+                if not j: # if no matches
                     sys.exit('Unrecognized property name ' + arg)
-                elif len(j) > 1:  # if more than one match
+                elif len(j) > 1: # if more than one match
                     # Check for any exact matches (in case any names are subsets of others)
                     k = []
                     for p in range(m):
@@ -220,7 +219,7 @@ class rbfcreate:
                             msg = msg + ', ' + Names[j[p]].replace(" ", "")
                         msg = msg + ').'
                         sys.exit(msg)
-                expectval = 1  # we expect a value next
+                expectval = 1 # we expect a value next
             else:
                 if Names[j[0]].replace(" ", "") == 'RBFFunction':
                     self.RBFFunction = arg
@@ -236,30 +235,28 @@ class rbfcreate:
         if expectval:
             sys.exit('Expected value for property ' + arg)
 
-        # **************************************************************************
+        #**************************************************************************
         # Creating RBF Interpolatin
-        # **************************************************************************
+        #**************************************************************************
 
         if self.RBFFunction == 'linear':
-            self.rbfphi = lambda r, const: (r, 1 / r)
+            self.rbfphi = lambda r, const: (r, 1/r)
         elif self.RBFFunction == 'cubic':
-            self.rbfphi = lambda r, const: (r * r * r, 3 * r)
+            self.rbfphi = lambda r, const: (r*r*r, 3*r)
         elif self.RBFFunction == 'multiquadric':
-            self.rbfphi = lambda r, const: (
-                np.sqrt(1 + r * r / (const * const)), 1 / (const * const * np.sqrt(1 + r * r / (const * const))))
+            self.rbfphi = lambda r, const: (np.sqrt(1+r*r/(const*const)), 1/(const*const*np.sqrt(1+r*r/(const*const))))
         elif self.RBFFunction == 'thinplate':
-            self.rbfphi = lambda r, const: (r * r * np.log(r + 1), r / ((r + 1) + 2 * np.log(r + 1)))
+            self.rbfphi = lambda r, const: (r*r*np.log(r+1), r/((r+1)+2*np.log(r+1)))
         elif self.RBFFunction == 'gaussian':
-            self.rbfphi = lambda r, const: (
-                np.exp(-0.5 * r * r / (const * const)), -np.exp(-0.5 * r * r / (const * const)) / (const * const))
+            self.rbfphi = lambda r, const: (np.exp(-0.5*r*r/(const*const)), -np.exp(-0.5*r*r/(const*const))/(const*const))
         else:
-            self.rbfphi = lambda r, const: (r, 1 / r)
+            self.rbfphi = lambda r, const: (r, 1/r)
 
         phi = self.rbfphi
 
         A = rbfAssemble(x, phi, self.RBFConstant, self.RBFSmooth)
 
-        b = np.r_[np.reshape(y, [nYCount, 1], order='F'), np.zeros([nXDim + 1, 1])]
+        b = np.r_[np.reshape(y,[nYCount,1], order='F'), np.zeros([nXDim+1, 1])]
 
         # inverse
         rbfcoeff = np.linalg.lstsq(A, b, rcond=None)[0]
@@ -277,9 +274,9 @@ def rbfinterp(x, options):
 
     start_time = time.time()
 
-    phi = options.rbfphi
+    phi      = options.rbfphi
     rbfconst = options.RBFConstant
-    nodes = options.x
+    nodes    = options.x
     rbfcoeff = options.rbfcoeff
 
     dim, n = nodes.shape
@@ -295,22 +292,20 @@ def rbfinterp(x, options):
 
     for i in range(nPoints):
         ds = np.zeros([dimPoints, 1])
-        dx = np.matmul(np.reshape(x[:, i], [xDim, 1], order='F'), np.ones([1, n])) - nodes
-        r = np.sqrt(np.sum(dx * dx, axis=0))
+        dx = np.matmul(np.reshape(x[:, i],[xDim, 1], order='F'), np.ones([1, n])) - nodes
+        r = np.sqrt(np.sum(dx*dx, axis=0))
 
         rbf, d_rbf = phi(r, rbfconst)
 
         # First term is constant coefficient from monomial terms
-        s = rbfcoeff[n] + np.sum(rbfcoeff[0:n] * np.reshape(rbf, [n, 1], order='F'))
+        s = rbfcoeff[n] + np.sum(rbfcoeff[0:n]*np.reshape(rbf,[n, 1], order='F'))
         for k in range(dim):
-            s = s + rbfcoeff[k + n + 1] * x[k, i]  # add monomial terms
+            s = s + rbfcoeff[k+n+1] * x[k, i] # add monomial terms
             # Second term here are coefficients from monomial terms
-            ds[k] = np.sum(
-                rbfcoeff[0:n] * np.reshape(dx[k, :], [n, 1], order='F') * np.reshape(d_rbf, [n, 1], order='F')) + \
-                    rbfcoeff[k + n + 1]
+            ds[k] = np.sum(rbfcoeff[0:n] * np.reshape(dx[k, :],[n, 1], order='F') * np.reshape(d_rbf,[n, 1], order='F')) + rbfcoeff[k+n+1]
         f[i] = s
-        df[:, i] = np.reshape(ds, [1, dimPoints], order='F')
-
+        df[:, i] = np.reshape(ds,[1, dimPoints], order='F')
+        
     if options.Stats == 'on':
         print('Interpolation at ' + len(f) + ' points was computed in ' + time.time() - start_time + ' sec.')
     return f, df
@@ -323,29 +318,25 @@ def rbfcheck(options):
     start_time = time.time()
 
     nodes = options.x
-    y = options.y
+    y     = options.y
 
     s, _ = rbfinterp(nodes, options)
 
     print('RBF Check')
-    print('max|y - yi| = ' + str(np.max(abs(s - y))))
+    print('max|y - yi| = ' + str(np.max(abs(s-y))))
 
     if options.Stats == 'on':
         print(len(y) + ' points were checked in ' + time.time() - start_time + ' sec.')
 
 
-def rbf(x0, d0, x1, rbfConstant):
-    print(x0.shape)
-    print(x1[:, 0].shape)
+def rbf_scipy(x0, d0, x1, rbfConstant):
 
     x = x0[:, 0]
     y = x0[:, 1]
     z = x0[:, 2]
     d = d0
 
-    print(x.shape, y.shape, z.shape, d.shape)
-
-    F = Rbf(x, y, z, d, function='linear', smooth=rbfConstant, mode='N-D')
+    F = Rbf(x, y, z, d, function='multiquadric', smooth=rbfConstant)
     d1 = F(x1[:, 0], x1[:, 1], x1[:, 2])
 
     return d1
@@ -367,26 +358,17 @@ class OpenEPDataInterpolator():
         self.d0 = d0
         self.x1 = x1
 
-        print(self.x0.shape)
-        print(self.x1.shape)
 
         if self.method == 'scatteredinterpolant':
             F = LinearNDInterpolatorExt(points=(self.x0[:, 0], self.x0[:, 1], self.x0[:, 2]), values=self.d0)
             d1 = np.array(F(self.x1[:, 0], self.x1[:, 1], self.x1[:, 2])).reshape(self.x1.shape[0], 1)
 
         elif self.method == 'rbf':
-            # print('x0-shape',self.x0.shape)
-            # print('d0-shape',self.d0.shape)
             op = rbfcreate(self.x0.T, self.d0.T, 'RBFFunction', 'multiquadric', 'RBFConstant', self.rbfConstant)
             rbfcheck(op)
             out = rbfinterp(self.x1.T, op)
             d1 = np.array(out[0]).reshape(self.x1.shape[0], 1)
-            print(d1)
-            print('d1-shape', d1.shape)
-
-            # F = Rbf(self.x0[:,0],self.x0[:,1],self.x0[:,2],self.d0,function='linear',epsilon=self.rbfConstant)
-            # d1 = F(self.x1[:,0],self.x1[:,1],self.x1[:,2])
-
+            
         elif self.method == 'localSmoothing':
             pass
 

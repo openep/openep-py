@@ -1,3 +1,6 @@
+# import sys
+# sys.path.append('/home/jra21/work/source/repos/opep')
+
 from openep import io as openep_io
 from openep import case as openep_case
 from openep import mesh_routines as openep_mesh
@@ -12,7 +15,8 @@ from matplotlib.cm import jet, rainbow, jet_r, seismic
 
 # # Usecase 039 - Creating a voltage map from electroanatomic mapping data
 
-filename = '/home/jra21/work/source/repos/openep_py/examples/data/new_dataset_2.mat'
+filename = '/home/jra21/work/source/repos/opep/examples/data/new_dataset_1.mat'
+
 distanceThresh = 10
 
 
@@ -28,7 +32,7 @@ pts = ep_case.nodes
 
 
 # # Load EGMSurfx and EGM voltage values
-coords = ep_case.electric['egmSurfX'].T
+coords = ep_case.electric['egmX'].T
 data = ep_case.electric['egm'].T
 
 
@@ -57,8 +61,7 @@ for indx in range(amplitude_volt.shape[1]):
     tempCoords=tempCoords[~iNaN]
 
 
-
-    interp = case_routines.openEpDataInterpolator(method='rbf',distanceThreshold=distanceThresh,rbfConstant=1)
+    interp = case_routines.OpenEPDataInterpolator(method='rbf',distanceThreshold=distanceThresh,rbfConstant=1)
     VertexVoltageData = interp.interpolate(x0=tempCoords,d0=tempData,x1=pts)
 
     # print('pts-shape',pts.shape)
