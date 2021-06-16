@@ -13,231 +13,161 @@ from scipy.interpolate import make_interp_spline, BSpline, griddata, interp1d, N
 from matplotlib.cm import jet_r
 import vtk
 
-# DEFINITIONS
-file_path = '../openep_py/tests/data/openep_dataset_1.mat'
-data_tri_X_lst = []
-data_tri_T_lst = []
-x_values = []
-y_values = []
-z_values = []
-# voltage threshold to split the colorbar by solid and JET
-volt_threshold = 2
-below_color=(0, 0, 0, 255)
-above_color=(255, 0, 255, 255)
-nan_color=(50/255, 50/255, 50/255, 255/255)
-random_color = (6, 202, 255, 0.9)
-color_map=jet_r
-minval=0,
-maxval=1,
-
-color1 = []
-
+DEFAULT_FILE_PATH = "tests/data/openep_dataset_1.mat"
 
 class VisualisationBackend(Enum):
     Matplotlib = auto()
     VTKNoInterp = auto()
     VTKLinInterp = auto()
 
+def load_data(file_path):
 
-# Switch these for matplotlib/VTK comparison (VTK with and without lin. interp.)
-visualisation_backend = VisualisationBackend.VTKLinInterp
-# visualisation_backend = VisualisationBackend.VTKNoInterp
-# visualisation_backend = VisualisationBackend.Matplotlib
+    # DEFINITIONS
+    data_tri_X_lst = []
+    data_tri_T_lst = []
+    x_values = []
+    y_values = []
+    z_values = []
+    # voltage threshold to split the colorbar by solid and JET
+    volt_threshold = 2
+    below_color=(0, 0, 0, 255)
+    above_color=(255, 0, 255, 255)
+    nan_color=(50/255, 50/255, 50/255, 255/255)
+    random_color = (6, 202, 255, 0.9)
+    color_map=jet_r
+    minval=0,
+    maxval=1,
+
+    color1 = []
+
+    # Load the file
+    # Main MAT File - userdata
+    main_file = sio.loadmat(file_path)
+    # Vertices/Points = .X
+    data_tri_X = main_file['userdata']['surface_triRep_X'][0][0]
+    x = data_tri_X[:,0]
+    y = data_tri_X[:,1]
+    z = data_tri_X[:,2]
+
+    x_new = np.reshape(a=x,newshape=(len(x),1))
+    y_new = np.reshape(a=y,newshape=(len(y),1))
+    z_new = np.reshape(a=z,newshape=(len(z),1))
+
+    # Triangulation/faces - .T
+    data_tri_T = main_file['userdata']['surface_triRep_Triangulation'][0][0]
+    # Resolving indexing issue - matlab to python
+    t = data_tri_T-1
+    print('t\n',t.shape)
+
+    # Voltage Data
+    data_act_bip = main_file['userdata']['surface'][0][0]['act_bip'][0][0]
+    del main_file
+    voltage_data = data_act_bip[:,1]
+    print('voltag_bip\n',voltage_data.shape)
+
+    voltage_new = np.reshape(a=voltage_data,newshape=(len(voltage_data),1))
+    print('voltage-new\n',voltage_new.shape)
+
+    # ColorShell
+    # coloring the shell by the voltage value rather than z-axis height
+    min_volt = min(voltage_data)
+    max_volt = max(voltage_data)
+    print('min_volt',min_volt)
+
+    # normalisation - normalising the voltage - values
+    norm = mp.colors.Normalize(vmin=min_volt, vmax=max_volt)
+
+    # Plot the Mesh
+    # Create a new fig window
+    fig = plt.figure(constrained_layout=True,
+                    frameon=False,
+                    tight_layout=False,
+                    figsize=(40,20),
+                    dpi=150)
+    # first plot
+    # get the current 3d axis on the current fig
+    ax1 = fig.add_subplot(1,1,1, projection='3d')
+
+    field = voltage_data
+    new_field = np.zeros((field.shape[0], 4), np.int32)
 
 
-# Load the file
-# Main MAT File - userdata
-main_file = sio.loadmat(file_path)
+    # creatig the color array
+    for idx in range(len(field)):
+        val = field[idx]
+        # print(val)
 
-# Parsing TriRep Anatomy Data
-# .X & .Triangulation
+        if np.isnan(val):
+            color1.append(nan_color)
+        elif(val<minval):
+            color1.append(below_color)
+        elif(val>maxval):
+            color1.append(above_color)
+        else:
+            color1.append(random_color)
+            # num = val-minval
+            # den = maxval-minval
+            # valscaled = num / den
 
-# Vertices/Points = .X
-data_tri_X = main_file['userdata']['surface_triRep_X'][0][0]
-x = data_tri_X[:,0]
-y = data_tri_X[:,1]
-z = data_tri_X[:,2]
+    color1 = np.array(color1)
+    print('color1\n',color1.shape)
 
-x_new = np.reshape(a=x,newshape=(len(x),1))
-y_new = np.reshape(a=y,newshape=(len(y),1))
-z_new = np.reshape(a=z,newshape=(len(z),1))
-#
-print('x-newshape\n',x_new.shape)
-#
-# xx = np.zeros(shape=(len(x),1),dtype=np.float64) + x_new
-# yy = np.zeros(shape=(len(y),1),dtype=np.float64) + y_new
-# zz = np.zeros(shape=(len(z),1),dtype=np.float64) + z_new
-#
-# print('xx\n',xx.shape)
-#
-# print(xx.max(),xx.min())
-# print(yy.max(),yy.min())
-# print(zz.max(),zz.min())
-#
-# # AXIS vectorspoints, values, (grid_x, grid_y
-# # xx = np.linspace(int(x.min()),int(x.max()),len(x),dtype='uint8')
-# # yy = np.linspace(int(y.min()),int(y.max()),len(y),dtype='uint8')
-# # zz = np.linspace(int(z.min()),int(z.max()),len(z),dtype='uint8')
-# #
-# #
-# # print('xx-shape\n',xx)
-# # print('yy-shape\n',yy)
-# # print('zz-shape\n',zz)
-#
-# # Meshgrid
-# xxx,yyy = np.meshgrid(xx,yy)
-# print('xxx\n',xxx)
-# print('yyy\n',yyy)
+    print('voltage_new',voltage_new.shape)
+    print('t',t)
+    print('voltage_new[t]',voltage_new[t].shape)
 
-# x=x_new,y=y_new,z=z_new,kind='near')
+    color3d = voltage_new[t]
+    print('color3d',color3d.shape)
 
 
+    color = np.mean(voltage_new[t], axis=1)
+    print('color',color.shape)
+
+    # color_r = np.linspace(color.min(),color.max(),len(color))
+    # color_interp = interp1d(color_r)
+    # print('color-arry\n',color_r)
+
+    # Voltage Threshold - to split the colorbar axis
+    # determining the size of the voltage values
+    diff_volt = max_volt - min_volt
+    dist_below_threshold = volt_threshold - min_volt
+    dist_above_threshold = max_volt - volt_threshold
+
+    # splitting the colorbar
+    # color below threshold - size
+    size_below_threshold = round((dist_below_threshold/diff_volt)*256)
+    # color above threshold - size
+    size_above_threshold = int(256 - size_below_threshold)
+
+    # Define Colormap - Reverse JET
+    cm_jet = plt.cm.get_cmap('jet_r',size_below_threshold)
+    newcolors = cm_jet(np.linspace(0,1,256))
+    # Magenta - RGBA array
+    magenta = np.array([255/255, 0/255, 255/255, 1])
+    # magenta = np.array([139/255, 0/255, 139/255, 1])
+    # Gray - RGBA array
+    gray = np.array([128/255, 128/255, 128/255, 1])
+
+    # Creating new colormap columns
+    # Col 1 - Jet
+    col1 = cm_jet(np.linspace(0,1,size_below_threshold))
+    print('col1\n',col1)
+    # Col2 - Magenta
+    col2 = np.zeros(shape=(size_above_threshold,4))+magenta
+    # col3 = np.ones(size_above_threshold)
+    # Combining Col1 + Col2
+    final_col = np.concatenate((col1,col2))
+    print('final_col\n',final_col.shape)
+
+    return voltage_new, voltage_data, final_col, data_tri_X, t, x_values, y_values, z_values, ax1, x, y, z, color, norm, nan_color
 
 
 
+def visualise_matplotlib(file_path):
+    voltage_new, voltage_data, final_col, data_tri_X, t, x_values, y_values, z_values, ax1, x, y, z, color, norm, nan_color = load_data(file_path)
 
-
-
-# Triangulation/faces - .T
-data_tri_T = main_file['userdata']['surface_triRep_Triangulation'][0][0]
-# Resolving indexing issue - matlab to python
-t = data_tri_T-1
-print('t\n',t.shape)
-
-# Voltage Data
-data_act_bip = main_file['userdata']['surface'][0][0]['act_bip'][0][0]
-del main_file
-voltage_data = data_act_bip[:,1]
-print('voltag_bip\n',voltage_data.shape)
-
-voltage_new = np.reshape(a=voltage_data,newshape=(len(voltage_data),1))
-print('voltage-new\n',voltage_new.shape)
-
-# Checking for NaN values and replacing with 0 in voltage data
-if visualisation_backend == VisualisationBackend.Matplotlib:
     voltage_new = np.asarray(list(map(lambda x:0 if np.isnan(x) else x, voltage_data)))
 
-# ColorShell
-# coloring the shell by the voltage value rather than z-axis height
-min_volt = min(voltage_data)
-max_volt = max(voltage_data)
-print('min_volt',min_volt)
-
-# normalisation - normalising the voltage - values
-norm = mp.colors.Normalize(vmin=min_volt, vmax=max_volt)
-
-# Plot the Mesh
-# Create a new fig window
-fig = plt.figure(constrained_layout=True,
-                 frameon=False,
-                 tight_layout=False,
-                 figsize=(40,20),
-                 dpi=150)
-# first plot
-# get the current 3d axis on the current fig
-ax1 = fig.add_subplot(1,1,1, projection='3d')
-
-# defining a custom color scalar field
-# if only nodal values are known, then the signal need to be averaged by the triangles
-
-# color2 = voltage_data[t]
-# print('color-2',color2)
-
-field = voltage_data
-new_field = np.zeros((field.shape[0], 4), np.int32)
-
-
-# creatig the color array
-for idx in range(len(field)):
-    val = field[idx]
-    # print(val)
-
-    if np.isnan(val):
-        color1.append(nan_color)
-    elif(val<minval):
-        color1.append(below_color)
-    elif(val>maxval):
-        color1.append(above_color)
-    else:
-        color1.append(random_color)
-        # num = val-minval
-        # den = maxval-minval
-        # valscaled = num / den
-
-
-
-color1 = np.array(color1)
-print('color1\n',color1.shape)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-print('voltage_new',voltage_new.shape)
-print('t',t)
-print('voltage_new[t]',voltage_new[t].shape)
-
-color3d = voltage_new[t]
-print('color3d',color3d.shape)
-
-
-color = np.mean(voltage_new[t], axis=1)
-print('color',color.shape)
-
-# color_r = np.linspace(color.min(),color.max(),len(color))
-# color_interp = interp1d(color_r)
-# print('color-arry\n',color_r)
-
-# Voltage Threshold - to split the colorbar axis
-# determining the size of the voltage values
-diff_volt = max_volt - min_volt
-dist_below_threshold = volt_threshold - min_volt
-dist_above_threshold = max_volt - volt_threshold
-
-# splitting the colorbar
-# color below threshold - size
-size_below_threshold = round((dist_below_threshold/diff_volt)*256)
-# color above threshold - size
-size_above_threshold = int(256 - size_below_threshold)
-
-# Define Colormap - Reverse JET
-cm_jet = plt.cm.get_cmap('jet_r',size_below_threshold)
-newcolors = cm_jet(np.linspace(0,1,256))
-# Magenta - RGBA array
-magenta = np.array([255/255, 0/255, 255/255, 1])
-# magenta = np.array([139/255, 0/255, 139/255, 1])
-# Gray - RGBA array
-gray = np.array([128/255, 128/255, 128/255, 1])
-
-# Creating new colormap columns
-# Col 1 - Jet
-col1 = cm_jet(np.linspace(0,1,size_below_threshold))
-print('col1\n',col1)
-# Col2 - Magenta
-col2 = np.zeros(shape=(size_above_threshold,4))+magenta
-# col3 = np.ones(size_above_threshold)
-# Combining Col1 + Col2
-final_col = np.concatenate((col1,col2))
-print('final_col\n',final_col.shape)
-
-if visualisation_backend == VisualisationBackend.Matplotlib:
     # NewColormap
     newcmp = ListedColormap(final_col)
 
@@ -338,12 +268,8 @@ if visualisation_backend == VisualisationBackend.Matplotlib:
 
     plt.show()
 
-
-
-    # UseCase03
-
-else:  # if visualisation_backend == VisualisationBackend.VTK
-
+def visualise_vtk(file_path, visualisation_backend = VisualisationBackend.VTKLinInterp, renderer = None):
+    voltage_new, _, final_col, _, t, _, _, _, _, x, y, z, color, _, nan_color = load_data(file_path)
     def get_point_idx(triangulation_data, triangle_idx, point_idx):
         return triangulation_data[triangle_idx, point_idx]
 
@@ -397,19 +323,33 @@ else:  # if visualisation_backend == VisualisationBackend.VTK
     actor.GetProperty().SetPointSize(5)
 
     # Renderer
-    renderer = vtk.vtkRenderer()
+    standalone_window = renderer is None
+    if standalone_window:
+        renderer = vtk.Renderer()
+
     renderer.AddActor(actor)
-    renderer.SetBackground(.2, .3, .4)
+    renderer.SetBackground(0., 0., 0.)
     renderer.ResetCamera()
 
-    # Render Window
-    renderWindow = vtk.vtkRenderWindow()
-    renderWindow.AddRenderer(renderer)
+    if standalone_window:
 
-    # Interactor
-    renderWindowInteractor = vtk.vtkRenderWindowInteractor()
-    renderWindowInteractor.SetRenderWindow(renderWindow)
+        # Render Window
+        renderWindow = vtk.vtkRenderWindow()
+        renderWindow.AddRenderer(renderer)
 
-    # Begin Interaction
-    renderWindow.Render()
-    renderWindowInteractor.Start()
+        # Interactor
+        renderWindowInteractor = vtk.vtkRenderWindowInteractor()
+        renderWindowInteractor.SetRenderWindow(renderWindow)
+
+        # Begin Interaction
+        renderWindow.Render()
+        renderWindowInteractor.Start()
+
+
+def visualise(file_path, visualisation_backend = VisualisationBackend.VTKLinInterp):
+    if visualisation_backend == VisualisationBackend.Matplotlib:
+        return visualise_matplotlib(file_path)
+    return visualise_vtk(file_path, visualisation_backend)
+
+if __name__ == "__main__":
+    visualise(DEFAULT_FILE_PATH)
