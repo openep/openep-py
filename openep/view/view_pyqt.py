@@ -73,7 +73,7 @@ class App(QWidget):
         vbox.addRow(hbox)
 
         # Plot
-        self.plotter = pyvqt.BackgroundPlotter()
+        # self.plotter = pyvqt.BackgroundPlotter()
         vbox.addRow(QLabel('3-D Plot'))
         
 
@@ -116,8 +116,7 @@ class App(QWidget):
 
 
     def on_click2(self):
-        _ = self.plotter.add_mesh(pv.Sphere())
-        draw.DrawMap(self.ep_case)
+        draw.DrawMap(self.ep_case,color=[220/250,220/250,220/250],freeboundary_width=5)
 
 
 

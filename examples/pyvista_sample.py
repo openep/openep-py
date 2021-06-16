@@ -18,6 +18,6 @@ ep_case = openep_io.load_case(filename)
 ep_case_mesh = ep_case.create_mesh()
 
 
-draw.DrawMap(ep_case,color=[220/250,220/250,220/250],freeboundary_width=5)
+draw.DrawMap(ep_case,surf_color='magenta',freeboundary_color='black',freeboundary_width=5)
 
 
