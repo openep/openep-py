@@ -75,6 +75,7 @@ class App(QWidget):
         # Plot
         # self.plotter = pyvqt.BackgroundPlotter()
         vbox.addRow(QLabel('3-D Plot'))
+        # vbox.addWidget(self.plotter)
         
 
         # vbox.addRow(pg.PlotWidget())
@@ -116,7 +117,11 @@ class App(QWidget):
 
 
     def on_click2(self):
-        draw.DrawMap(self.ep_case,color=[220/250,220/250,220/250],freeboundary_width=5)
+        c = draw.DrawMap(self.ep_case,freeboundary_color='black',freeboundary_width=5)
+        # import pyvista as pv
+        # from pyvistaqt import MultiPlotter
+        # plotter = MultiPlotter()
+        # _ = plotter[0, 0].add_mesh(c)
 
 
 
