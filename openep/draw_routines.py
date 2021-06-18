@@ -134,6 +134,10 @@ def DrawMap(ep_case,freeboundary_color,freeboundary_width):
         # p.add_lines(freeboundary_points[5],color='orange',width=freeboundary_width)
         # p.add_lines(freeboundary_points[6],color='magenta',width=freeboundary_width)
 
-    p.show()
+    # p.show()
     
-    return p
+    return mesh,volt,nan_color,minval,maxval,jet_r,below_color,above_color,freeboundary_points
+
+
+    def getAnatomicalStructures(ep_case, *args):
+        pass
