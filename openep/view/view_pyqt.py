@@ -2,16 +2,10 @@
 GUI code for OpenEp
 '''
 
+from PyQt5 import QtWidgets as qtw
+import pyvista as pv
+from pyvistaqt import QtInteractor, MainWindow
 
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
-import pyvistaqt as pyvqt
-
-# import scipy.io as sio
-# import pyqtgraph as pg
-# import numpy as np
-# import trimesh as tm
 
 import sys
 sys.path.append('../openep')
@@ -23,9 +17,7 @@ from openep import case_routines as case_routines
 from openep import draw_routines as draw
 
 
-
-class App(QWidget):
-
+class OpenEpGUI(qtw.QWidget):
     def __init__(self):
         super().__init__()
         self.title = 'OpenEp Application'
@@ -34,82 +26,60 @@ class App(QWidget):
         self.width = 840
         self.height = 480
         self.initUI()
-        self.mesh_obj = None
-        self.voltage_new = None
 
 
     def initUI(self):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
 
-        # Defining the Vertical & Horizontal Box layout
-        vbox = QFormLayout(self)
-        hbox = QHBoxLayout(self)
-
-        # Main Label
-        mainLabel1 = QLabel('OpenEp Tool',self)
-        mainLabel2 = QLabel( 'The Open Source solution for electrophysiology data analysis',self)
-
-        vbox.addWidget(mainLabel1)
-        vbox.addWidget(mainLabel2)
+        # LAYOUTS
+        self.mainLayout = qtw.QVBoxLayout(self)
+        self.labelLayout = qtw.QFormLayout(self)
+        self.buttonLayout = qtw.QHBoxLayout(self)
+        
+        mainLabel1 = qtw.QLabel('OpenEp Tool',self)
+        self.labelLayout.addWidget(mainLabel1)
+        mainLabel2 = qtw.QLabel( 'The Open Source solution for electrophysiology data analysis',self)
+        self.labelLayout.addWidget(mainLabel2)
 
 
 
         # Button 1
-        button1 = QPushButton('Load OpenEp Data', self)
+        button1 = qtw.QPushButton('Load OpenEp Data', self)
         button1.setGeometry(200,150,100,40)
-        a = button1.clicked.connect(self.on_click)
+        button1.clicked.connect(self.on_click)
 
 
         # Button 2
-        button2 = QPushButton('Plot 3D Mesh', self)
+        button2 = qtw.QPushButton('Plot Voltage Map', self)
         button2.setGeometry(200,150,100,40)
         button2.clicked.connect(self.on_click2)
 
         # Adding buttons to the horizontal layout
-        hbox.addWidget(button1)
-        hbox.addWidget(button2)
+        self.buttonLayout.addWidget(button1)
+        self.buttonLayout.addWidget(button2)
 
-        vbox.addRow(hbox)
+        self.labelLayout.addRow(self.buttonLayout)
 
         # Plot
-        # self.plotter = pyvqt.BackgroundPlotter()
-        vbox.addRow(QLabel('3-D Plot'))
-        # vbox.addWidget(self.plotter)
-        
+        self.frame = qtw.QFrame()
+        self.plotLayout = qtw.QVBoxLayout()
+        self.plotter = QtInteractor(self.frame)
+        self.plotLayout.addWidget(self.plotter.interactor)
 
-        # vbox.addRow(pg.PlotWidget())
-
-        # create a mesh object,
-        # display the mesh
-
-        # vbox hidden once data is loaded, self.vbox so you have access to it later on.
+        # Nesting Layouts and setting the main layout
+        self.mainLayout.addLayout(self.labelLayout)
+        self.mainLayout.addLayout(self.plotLayout)
+        self.setLayout(self.mainLayout)
 
 
 
-
-
-
-
-        # # Plot
-        # # self.graphWidget = pg.PlotWidget()
-        # self.graph = pg.PlotWidget()
-        # # self.setCentralWidget(self.graph)
-        # hour = [1,2,3,4,5,6,7,8,9,10]
-        # temperature = [30,32,34,32,33,31,29,32,35,45]
-        # print('hour\n',hour)
-        # print('temperature\n',temperature)
-        # self.graph.plot(hour, temperature)
-        #
-
-        self.show()
 
     def on_click(self):
         print('Please wait: Loading Data ... ')
-
         # Loading file from a Dialog Box
-        dlg = QFileDialog()
-        dlg.setFileMode(QFileDialog.AnyFile)
+        dlg = qtw.QFileDialog()
+        dlg.setFileMode(qtw.QFileDialog.AnyFile)
 
         if dlg.exec_():
             filenames = dlg.selectedFiles()
@@ -117,16 +87,39 @@ class App(QWidget):
 
 
     def on_click2(self):
-        c = draw.DrawMap(self.ep_case,freeboundary_color='black',freeboundary_width=5)
-        # import pyvista as pv
-        # from pyvistaqt import MultiPlotter
-        # plotter = MultiPlotter()
-        # _ = plotter[0, 0].add_mesh(c)
+        surf = draw.DrawMap(self.ep_case,freeboundary_color='black',freeboundary_width=5)
+        self.mesh = surf[0]
+        self.volt = surf[1]
+        self.nan_color = surf[2]
+        self.minval = surf[3]
+        self.maxval = surf[4]
+        self.cmap = surf[5]
+        self.below_color = surf[6]
+        self.above_color = surf[7]
+        self.freeboundary_points = surf[8]
+
+        self.plotter.add_mesh(self.mesh,
+                              show_edges=False,
+                              smooth_shading=True,
+                              scalars=self.volt,
+                              nan_color=self.nan_color,
+                              clim=[self.minval,self.maxval],
+                              cmap=self.cmap,
+                              below_color=self.below_color,
+                              above_color=self.above_color)
+        
+        for indx in range(len(self.freeboundary_points)):
+            self.plotter.add_lines(self.freeboundary_points[indx],color='black',width=5)
+            self.plotter.reset_camera()
 
 
-
+def main():
+    # Create an instance of Qapplication
+    app = qtw.QApplication(sys.argv)
+    # Create an instance of GUI
+    window = OpenEpGUI()
+    window.show()
+    sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    ex = App()
-    sys.exit(app.exec_())
+    main()
