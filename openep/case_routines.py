@@ -43,6 +43,15 @@ def getMappingPointsWithinWoI(mesh_case):
     return iPoint
 
 
+def getWindowOfInterest(mesh_case):
+    '''
+    GETWINDOWOFINTERST Returns the window of interest
+    '''
+    woi = []
+    woi = mesh_case.electric['annotations/woi'].T
+    
+    return woi
+
 def distBetweenPoints(A, B):
     '''
     DISTBETWEENPOINTS returns the distance from A to B. A and B are specified
