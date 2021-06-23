@@ -26,6 +26,9 @@ class OpenEpGUI(qtw.QWidget):
         self.width = 840
         self.height = 480
         self.initUI()
+        self.thresholds = False
+        self.minval = 0
+        self.maxval = 2
 
 
     def initUI(self):
@@ -36,6 +39,7 @@ class OpenEpGUI(qtw.QWidget):
         self.mainLayout = qtw.QVBoxLayout(self)
         self.labelLayout = qtw.QFormLayout(self)
         self.buttonLayout = qtw.QHBoxLayout(self)
+
         
         mainLabel1 = qtw.QLabel('OpenEp Tool',self)
         self.labelLayout.addWidget(mainLabel1)
@@ -67,10 +71,28 @@ class OpenEpGUI(qtw.QWidget):
         self.plotter = QtInteractor(self.frame)
         self.plotLayout.addWidget(self.plotter.interactor)
 
+
+        # VoltThresholds limit
+        self.limitLayout = qtw.QFormLayout(self)
+        self.lowerlimit = qtw.QLineEdit()
+        self.upperlimit = qtw.QLineEdit()
+        self.lowerlimit.setText(str(0))
+        self.upperlimit.setText(str(2))
+        self.limitLayout.addRow('Voltage Threshold - Lower', self.lowerlimit)
+        self.limitLayout.addRow('Voltage Threshold - Upper', self.upperlimit)
+
+        button3 = qtw.QPushButton('Set Voltage Thresholds', self)
+        button3.setGeometry(200,150,100,40)
+        button3.clicked.connect(self.on_click3)
+        self.limitLayout.addRow(button3)
+
+
         # Nesting Layouts and setting the main layout
         self.mainLayout.addLayout(self.labelLayout)
         self.mainLayout.addLayout(self.plotLayout)
+        self.mainLayout.addLayout(self.limitLayout)
         self.setLayout(self.mainLayout)
+
 
 
 
@@ -87,7 +109,7 @@ class OpenEpGUI(qtw.QWidget):
 
 
     def on_click2(self):
-        surf = draw.DrawMap(self.ep_case,freeboundary_color='black',freeboundary_width=5)
+        surf = draw.DrawMap(self.ep_case,freeboundary_color='black',freeboundary_width=5,minval=self.minval,maxval=self.maxval,)
         self.mesh = surf[0]
         self.volt = surf[1]
         self.nan_color = surf[2]
@@ -111,6 +133,32 @@ class OpenEpGUI(qtw.QWidget):
         for indx in range(len(self.freeboundary_points)):
             self.plotter.add_lines(self.freeboundary_points[indx],color='black',width=5)
             self.plotter.reset_camera()
+
+    def on_click3(self):
+        self.minval = float(self.lowerlimit.text())
+        self.maxval = float(self.upperlimit.text())
+        self.plotter.clear()
+        self.plotter.add_mesh(self.mesh,
+                              show_edges=False,
+                              smooth_shading=True,
+                              scalars=self.volt,
+                              nan_color=self.nan_color,
+                              clim=[self.minval,self.maxval],
+                              cmap=self.cmap,
+                              below_color=self.below_color,
+                              above_color=self.above_color)
+        
+        for indx in range(len(self.freeboundary_points)):
+            self.plotter.add_lines(self.freeboundary_points[indx],color='black',width=5)
+            self.plotter.reset_camera()
+
+
+
+
+        # self.thresholds = True
+        # return self.thresholds
+        # print(self.thresholds)
+        
 
 
 def main():

@@ -17,7 +17,13 @@ np.set_printoptions(suppress=True)
 ep_case = openep_io.load_case(filename)
 ep_case_mesh = ep_case.create_mesh()
 
+hsurf = draw.DrawMap(ep_case,
+                    freeboundary_color='black',
+                    freeboundary_width=5,
+                    minval=0,
+                    maxval=2,
+                    volt_below_color=[149, 85, 0],
+                    volt_above_color=[255, 0, 255], 
+                    nan_color=[180, 180, 180])
 
-hsurf = draw.DrawMap(ep_case,freeboundary_color='black',freeboundary_width=5)
-print(hsurf)
 
