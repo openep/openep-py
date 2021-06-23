@@ -83,16 +83,14 @@ def DrawMap(ep_case,freeboundary_color,freeboundary_width,minval,maxval,volt_bel
                nan_color=nan_color,
                clim=[minval,maxval],
                cmap=jet_r,
-               below_color=below_color,
-               above_color=above_color)
+               below_color=volt_below_color,
+               above_color=volt_above_color)
 
     # Plot free Boundary - Lines
     for indx in range(len(freebound)):
         p.add_lines(freebound[indx],color=freeboundary_color,width=freeboundary_width)
 
-    p.show()
-    
-    return mesh,volt,nan_color,minval,maxval,jet_r,below_color,above_color,freebound
+    return p,mesh,volt,nan_color,minval,maxval,jet_r,volt_below_color,volt_above_color,freebound
 
 
     
