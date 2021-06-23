@@ -109,18 +109,28 @@ class OpenEpGUI(qtw.QWidget):
 
 
     def on_click2(self):
-        surf = draw.DrawMap(self.ep_case,freeboundary_color='black',freeboundary_width=5,minval=self.minval,maxval=self.maxval,)
-        self.mesh = surf[0]
-        self.volt = surf[1]
-        self.nan_color = surf[2]
-        self.minval = surf[3]
-        self.maxval = surf[4]
-        self.cmap = surf[5]
-        self.below_color = surf[6]
-        self.above_color = surf[7]
-        self.freeboundary_points = surf[8]
+        surf = draw.DrawMap(self.ep_case,
+                            freeboundary_color='black',
+                            freeboundary_width=5,
+                            minval=self.minval,
+                            maxval=self.maxval,
+                            volt_below_color='brown', 
+                            volt_above_color='magenta', 
+                            nan_color='gray')
+        self.mesh = surf[1]
+        self.volt = surf[2]
+        self.nan_color = surf[3]
+        self.minval = surf[4]
+        self.maxval = surf[5]
+        self.cmap = surf[6]
+        self.below_color = surf[7]
+        self.above_color = surf[8]
+        self.freeboundary_points = surf[9]
+
+        self.sargs = dict(interactive=True)
 
         self.plotter.add_mesh(self.mesh,
+                              scalar_bar_args=self.sargs,
                               show_edges=False,
                               smooth_shading=True,
                               scalars=self.volt,
@@ -135,9 +145,19 @@ class OpenEpGUI(qtw.QWidget):
             self.plotter.reset_camera()
 
     def on_click3(self):
+        sargs = dict(height=0.05, 
+                    vertical=False, 
+                    position_x=0.4, 
+                    position_y=0.9,
+                    label_font_size=12,
+                    shadow=True,
+                    n_labels=4,
+                    italic=True,
+                    fmt="%.1f",
+                    font_family="arial")
         self.minval = float(self.lowerlimit.text())
         self.maxval = float(self.upperlimit.text())
-        self.plotter.clear()
+        # self.plotter.clear()
         self.plotter.add_mesh(self.mesh,
                               show_edges=False,
                               smooth_shading=True,
@@ -146,7 +166,8 @@ class OpenEpGUI(qtw.QWidget):
                               clim=[self.minval,self.maxval],
                               cmap=self.cmap,
                               below_color=self.below_color,
-                              above_color=self.above_color)
+                              above_color=self.above_color,
+                              scalar_bar_args=sargs)
         
         for indx in range(len(self.freeboundary_points)):
             self.plotter.add_lines(self.freeboundary_points[indx],color='black',width=5)
