@@ -43,13 +43,49 @@ def getMappingPointsWithinWoI(mesh_case):
     return iPoint
 
 
-def getWindowOfInterest(mesh_case):
+
+def getWindowOfInterest(mesh_case,*args):
+
     '''
     GETWINDOWOFINTERST Returns the window of interest
+
+    Args:
+        mesh_case:                                                  Case
+        'iEgm':                                                     str
+        {:} (default) | integer | range(start int, stop int)        str (default) | int | int array
+         - The electrogram point(s) for which the window of interst is required
+
+    Usage:
+    woi = getWindowOfInterest(userdata) - returns the entire array of woi values from the case dataset
+    woi = getWindowOfInterest(userdata, 'iEgm', 1) - returns the 1st woi value
+    woi = getWindowOfInterest(userdata, 'iEgm', [100,150]) - returns the 100th and 150th woi value
+    woi = getWindowOfInterest(userdata, 'iEgm', range(12,20)) - returns a range of woi values starting from 12th to 19th 
+
+    Returns:
+        m x 2 arrays of window of interest      
     '''
-    woi = []
-    woi = mesh_case.electric['annotations/woi'].T
+
+    nStandardArgs = 1
+    iEgm = np.array(':')
     
+    nargin = len(args)+1
+    if nargin>nStandardArgs:
+        for i in range(0,(nargin-nStandardArgs),2):
+            if np.char.lower(args[i]) == 'iegm':
+                iEgm = args[i+1]
+    woi = []
+    if (type(iEgm)==str) and (np.char.compare_chararrays(iEgm,':','==',True)):
+        woi = mesh_case.electric['annotations/woi'].T
+        woi = woi.astype(int)
+        
+    else:
+        woi_raw = ep_case.electric['annotations/woi'].T
+        woi_raw = woi_raw.astype(int)
+        for i in iEgm:
+            woi.append(woi_raw[i])
+    
+    woi = np.array(woi)
+
     return woi
 
 def distBetweenPoints(A, B):
