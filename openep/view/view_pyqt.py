@@ -116,7 +116,8 @@ class OpenEpGUI(qtw.QWidget):
                             maxval=self.maxval,
                             volt_below_color='brown', 
                             volt_above_color='magenta', 
-                            nan_color='gray')
+                            nan_color='gray',
+                            plot=True)
         self.mesh = surf[1]
         self.volt = surf[2]
         self.nan_color = surf[3]
@@ -125,7 +126,7 @@ class OpenEpGUI(qtw.QWidget):
         self.cmap = surf[6]
         self.below_color = surf[7]
         self.above_color = surf[8]
-        self.freeboundary_points = surf[9]
+        self.freeboundary_points = draw.getAnatomicalStructures(self.ep_case)
 
         self.sargs = dict(interactive=True)
 
@@ -140,21 +141,11 @@ class OpenEpGUI(qtw.QWidget):
                               below_color=self.below_color,
                               above_color=self.above_color)
         
-        for indx in range(len(self.freeboundary_points)):
-            self.plotter.add_lines(self.freeboundary_points[indx],color='black',width=5)
+        for indx in range(len(self.freeboundary_points['FreeboundaryPoints'])):
+            self.plotter.add_lines(self.freeboundary_points['FreeboundaryPoints'][indx],color='black',width=5)
             self.plotter.reset_camera()
 
     def on_click3(self):
-        sargs = dict(height=0.05, 
-                    vertical=False, 
-                    position_x=0.4, 
-                    position_y=0.9,
-                    label_font_size=12,
-                    shadow=True,
-                    n_labels=4,
-                    italic=True,
-                    fmt="%.1f",
-                    font_family="arial")
         self.minval = float(self.lowerlimit.text())
         self.maxval = float(self.upperlimit.text())
         # self.plotter.clear()
@@ -166,8 +157,7 @@ class OpenEpGUI(qtw.QWidget):
                               clim=[self.minval,self.maxval],
                               cmap=self.cmap,
                               below_color=self.below_color,
-                              above_color=self.above_color,
-                              scalar_bar_args=sargs)
+                              above_color=self.above_color)
         
         for indx in range(len(self.freeboundary_points)):
             self.plotter.add_lines(self.freeboundary_points[indx],color='black',width=5)
