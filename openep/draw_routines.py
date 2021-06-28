@@ -6,6 +6,8 @@ from matplotlib.cm import jet, rainbow, jet_r, seismic
 import trimesh as tm
 
 
+plot = False
+
 def lineLength(h):
     
     '''
@@ -144,12 +146,15 @@ def getAnatomicalStructures(mesh_case, *args):
 
 
 
-def DrawMap(ep_case,freeboundary_color,freeboundary_width,minval,maxval,volt_below_color, volt_above_color, nan_color):
+def DrawMap(ep_case,freeboundary_color,freeboundary_width,minval,maxval,volt_below_color, volt_above_color, nan_color, plot,**kwargs):
+    '''
+    DrawMap - 
+    '''
+
     pts = ep_case.nodes
     tri = ep_case.indices.astype(int)
     volt = ep_case.fields['bip']
 
-    
     np.set_printoptions(suppress=True)
     size_tri = []
 
@@ -167,13 +172,20 @@ def DrawMap(ep_case,freeboundary_color,freeboundary_width,minval,maxval,volt_bel
     face = np.hstack(np.concatenate((size_tri_arr,tri),axis=1)).astype(int)
     mesh = pv.PolyData(pts,face)
 
-    # GetFreeBoundary()
-    freebound = getAnatomicalStructures(ep_case)
-
     p = pv.Plotter()
 
-    # Plot OpenEp mesh
-    p.add_mesh(mesh,
+    if plot:
+
+        # Plot OpenEp mesh
+        sargs = dict(interactive=True, 
+                          n_labels=2,
+                          label_font_size=18,
+                          below_label='  ',
+                          above_label='  ')
+
+        freebound = getAnatomicalStructures(ep_case)
+        p.add_mesh(mesh,
+               scalar_bar_args=sargs,
                show_edges=False,
                smooth_shading=True,
                scalars=volt,
@@ -183,11 +195,23 @@ def DrawMap(ep_case,freeboundary_color,freeboundary_width,minval,maxval,volt_bel
                below_color=volt_below_color,
                above_color=volt_above_color)
 
-    # Plot free Boundary - Lines
-    for indx in range(len(freebound)):
-        p.add_lines(freebound[indx],color=freeboundary_color,width=freeboundary_width)
+    
+        # Plot free Boundary - Lines
+        for indx in range(len(freebound['FreeboundaryPoints'])):
+            p.add_lines((freebound['FreeboundaryPoints'][indx]),
+                        color=freeboundary_color,
+                        width=freeboundary_width)
+        p.show()
 
-    return p,mesh,volt,nan_color,minval,maxval,jet_r,volt_below_color,volt_above_color,freebound
+    return {'hsurf':p,
+            'pyvista-mesh':mesh,
+            'volt':volt,
+            'nan_color':nan_color,
+            'minval':minval,
+            'maxval':maxval,
+            'cmap':jet_r,
+            'volt_below_color':volt_below_color,
+            'volt_above_color':volt_above_color}
 
 
     
