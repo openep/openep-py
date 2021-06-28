@@ -5,18 +5,75 @@ import numpy as np
 from matplotlib.cm import jet, rainbow, jet_r, seismic
 import trimesh as tm
 
-def getAnatomicalStructures(ep_case, *args):
+
+def lineLength(h):
+    
+    '''
+    Calculates the Length of a line
+    
+    Args:
+        h: mx3 matrix of cartesian co-ordinates representing the line
+        the X,Y, Z data are received directly in a matrix of the form:
+         [ x_1  y_1  z_1 ]
+         [ x_2  y_2  z_2 ]
+         [ ...  ...  ... ]
+         [ x_n  y_n  z_n ]
+         
+    Returns:
+        l - length of the line as a float
+    '''
+#   remove any Nan values
+    data = h[~np.isnan(h)].reshape(h.shape[0],h.shape[1])
+        
+    dx = np.diff(data[:,0])
+    dy = np.diff(data[:,1])
+    dz = np.diff(data[:,2])
+    
+    l = 0
+    for i in range(len(dx)):
+        l = l+ np.sqrt(np.square(dx[i]) + np.square(dy[i]) + np.square(dz[i]))
+        
+    return l
+
+
+
+def getAnatomicalStructures(mesh_case, *args):
+    
+    '''
+    GETANATOMICALSTRUCTURES Returns the free boundaries (anatomical 
+    structures) described in ep_case
+    
+    Args:
+        mesh_case : Case
+        
+    Returns:
+        FreeboundaryPoints : m x 3 matrix of the freeboundary coordinate points of each anatomical structure
+        l                  : array of lengths [perimeters] of each anatomical structure
+        a                  : array of areas of each anatomical structure
+        tr                 : array of trimesh objects of each anatomical structure
+    
+    
+    GETANATOMICALSTRUCTURES identifies all the anatomical structures of a 
+    given data set. Anatomical structures are boundary regions that have been 
+    added to an anatomical model in the clinical mapping system. For example, 
+    with respect of left atrial ablation, anatomical structures may represent 
+    the pulmonary vein ostia, mitral valve annulus or left atrial appendage 
+    ostium.
+        
+    '''
+
+
     x_values = []
     y_values = []
     z_values = []
 
-    tri = []
+    tr = []
     a = []
     dist = []
     l = []
     
-    pts = ep_case.nodes
-    face = ep_case.indices.astype(int)
+    pts = mesh_case.nodes
+    face = mesh_case.indices.astype(int)
         
     tm_mesh = tm.Trimesh(vertices=pts,faces=face)
     freeboundary = tm_mesh.outline().to_dict()
@@ -52,7 +109,8 @@ def getAnatomicalStructures(ep_case, *args):
                                             axis=1))
 
     freeboundary_points = np.array(freeboundary_points,dtype=object)
-
+    
+    
 
     for i in range(len(freeboundary_points)):
         coords = freeboundary_points[i]
@@ -71,15 +129,17 @@ def getAnatomicalStructures(ep_case, *args):
         TRI = np.concatenate((A,B,C),axis=1)
 
         for j in range(len(coords)-1):
-            dist.append(np.linalg.norm(np.subtract(coords[j+1],coords[j])))
+            dist.append(np.linalg.norm(coords[j+1]-coords[j]))
+            
 
-        tri.append(tm.Trimesh(vertices=X,faces=TRI))
-        a.append(round(tri[i].area,4))
-        l.append(round(np.sum(dist),4))
-        print('Periemeter is :',l[i],'| Area is:',a[i])
+        tr.append(tm.Trimesh(vertices=X,faces=TRI))
+        lineLen = lineLength(coords)
+        a.append(round(tr[i].area,4))
+        l.append(round(lineLen,4))
+        print('Perimeter is :',l[i],'| Area is:',a[i])
 
 
-    return freeboundary_points
+    return {'FreeboundaryPoints':freeboundary_points,'Lengths':l, 'Area':a, 'tr':tr}
        
 
 
