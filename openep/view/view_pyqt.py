@@ -150,6 +150,7 @@ class OpenEpGUI(qtw.QWidget):
         self.maxval = float(self.upperlimit.text())
         # self.plotter.clear()
         self.plotter.add_mesh(self.mesh,
+                              scalar_bar_args=self.sargs,
                               show_edges=False,
                               smooth_shading=True,
                               scalars=self.volt,
@@ -159,9 +160,9 @@ class OpenEpGUI(qtw.QWidget):
                               below_color=self.below_color,
                               above_color=self.above_color)
         
-        for indx in range(len(self.freeboundary_points)):
-            self.plotter.add_lines(self.freeboundary_points[indx],color='black',width=5)
-            self.plotter.reset_camera()
+        # for indx in range(len(self.freeboundary_points['FreeboundaryPoints'])):
+        #     self.plotter.add_lines(self.freeboundary_points['FreeboundaryPoints'][indx],color='black',width=5)
+        #     self.plotter.reset_camera()
 
 
 
