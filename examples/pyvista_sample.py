@@ -22,8 +22,10 @@ hsurf = draw.DrawMap(ep_case,
                     freeboundary_width=5,
                     minval=0,
                     maxval=2,
-                    volt_below_color=[149, 85, 0],
-                    volt_above_color=[255, 0, 255], 
-                    nan_color=[180, 180, 180])
+                    volt_below_color='brown', 
+                    volt_above_color='magenta', 
+                    nan_color='gray',
+                    plot=False)
 
+print(hsurf)
 
