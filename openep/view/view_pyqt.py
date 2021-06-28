@@ -118,14 +118,15 @@ class OpenEpGUI(qtw.QWidget):
                             volt_above_color='magenta', 
                             nan_color='gray',
                             plot=True)
-        self.mesh = surf[1]
-        self.volt = surf[2]
-        self.nan_color = surf[3]
-        self.minval = surf[4]
-        self.maxval = surf[5]
-        self.cmap = surf[6]
-        self.below_color = surf[7]
-        self.above_color = surf[8]
+        
+        self.mesh = surf['pyvista-mesh']
+        self.volt = surf['volt']
+        self.nan_color = surf['nan_color']
+        self.minval = surf['minval']
+        self.maxval = surf['maxval']
+        self.cmap = surf['cmap']
+        self.below_color = surf['below_color']
+        self.above_color = surf['above_color']
         self.freeboundary_points = draw.getAnatomicalStructures(self.ep_case)
 
         self.sargs = dict(interactive=True, 
@@ -164,19 +165,6 @@ class OpenEpGUI(qtw.QWidget):
                               cmap=self.cmap,
                               below_color=self.below_color,
                               above_color=self.above_color)
-        
-        # for indx in range(len(self.freeboundary_points['FreeboundaryPoints'])):
-        #     self.plotter.add_lines(self.freeboundary_points['FreeboundaryPoints'][indx],color='black',width=5)
-        #     self.plotter.reset_camera()
-
-
-
-
-        # self.thresholds = True
-        # return self.thresholds
-        # print(self.thresholds)
-        
-
 
 def main():
     # Create an instance of Qapplication
