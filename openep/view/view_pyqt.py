@@ -128,10 +128,15 @@ class OpenEpGUI(qtw.QWidget):
         self.above_color = surf[8]
         self.freeboundary_points = draw.getAnatomicalStructures(self.ep_case)
 
-        self.sargs = dict(interactive=True)
+        self.sargs = dict(interactive=True, 
+                          n_labels=2,
+                          label_font_size=18,
+                          below_label='  ',
+                          above_label='  ')
 
         self.plotter.add_mesh(self.mesh,
                               scalar_bar_args=self.sargs,
+                              annotations=False,
                               show_edges=False,
                               smooth_shading=True,
                               scalars=self.volt,
