@@ -1,5 +1,6 @@
 from openep import mesh_routines as openep_mesh
 
+
 import pyvista as pv
 import numpy as np
 from matplotlib.cm import jet, rainbow, jet_r, seismic
@@ -37,9 +38,62 @@ def lineLength(h):
         
     return l
 
+def drawFreeBoundaries(mesh_case,
+                       fb_points,
+                       fb_col,
+                       fb_width,
+                       mesh_surf_color,
+                       opacity,
+                       smooth_shading,
+                       use_transparency,
+                       lighting,**kwargs):
+    '''
+    Draws the boundaries at the edge of a TriSurface mesh
+    Args:
+        mesh_case         : openep Case object
+        fb_points         : m x 3 coordinate point arrays
+        fb_width          : Float
+        mesh_surf_color   : RGB values scaled between 0 and 1
+        opacity           : Float - any value in the range 0-1 
+        smooth_shading    : Boolean - True | False  
+        use_transparency  : Boolean - True | False
+        lighting          : Boolean - True | False
+    
+    Returns:
+        p                 : pyvista plotter handle
 
+    '''
+    surf = DrawMap(mesh_case,
+                        cmap='jet_r',
+                        freeboundary_color='black',
+                        freeboundary_width=5,
+                        minval=0,
+                        maxval=2,
+                        volt_below_color=0, 
+                        volt_above_color=2, 
+                        nan_color='Gray',
+                        plot=False)
+    
+    pvmesh = surf['pyvista-mesh']
+    p = surf['hsurf']
+    
+    #     Freeboundary Color
+    fb_col = ['blue','yellow','green','red','orange','brown','magenta']
+    
+    p.add_mesh(pvmesh, 
+               color=mesh_surf_color,
+               opacity=opacity,
+               smooth_shading=smooth_shading,
+               use_transparency=use_transparency,
+               lighting=lighting)
+    
+    for indx in range(len(fb_points)):
+            p.add_lines(fb_points[indx],
+                        color=fb_col[indx],
+                        width=fb_width)    
+    return p
 
-def getAnatomicalStructures(mesh_case, *args):
+def getAnatomicalStructures(mesh_case, plot, **kwargs):
     
     '''
     GETANATOMICALSTRUCTURES Returns the free boundaries (anatomical 
@@ -68,11 +122,12 @@ def getAnatomicalStructures(mesh_case, *args):
     x_values = []
     y_values = []
     z_values = []
-
+    
     tr = []
     a = []
     dist = []
     l = []
+    
     
     pts = mesh_case.nodes
     face = mesh_case.indices.astype(int)
@@ -139,16 +194,35 @@ def getAnatomicalStructures(mesh_case, *args):
         a.append(round(tr[i].area,4))
         l.append(round(lineLen,4))
         print('Perimeter is :',l[i],'| Area is:',a[i])
-
-
+        
+    if plot:
+        col = ['blue','yellow','green','red','orange','brown','magenta']
+        fb_width = 3
+        mesh_surf = [0.5,0.5,0.5]
+        p = drawFreeBoundaries(mesh_case=mesh_case,
+                               fb_points=freeboundary_points,
+                               fb_col = col,
+                               fb_width = fb_width,
+                               mesh_surf_color = mesh_surf,
+                               opacity = 0.2,
+                               smooth_shading= True,
+                               use_transparency=False,
+                               lighting=False,
+                               **kwargs)
+            
+        p.background_color='White'
+        p.show()
+    
+        
     return {'FreeboundaryPoints':freeboundary_points,'Lengths':l, 'Area':a, 'tr':tr}
-       
 
 
 
-def DrawMap(ep_case,freeboundary_color,freeboundary_width,minval,maxval,volt_below_color, volt_above_color, nan_color, plot,**kwargs):
+def DrawMap(ep_case,freeboundary_color,cmap,freeboundary_width,minval,maxval,volt_below_color, volt_above_color, nan_color, plot,**kwargs):
     '''
-    DrawMap - 
+    DrawMap - plots an OpenEp Map
+    Args:
+        
     '''
 
     pts = ep_case.nodes
@@ -183,7 +257,7 @@ def DrawMap(ep_case,freeboundary_color,freeboundary_width,minval,maxval,volt_bel
                           below_label='  ',
                           above_label='  ')
 
-        freebound = getAnatomicalStructures(ep_case)
+        freebound = getAnatomicalStructures(ep_case,plot=False)
         p.add_mesh(mesh,
                scalar_bar_args=sargs,
                show_edges=False,
@@ -191,7 +265,7 @@ def DrawMap(ep_case,freeboundary_color,freeboundary_width,minval,maxval,volt_bel
                scalars=volt,
                nan_color=nan_color,
                clim=[minval,maxval],
-               cmap=jet_r,
+               cmap=cmap,
                below_color=volt_below_color,
                above_color=volt_above_color)
 
