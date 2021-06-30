@@ -67,9 +67,22 @@ class OpenEpGUI(qtw.QWidget):
 
         # Plot
         self.frame = qtw.QFrame()
-        self.plotLayout = qtw.QVBoxLayout()
+        self.plotLayout = qtw.QHBoxLayout()
         self.plotter = QtInteractor(self.frame)
         self.plotLayout.addWidget(self.plotter.interactor)
+
+        # QDock Widget
+        
+        self.plotter1 = QtInteractor(self.frame)
+        
+        self.dock_plot = qtw.QDockWidget("Dockable", self)
+        self.dock_plot.setFloating(False)
+        self.dock_plot.setWidget(self.plotter1)
+
+        self.plotLayout.addWidget(self.dock_plot)
+        
+        
+
 
 
         # VoltThresholds limit
@@ -97,6 +110,8 @@ class OpenEpGUI(qtw.QWidget):
 
 
 
+
+
     def on_click(self):
         print('Please wait: Loading Data ... ')
         # Loading file from a Dialog Box
@@ -110,6 +125,7 @@ class OpenEpGUI(qtw.QWidget):
 
     def on_click2(self):
         surf = draw.DrawMap(self.ep_case,
+                            cmap='jet_r',
                             freeboundary_color='black',
                             freeboundary_width=5,
                             minval=self.minval,
@@ -117,17 +133,17 @@ class OpenEpGUI(qtw.QWidget):
                             volt_below_color='brown', 
                             volt_above_color='magenta', 
                             nan_color='gray',
-                            plot=True)
-        
+                            plot=False)
+
         self.mesh = surf['pyvista-mesh']
         self.volt = surf['volt']
         self.nan_color = surf['nan_color']
         self.minval = surf['minval']
         self.maxval = surf['maxval']
         self.cmap = surf['cmap']
-        self.below_color = surf['below_color']
-        self.above_color = surf['above_color']
-        self.freeboundary_points = draw.getAnatomicalStructures(self.ep_case)
+        self.below_color = surf['volt_below_color']
+        self.above_color = surf['volt_above_color']
+        self.freeboundary_points = draw.getAnatomicalStructures(self.ep_case,plot=False)
 
         self.sargs = dict(interactive=True, 
                           n_labels=2,
@@ -150,6 +166,23 @@ class OpenEpGUI(qtw.QWidget):
         for indx in range(len(self.freeboundary_points['FreeboundaryPoints'])):
             self.plotter.add_lines(self.freeboundary_points['FreeboundaryPoints'][indx],color='black',width=5)
             self.plotter.reset_camera()
+
+        
+        self.plotter1.add_mesh(self.mesh,
+                              scalar_bar_args=self.sargs,
+                              annotations=False,
+                              show_edges=False,
+                              smooth_shading=True,
+                              scalars=self.volt,
+                              nan_color=self.nan_color,
+                              clim=[self.minval,self.maxval],
+                              cmap=self.cmap,
+                              below_color=self.below_color,
+                              above_color=self.above_color)
+
+
+
+
 
     def on_click3(self):
         self.minval = float(self.lowerlimit.text())
