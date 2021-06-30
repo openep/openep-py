@@ -28,4 +28,4 @@ ep_case_mesh = ep_case.create_mesh()
 #                     nan_color='gray',
 #                     plot=True)
 
-hsurf1 = draw.getAnatomicalStructures(ep_case,plot=True)
+hsurf1 = draw.getAnatomicalStructures(ep_case,plot=False)

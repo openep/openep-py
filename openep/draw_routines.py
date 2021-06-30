@@ -48,12 +48,13 @@ def drawFreeBoundaries(mesh_case,
                        use_transparency,
                        lighting,**kwargs):
     '''
-    Draws the boundaries at the edge of a TriSurface mesh
+    Draws the boundaries at the edge of a TriSurface mesh with each freeboundary rendered with the colors mentioned in the fb_col 
     Args:
         mesh_case         : openep Case object
         fb_points         : m x 3 coordinate point arrays
+        fb_col            : list of RGB colors For eg: fb_col = ['blue','yellow','green','red','orange','brown','magenta']
         fb_width          : Float
-        mesh_surf_color   : RGB values scaled between 0 and 1
+        mesh_surf_color   : RGB values between 0 and 1
         opacity           : Float - any value in the range 0-1 
         smooth_shading    : Boolean - True | False  
         use_transparency  : Boolean - True | False
@@ -97,7 +98,7 @@ def getAnatomicalStructures(mesh_case, plot, **kwargs):
     
     '''
     GETANATOMICALSTRUCTURES Returns the free boundaries (anatomical 
-    structures) described in ep_case
+    structures) described in ep_case and plots them if plot=True with drawFreeBoundaries()
     
     Args:
         mesh_case : Case
@@ -222,7 +223,19 @@ def DrawMap(ep_case,freeboundary_color,cmap,freeboundary_width,minval,maxval,vol
     '''
     DrawMap - plots an OpenEp Map
     Args:
-        
+        ep_case,
+        freeboundary_color,
+        cmap,
+        freeboundary_width,
+        minval,
+        maxval,
+        volt_below_color, 
+        volt_above_color, 
+        nan_color, 
+        plot
+
+    Returns:
+
     '''
 
     pts = ep_case.nodes
@@ -283,7 +296,7 @@ def DrawMap(ep_case,freeboundary_color,cmap,freeboundary_width,minval,maxval,vol
             'nan_color':nan_color,
             'minval':minval,
             'maxval':maxval,
-            'cmap':jet_r,
+            'cmap':cmap,
             'volt_below_color':volt_below_color,
             'volt_above_color':volt_above_color}
 
