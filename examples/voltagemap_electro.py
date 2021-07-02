@@ -1,77 +1,63 @@
-# import sys
-# sys.path.append('/home/jra21/work/source/repos/opep')
-
 from openep import io as openep_io
 from openep import case as openep_case
 from openep import mesh_routines as openep_mesh
 from openep import case_routines as case_routines
+from openep import draw_routines as draw
 
 import numpy as np
-from scipy.interpolate import LinearNDInterpolator as linterp
-from scipy.interpolate import NearestNDInterpolator as nearest
-from sklearn.neighbors import NearestNeighbors
-from matplotlib.cm import jet, rainbow, jet_r, seismic
 
+filename = '/home/jra21/work/source/repos/opep/examples/data/new_dataset_2.mat'
+distance_thresh = 10
 
-# # Usecase 039 - Creating a voltage map from electroanatomic mapping data
-
-filename = '/home/jra21/work/source/repos/opep/examples/data/new_dataset_1.mat'
-
-distanceThresh = 10
-
-
+# Load opneep case
 ep_case = openep_io.load_case(filename)
-ep_case_mesh = ep_case.create_mesh()
-# simplify the mesh
-# ep_case_mesh.merge_vertices()
 
-# Load EP CASE - MESH Points (trirep.X)
-# pts = ep_case_mesh.vertices
+# Anatomic descriptions (Mesh) - nodes and indices
 pts = ep_case.nodes
+indices = ep_case.indices
 
 
-
-# # Load EGMSurfx and EGM voltage values
-coords = ep_case.electric['egmX'].T
-data = ep_case.electric['egm'].T
-
-
-iVp = case_routines.getMappingPointsWithinWoI(ep_case)
+# Electric data
+# Locations – Cartesian co-ordinates, projected on to the surface 
+locations = case_routines.get_electrogram_coordinates(ep_case,'type','bip')
+i_egm = ep_case.electric['egm'].T
+i_vp = case_routines.getMappingPointsWithinWoI(ep_case)
 # macthing the shape of ivp with data
-iVp_data = np.repeat(iVp, repeats=data.shape[1], axis=1)
+i_vp_egm = np.repeat(i_vp, repeats=i_egm.shape[1], axis=1)
 # macthing the shape of ivp with coords
-iVp_coords = np.repeat(iVp, repeats=coords.shape[1],axis=1)
+i_vp_locations = np.repeat(i_vp, repeats=locations.shape[1],axis=1)
 
-data[~iVp_data] = np.nan
-coords[~iVp_coords] = np.nan
-
+# Replacing the values outside the window of interest with Nan values
+i_egm[~i_vp_egm] = np.nan
+locations[~i_vp_locations] = np.nan
 
 # For each mapping point, n, find the voltage amplitude
-max_volt = np.amax(a=data,axis=1).reshape(len(data),1)
-min_volt = np.amin(a=data,axis=1).reshape(len(data),1)
-
+max_volt = np.amax(a=i_egm,axis=1).reshape(len(i_egm),1)
+min_volt = np.amin(a=i_egm,axis=1).reshape(len(i_egm),1)
 
 amplitude_volt = np.subtract(max_volt,min_volt)
-# Remove any data with Nans
+
 for indx in range(amplitude_volt.shape[1]):
-    tempData = amplitude_volt[:,indx]
-    tempCoords = coords
-    iNaN = np.isnan(tempData)
-    tempData=tempData[~iNaN]
-    tempCoords=tempCoords[~iNaN]
+    temp_data = amplitude_volt[:,indx]
+    temp_coords = locations
+    i_nan = np.isnan(temp_data)
+    temp_data=temp_data[~i_nan]
+    temp_coords=temp_coords[~i_nan]
 
 
-    interp = case_routines.OpenEPDataInterpolator(method='rbf',distanceThreshold=distanceThresh,rbfConstant=1)
-    VertexVoltageData = interp.interpolate(x0=tempCoords,d0=tempData,x1=pts)
+    interp = case_routines.OpenEPDataInterpolator(method='rbf',distanceThreshold=distance_thresh,rbfConstant=1)
+    vertex_voltage_data = interp.interpolate(x0=temp_coords,d0=temp_data,x1=pts)
 
-    # print('pts-shape',pts.shape)
-    # # c = case_routines.LocalSmoothing(x0=tempCoords,x1=pts,smoothingLength=10)
-    # # c = case_routines.rbf(x0=tempCoords,d0=tempData,x1=pts,rbfConstant=1)
-    # # print(c)
 
-ep_case.fields['d1'] = VertexVoltageData
-    
-# DRAW Map
-openep_mesh.compute_field(mesh=ep_case_mesh,fieldname='d1',minval=0,maxval=2,color_map=jet_r)
-ep_case_mesh.show()
 
+vsurf = draw.DrawMap(ep_case,
+        volt = vertex_voltage_data,
+        freeboundary_color='black',
+        cmap='jet_r',
+        freeboundary_width=5,
+        minval=0,
+        maxval=2,
+        volt_below_color='brown', 
+        volt_above_color='magenta', 
+        nan_color='gray', 
+        plot=True,)
