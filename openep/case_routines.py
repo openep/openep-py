@@ -123,6 +123,49 @@ def calculate_point_distance_max(points, test_points, max_distance):
     return results, dists
 
 
+def get_electrogram_coordinates(mesh_case, *args):
+    '''
+    Function which returns the 3-D Cartesian Coordinates of the electrodes used to record the electrograms
+    It returns the "bip" coordinates by defualt if "type" not specified when calling the function
+
+    Args:
+        mesh_case (obj): Case object from a given openep file
+        "type" (str):  
+        "bip" | "uni" (str): 
+
+        *args: Variable length argument list.
+        **kwargs: Arbitrary keyword arguments.
+
+
+    Returns:
+        mx3 array: if "type","bip" else mx3x2 array: if "type","uni"
+    
+    Raises:
+        ValueError: If "uni" voltage field is not in the openep file (mesh_case.electric.egmUniX)
+
+    '''
+    n_standard_args = 1
+    v_type = "bip"
+    
+    nargin = len(args)+1
+    if nargin>n_standard_args:
+        for i in range(0,(nargin-n_standard_args),2):
+            if np.char.lower(args[i]) == "type":
+                v_type = args[i+1]
+    
+    if np.char.lower(v_type) == "bip":
+        x = mesh_case.electric["egmX"].T
+        
+    elif np.char.lower(v_type) == "uni":
+        if not("egmUniX" in mesh_case.electric):
+            raise ValueError("There is no unipolar data associated with this openep case")
+            
+        else:
+            x = mesh_case.electric['egmUniX'].T
+        
+    return x
+
+
 class LinearNDInterpolatorExt(object):
     ''' 
     Interpolation Method - Python implementation of ScatteredInterpolation
