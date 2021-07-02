@@ -8,6 +8,7 @@ import trimesh as tm
 
 
 plot = False
+volt = 0
 
 def lineLength(h):
     
@@ -219,11 +220,12 @@ def getAnatomicalStructures(mesh_case, plot, **kwargs):
 
 
 
-def DrawMap(ep_case,freeboundary_color,cmap,freeboundary_width,minval,maxval,volt_below_color, volt_above_color, nan_color, plot,**kwargs):
+def DrawMap(ep_case,volt,freeboundary_color,cmap,freeboundary_width,minval,maxval,volt_below_color, volt_above_color, nan_color, plot,**kwargs):
     '''
     DrawMap - plots an OpenEp Map
     Args:
         ep_case,
+        volt (str | nx1 array) - 'bip' | interpolated voltagae values 
         freeboundary_color,
         cmap,
         freeboundary_width,
@@ -238,9 +240,14 @@ def DrawMap(ep_case,freeboundary_color,cmap,freeboundary_width,minval,maxval,vol
 
     '''
 
+
     pts = ep_case.nodes
     tri = ep_case.indices.astype(int)
-    volt = ep_case.fields['bip']
+    
+    if volt == 'bip':
+        volt = ep_case.fields['bip']
+    else:
+        volt = volt
 
     np.set_printoptions(suppress=True)
     size_tri = []
