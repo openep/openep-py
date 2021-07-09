@@ -181,13 +181,19 @@ def getAnatomicalStructures(mesh_case, plot, **kwargs):
     testset[:] = np.nan
     testset[:,0] = fb[:,0]
 
-    res = list(map(lambda x:x, fb[:,1][0:len(fb-1)]))
-    print('len-res\n',len(res))
-    res.insert(0,fb[:,1][-1])
-    res = np.array(res)
-    # testset[:,1] = res
+    #exctracting the contents of 2nd columm fb array into the testset
+    second_col_fb = list(map(lambda x:x, fb[:,1][0:len(fb)-1]))
+    second_col_fb.insert(0,fb[:,1][-1])
+    second_col_fb = np.array(second_col_fb)
+    
+    # Assigning the values of the second column to the 2nd column of testset
+    testset[:,1] = second_col_fb
 
-    print('testset\n',res.shape)
+    print('testset-type\n',type(testset))
+
+    
+
+
 
 
 
