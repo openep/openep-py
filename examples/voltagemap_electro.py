@@ -20,6 +20,7 @@ indices = ep_case.indices
 # Electric data
 # Locations – Cartesian co-ordinates, projected on to the surface 
 locations = case_routines.get_electrogram_coordinates(ep_case,'type','bip')
+
 i_egm = ep_case.electric['egm'].T
 i_vp = case_routines.getMappingPointsWithinWoI(ep_case)
 # macthing the shape of ivp with data
@@ -51,13 +52,13 @@ for indx in range(amplitude_volt.shape[1]):
 
 
 vsurf = draw.DrawMap(ep_case,
-        volt = vertex_voltage_data,
-        freeboundary_color='black',
-        cmap='jet_r',
-        freeboundary_width=5,
-        minval=0,
-        maxval=2,
-        volt_below_color='brown', 
-        volt_above_color='magenta', 
-        nan_color='gray', 
-        plot=True,)
+                    volt = vertex_voltage_data,
+                    freeboundary_color='black',
+                    cmap='jet_r',
+                    freeboundary_width=5,
+                    minval=0,
+                    maxval=2,
+                    volt_below_color='brown', 
+                    volt_above_color='magenta', 
+                    nan_color='gray', 
+                    plot=True,)
