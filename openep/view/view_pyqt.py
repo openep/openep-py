@@ -125,6 +125,7 @@ class OpenEpGUI(qtw.QWidget):
 
     def on_click2(self):
         surf = draw.DrawMap(self.ep_case,
+                            volt='bip',
                             cmap='jet_r',
                             freeboundary_color='black',
                             freeboundary_width=5,
@@ -151,6 +152,8 @@ class OpenEpGUI(qtw.QWidget):
                           below_label='  ',
                           above_label='  ')
 
+        
+
         self.plotter.add_mesh(self.mesh,
                               scalar_bar_args=self.sargs,
                               annotations=False,
@@ -168,6 +171,7 @@ class OpenEpGUI(qtw.QWidget):
             self.plotter.reset_camera()
 
         
+
         self.plotter1.add_mesh(self.mesh,
                               scalar_bar_args=self.sargs,
                               annotations=False,
