@@ -6,7 +6,7 @@ import numpy as np
 from matplotlib.cm import jet, rainbow, jet_r, seismic
 import trimesh as tm
 
-
+# GLOBAL VARIABLES
 plot = False
 volt = 0
 
@@ -35,9 +35,33 @@ def lineLength(h):
     
     l = 0
     for i in range(len(dx)):
-        l = l+ np.sqrt(np.square(dx[i]) + np.square(dy[i]) + np.square(dz[i]))
+        l = np.round(l+ np.sqrt(np.square(dx[i]) + np.square(dy[i]) + np.square(dz[i])),4)
         
     return l
+
+def create_pymesh(mesh_case):
+
+    pts = mesh_case.nodes
+    tri = mesh_case.indices.astype(int)
+    np.set_printoptions(suppress=True)
+    size_tri = []
+
+    x = tri[:,0].reshape(len(tri[:,0]),1)
+    y = tri[:,1].reshape(len(tri[:,1]),1)
+    z = tri[:,2].reshape(len(tri[:,2]),1)
+
+
+    for item in tri:
+        size_tri.append(len(item))
+
+    size_tri_list = size_tri
+    size_tri_arr = np.array(size_tri,dtype=np.int).reshape(len(size_tri),1)
+
+    face = np.hstack(np.concatenate((size_tri_arr,tri),axis=1)).astype(int)
+    mesh = pv.PolyData(pts,face)
+
+    return mesh
+
 
 def drawFreeBoundaries(mesh_case,
                        fb_points,
@@ -65,24 +89,16 @@ def drawFreeBoundaries(mesh_case,
         p                 : pyvista plotter handle
 
     '''
-    surf = DrawMap(mesh_case,
-                        cmap='jet_r',
-                        freeboundary_color='black',
-                        freeboundary_width=5,
-                        minval=0,
-                        maxval=2,
-                        volt_below_color=0, 
-                        volt_above_color=2, 
-                        nan_color='Gray',
-                        plot=False)
-    
-    pvmesh = surf['pyvista-mesh']
-    p = surf['hsurf']
+
+    # Create a pymesh of the openep case
+    py_mesh = create_pymesh(mesh_case)
     
     #     Freeboundary Color
     fb_col = ['blue','yellow','green','red','orange','brown','magenta']
+
+    p = pv.Plotter()
     
-    p.add_mesh(pvmesh, 
+    p.add_mesh(py_mesh, 
                color=mesh_surf_color,
                opacity=opacity,
                smooth_shading=smooth_shading,
@@ -120,30 +136,117 @@ def getAnatomicalStructures(mesh_case, plot, **kwargs):
         
     '''
 
+    size_fb = 0
 
+    fb = []
+    fb1=[]
+
+    a = []
+    l = []
+    tr = []
+    
     x_values = []
     y_values = []
     z_values = []
     
-    tr = []
-    a = []
-    dist = []
-    l = []
+    freeboundary_points = []
+    freeboundary_vertex_nodes = []
     
     
     pts = mesh_case.nodes
     face = mesh_case.indices.astype(int)
         
-    tm_mesh = tm.Trimesh(vertices=pts,faces=face)
+    tm_mesh = tm.Trimesh(vertices=pts,
+                        faces=face, 
+                        process=False)
+                
     freeboundary = tm_mesh.outline().to_dict()
     mesh_outline_entities = tm_mesh.outline().entities
-    freeboundary_vertex_nodes = []
-    freeboundary_points = []
 
 
     for i in range(len(mesh_outline_entities)):
         freeboundary_vertex_nodes.append(freeboundary["entities"][i]['points'])
+        # Removing the last element
+        # freeboundary_vertex_nodes[i].pop()
+        # 
+        for j in range(len(freeboundary_vertex_nodes[i])-1):
+            fb.append([freeboundary_vertex_nodes[i][j], freeboundary_vertex_nodes[i][j+1]]) 
 
+    # fb1=fb
+    fb = np.array(fb).astype(np.int64)
+
+    print(fb)
+    
+    testset=np.array(list(np.zeros((fb.shape[0],fb.shape[1]))))
+    testset[:] = np.nan
+    testset[:,0] = fb[:,0]
+
+    res = list(map(lambda x:x, fb[:,1][0:len(fb-1)]))
+    print('len-res\n',len(res))
+    res.insert(0,fb[:,1][-1])
+    res = np.array(res)
+    # testset[:,1] = res
+
+    print('testset\n',res.shape)
+
+
+
+    
+    # cc = list()
+    # cc.append(fb[:,1].tolist())
+    # cc.insert(0,[fb[:,1][-1]], fb[1:len(fb)-1] )
+
+
+    # cc.append(fb1[:,1][0:len(fb1)-1])
+    # cc.insert(0,fb1[:,1][-1])
+
+
+
+    # cc = list([fb[:1][-1],fb[0:len(fb)-1]])
+    # print('cc\n',cc)
+
+    # testset[:,1] = [fb[:1][-1],fb[1:len(fb)-1]]
+
+    # [1:len(fb-1)]
+    
+    
+    print('testset\n',testset)
+    # print('fb-2\n',fb[:,1][-1], fb[:,1][0:len(fb-1)])
+
+
+
+
+
+    # # fb1 = np.array(fb1).flatten().astype(np.int64)
+    # fb3 = []
+
+    # fb3 = fb1[0:-1]
+    # fb3.insert(0,fb1[-1])
+
+    # fb4=[]
+
+    # for k in range(len(fb1)):
+    #     fb4.append([fb1[k],fb3[k]])
+
+
+    # fb4=np.array(fb4)
+
+    # # fb3.append((fb1[-1],fb1[0:-1]))
+    # print('fb4\n',fb4)
+
+    # print('fb3\n',fb3)
+
+    # testset = np.zeros(shape=(fb1.size,1))
+    # testset[:] = np.nan
+    # testset[:] = fb1.reshape(fb1.size,1).astype(np.int64)
+
+
+    # print('fb1\n',testset)
+    # ff = []
+    # ff = zip(fb1,fb2)
+    # ff = np.array(ff)
+    # print('ff-list\n',ff)
+    
 
     # mesh Vertices
     trimesh_points = tm_mesh.vertices
@@ -169,7 +272,11 @@ def getAnatomicalStructures(mesh_case, plot, **kwargs):
 
     freeboundary_points = np.array(freeboundary_points,dtype=object)
     
+    testset = np.empty(shape=(size_fb,2))
+    testset[:] = np.nan
     
+    print('testset\n',testset.shape)
+
 
     for i in range(len(freeboundary_points)):
         coords = freeboundary_points[i]
@@ -186,15 +293,12 @@ def getAnatomicalStructures(mesh_case, plot, **kwargs):
         C = C.reshape(len(C),1)
         C = np.vstack((C,1))
         TRI = np.concatenate((A,B,C),axis=1)
-
-        for j in range(len(coords)-1):
-            dist.append(np.linalg.norm(coords[j+1]-coords[j]))
             
 
         tr.append(tm.Trimesh(vertices=X,faces=TRI))
         lineLen = lineLength(coords)
         a.append(round(tr[i].area,4))
-        l.append(round(lineLen,4))
+        l.append(lineLen)
         print('Perimeter is :',l[i],'| Area is:',a[i])
         
     if plot:
@@ -218,7 +322,31 @@ def getAnatomicalStructures(mesh_case, plot, **kwargs):
         
     return {'FreeboundaryPoints':freeboundary_points,'Lengths':l, 'Area':a, 'tr':tr}
 
+def create_pymesh(mesh_case):
 
+    pts = mesh_case.nodes
+    tri = mesh_case.indices.astype(int)
+    np.set_printoptions(suppress=True)
+    size_tri = []
+
+    x = tri[:,0].reshape(len(tri[:,0]),1)
+    y = tri[:,1].reshape(len(tri[:,1]),1)
+    z = tri[:,2].reshape(len(tri[:,2]),1)
+
+
+    for item in tri:
+        size_tri.append(len(item))
+
+    size_tri_list = size_tri
+    size_tri_arr = np.array(size_tri,dtype=np.int).reshape(len(size_tri),1)
+
+    face = np.hstack(np.concatenate((size_tri_arr,tri),axis=1)).astype(int)
+    mesh = pv.PolyData(pts,face)
+
+    return mesh
+
+
+    
 
 def DrawMap(ep_case,volt,freeboundary_color,cmap,freeboundary_width,minval,maxval,volt_below_color, volt_above_color, nan_color, plot,**kwargs):
     '''
@@ -239,33 +367,15 @@ def DrawMap(ep_case,volt,freeboundary_color,cmap,freeboundary_width,minval,maxva
     Returns:
 
     '''
-
-
-    pts = ep_case.nodes
-    tri = ep_case.indices.astype(int)
+    # Create a PyMesh
+    py_mesh = create_pymesh(ep_case)
     
     if volt == 'bip':
         volt = ep_case.fields['bip']
     else:
         volt = volt
 
-    np.set_printoptions(suppress=True)
-    size_tri = []
-
-    x = tri[:,0].reshape(len(tri[:,0]),1)
-    y = tri[:,1].reshape(len(tri[:,1]),1)
-    z = tri[:,2].reshape(len(tri[:,2]),1)
-
-
-    for item in tri:
-        size_tri.append(len(item))
-
-    size_tri_list = size_tri
-    size_tri_arr = np.array(size_tri,dtype=np.int).reshape(len(size_tri),1)
-
-    face = np.hstack(np.concatenate((size_tri_arr,tri),axis=1)).astype(int)
-    mesh = pv.PolyData(pts,face)
-
+    # pyvista plotter
     p = pv.Plotter()
 
     if plot:
@@ -278,7 +388,7 @@ def DrawMap(ep_case,volt,freeboundary_color,cmap,freeboundary_width,minval,maxva
                           above_label='  ')
 
         freebound = getAnatomicalStructures(ep_case,plot=False)
-        p.add_mesh(mesh,
+        p.add_mesh(py_mesh,
                scalar_bar_args=sargs,
                show_edges=False,
                smooth_shading=True,
@@ -298,7 +408,7 @@ def DrawMap(ep_case,volt,freeboundary_color,cmap,freeboundary_width,minval,maxva
         p.show()
 
     return {'hsurf':p,
-            'pyvista-mesh':mesh,
+            'pyvista-mesh':py_mesh,
             'volt':volt,
             'nan_color':nan_color,
             'minval':minval,
@@ -306,6 +416,5 @@ def DrawMap(ep_case,volt,freeboundary_color,cmap,freeboundary_width,minval,maxva
             'cmap':cmap,
             'volt_below_color':volt_below_color,
             'volt_above_color':volt_above_color}
-
 
     
