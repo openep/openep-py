@@ -1,23 +1,21 @@
+import sys
+sys.path.append('/home/jra21/work/source/repos/opep')
+
 from openep import io as openep_io
 from openep import case as openep_case
 from openep import mesh_routines as openep_mesh
 from openep import case_routines as case_routines
 from openep import draw_routines as draw
 
-import pyvista as pv
-import numpy as np
-from matplotlib.cm import jet, rainbow, jet_r, seismic
-import trimesh as tm
 
 
-filename = '/home/jra21/work/source/repos/opep/examples/data/new_dataset_1.mat'
-np.set_printoptions(suppress=True)
-
+filename = '/home/jra21/work/source/repos/opep/examples/data/new_dataset_2.mat'
 
 ep_case = openep_io.load_case(filename)
-ep_case_mesh = ep_case.create_mesh()
 
+# DrawVoltage Map
 # hsurf = draw.DrawMap(ep_case,
+#                     volt='bip',
 #                     freeboundary_color='black',
 #                     freeboundary_width=5,
 #                     cmap='jet_r',
@@ -28,4 +26,5 @@ ep_case_mesh = ep_case.create_mesh()
 #                     nan_color='gray',
 #                     plot=True)
 
-hsurf1 = draw.getAnatomicalStructures(ep_case,plot=False)
+# GetAnatomicalStructure and DrawFreeBoundaries on mesh
+hsurf1 = draw.getAnatomicalStructures(ep_case,plot=True)
