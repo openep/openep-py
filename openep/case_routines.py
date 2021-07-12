@@ -7,6 +7,44 @@ from scipy.interpolate import Rbf
 __all__ = ["OpenEPDataInterpolator"]
 
 
+
+def get_reference_annotation(mesh_case,*args):
+    '''
+    get_reference_annotation Returns the value of the reference annotation
+    
+    Args:
+        mesh_case: openep case object
+        'iegm': str
+        {:} (default) | integer | range(start int, stop int)
+        
+    Returns:
+            int value of the reference annotation for the corresponding iegm values
+    '''
+    
+    n_standard_args = 1
+    i_egm = np.array(':')
+    
+    n_arg_in = len(args)+1
+    if n_arg_in>n_standard_args:
+        for i in range(0,(n_arg_in-n_standard_args),2):
+            if np.char.lower(args[i]) == 'iegm':
+                i_egm = args[i+1]
+    ref = []
+    if (type(i_egm)==str) and (np.char.compare_chararrays(i_egm,':','==',True)):
+        ref = mesh_case.electric['annotations/referenceAnnot'].T
+
+    else:
+        ref_raw = mesh_case.electric['annotations/referenceAnnot'].T
+        ref_raw = ref_raw.astype(int)
+        
+        for i in i_egm:
+            ref.append(ref_raw[i])
+                        
+    
+    ref = np.array(ref).astype(int)
+    return ref
+
+
 def getMappingPointsWithinWoI(mesh_case):
     '''
     GETMAPPINGPOINTSWITHINWOI Returns the indices of the mapping points with
