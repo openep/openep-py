@@ -1,3 +1,4 @@
+from numpy.lib.function_base import _ARGUMENT_LIST
 from openep import mesh_routines as openep_mesh
 
 
@@ -41,6 +42,14 @@ def lineLength(h):
 
 def create_pymesh(mesh_case):
 
+    '''
+    Create a pymesh object
+    Args:
+
+    Returns:
+
+    '''
+
     pts = mesh_case.nodes
     tri = mesh_case.indices.astype(int)
     np.set_printoptions(suppress=True)
@@ -61,6 +70,115 @@ def create_pymesh(mesh_case):
     mesh = pv.PolyData(pts,face)
 
     return mesh
+
+def get_freeboundaries(tri):
+
+    '''
+    Args:
+        tri - Trimesh Object
+
+    Returns:
+           freeboundaries - Array of connected free boundary indices
+           l - the lengths of the freeboundaries
+    '''
+
+    freeboundary_vertex_nodes = []
+    freeboundaries = []
+
+    tri_outline = tri.outline().to_dict()
+    mesh_outline_entities = tri.outline().entities
+    no_of_freeboundaries = len(mesh_outline_entities)
+
+
+     # Find all the freeboundary facets
+    for i in range(no_of_freeboundaries):
+        freeboundary_vertex_nodes.append(tri_outline["entities"][i]['points'])
+
+        # creating an array of fb values with the index of the points
+        for j in range(len(freeboundary_vertex_nodes[i])-1):
+            freeboundaries.append([freeboundary_vertex_nodes[i][j], freeboundary_vertex_nodes[i][j+1]]) 
+
+    freeboundaries = np.array(freeboundaries).astype(np.int64)
+    
+    return {'freeboundary':freeboundaries,
+            'fb_vertex_nodes':freeboundary_vertex_nodes}
+
+
+
+def get_freeboundary_points(tri,fb):
+
+    trimesh_points = tri.vertices
+    fb = fb[:,0]
+    coords = np.array(list(trimesh_points[fb])).astype(np.float64)
+    
+    # for i in freeboundary_vertex_nodes:
+    #     x_values.append(trimesh_points[i][:,0])
+    #     y_values.append(trimesh_points[i][:,1])
+    #     z_values.append(trimesh_points[i][:,2])
+
+    # x_values_array = []
+    # y_values_array = []
+    # z_values_array = []
+
+
+    # for i in range(no_of_freeboundaries):
+    #     x_values_array.append(x_values[i].reshape(len(x_values[i]),1))
+    #     y_values_array.append(y_values[i].reshape(len(y_values[i]),1))
+    #     z_values_array.append(z_values[i].reshape(len(z_values[i]),1))
+    #     freeboundary_points.append(np.concatenate((x_values_array[i],
+    #                                         y_values_array[i],
+    #                                         z_values_array[i]),
+    #                                         axis=1))
+    
+    return coords
+
+
+def free_boundary(tri):
+    
+    l = []
+
+    f_fall = get_freeboundaries(tri)
+    fb = f_fall['freeboundary']
+
+    test_set=np.array(list(np.zeros((fb.shape[0],fb.shape[1]))))
+    test_set[:] = np.nan
+    test_set[:,0] = fb[:,0]
+
+    #exctracting the contents of 2nd columm fb array into the testset
+    second_col_fb = list(map(lambda x:x, fb[:,1][0:len(fb)-1]))
+    second_col_fb.insert(0,fb[:,1][-1])
+    second_col_fb = np.array(second_col_fb)
+    
+    # Assigning the values of the second column to the 2nd column of testset
+    test_set[:,1] = second_col_fb
+
+    # isstat
+    i_start = np.where(np.diff(a=test_set,n=1,axis=1).astype(np.int64))[0]
+    
+    ff = []
+
+    if not list(i_start):
+        ff.append(np.array(fb))
+        coords = get_freeboundary_points(tm_mesh,ff[0])
+        l.append(lineLength(coords))
+    else:
+        for i in range(i_start.shape[0]):
+            if i<(i_start.shape[0]-1):
+                np.array(ff.append(fb[i_start[i]:i_start[i+1]]))
+                coords = get_freeboundary_points(tm_mesh,ff[i])
+                l.append(lineLength(coords))
+            else:
+                ff.append(fb[i_start[i]:])
+                coords = get_freeboundary_points(tm_mesh,ff[i])
+                l.append(lineLength(coords))
+
+
+
+    return {'connected_freeboundary':ff,
+            'length':l}
+
+
+
 
 
 def drawFreeBoundaries(mesh_case,
@@ -136,13 +254,9 @@ def getAnatomicalStructures(mesh_case, plot, **kwargs):
         
     '''
 
-    size_fb = 0
-
-    fb = []
-    fb1=[]
-
     a = []
     l = []
+
     tr = []
     
     x_values = []
@@ -159,102 +273,16 @@ def getAnatomicalStructures(mesh_case, plot, **kwargs):
     tm_mesh = tm.Trimesh(vertices=pts,
                         faces=face, 
                         process=False)
-                
+
+       
     freeboundary = tm_mesh.outline().to_dict()
     mesh_outline_entities = tm_mesh.outline().entities
 
-
     for i in range(len(mesh_outline_entities)):
         freeboundary_vertex_nodes.append(freeboundary["entities"][i]['points'])
-        # Removing the last element
-        # freeboundary_vertex_nodes[i].pop()
-        # 
-        for j in range(len(freeboundary_vertex_nodes[i])-1):
-            fb.append([freeboundary_vertex_nodes[i][j], freeboundary_vertex_nodes[i][j+1]]) 
-
-    # fb1=fb
-    fb = np.array(fb).astype(np.int64)
-
-    print(fb)
+                
     
-    testset=np.array(list(np.zeros((fb.shape[0],fb.shape[1]))))
-    testset[:] = np.nan
-    testset[:,0] = fb[:,0]
-
-    #exctracting the contents of 2nd columm fb array into the testset
-    second_col_fb = list(map(lambda x:x, fb[:,1][0:len(fb)-1]))
-    second_col_fb.insert(0,fb[:,1][-1])
-    second_col_fb = np.array(second_col_fb)
-    
-    # Assigning the values of the second column to the 2nd column of testset
-    testset[:,1] = second_col_fb
-
-    print('testset-type\n',type(testset))
-
-    
-
-
-
-
-
-    
-    # cc = list()
-    # cc.append(fb[:,1].tolist())
-    # cc.insert(0,[fb[:,1][-1]], fb[1:len(fb)-1] )
-
-
-    # cc.append(fb1[:,1][0:len(fb1)-1])
-    # cc.insert(0,fb1[:,1][-1])
-
-
-
-    # cc = list([fb[:1][-1],fb[0:len(fb)-1]])
-    # print('cc\n',cc)
-
-    # testset[:,1] = [fb[:1][-1],fb[1:len(fb)-1]]
-
-    # [1:len(fb-1)]
-    
-    
-    print('testset\n',testset)
-    # print('fb-2\n',fb[:,1][-1], fb[:,1][0:len(fb-1)])
-
-
-
-
-
-    # # fb1 = np.array(fb1).flatten().astype(np.int64)
-    # fb3 = []
-
-    # fb3 = fb1[0:-1]
-    # fb3.insert(0,fb1[-1])
-
-    # fb4=[]
-
-    # for k in range(len(fb1)):
-    #     fb4.append([fb1[k],fb3[k]])
-
-
-    # fb4=np.array(fb4)
-
-    # # fb3.append((fb1[-1],fb1[0:-1]))
-    # print('fb4\n',fb4)
-
-    # print('fb3\n',fb3)
-
-    # testset = np.zeros(shape=(fb1.size,1))
-    # testset[:] = np.nan
-    # testset[:] = fb1.reshape(fb1.size,1).astype(np.int64)
-
-
-    # print('fb1\n',testset)
-    # ff = []
-    # ff = zip(fb1,fb2)
-    # ff = np.array(ff)
-    # print('ff-list\n',ff)
-    
-
-    # mesh Vertices
+    # mesh Vertices - finding the coordinates/points of the freeboundaries
     trimesh_points = tm_mesh.vertices
 
     for i in freeboundary_vertex_nodes:
@@ -275,14 +303,6 @@ def getAnatomicalStructures(mesh_case, plot, **kwargs):
                                             y_values_array[i],
                                             z_values_array[i]),
                                             axis=1))
-
-    freeboundary_points = np.array(freeboundary_points,dtype=object)
-    
-    testset = np.empty(shape=(size_fb,2))
-    testset[:] = np.nan
-    
-    print('testset\n',testset.shape)
-
 
     for i in range(len(freeboundary_points)):
         coords = freeboundary_points[i]
