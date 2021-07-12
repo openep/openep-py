@@ -159,17 +159,17 @@ def free_boundary(tri):
 
     if not list(i_start):
         ff.append(np.array(fb))
-        coords = get_freeboundary_points(tm_mesh,ff[0])
+        coords = get_freeboundary_points(tri,ff[0])
         l.append(lineLength(coords))
     else:
         for i in range(i_start.shape[0]):
             if i<(i_start.shape[0]-1):
                 np.array(ff.append(fb[i_start[i]:i_start[i+1]]))
-                coords = get_freeboundary_points(tm_mesh,ff[i])
+                coords = get_freeboundary_points(tri,ff[i])
                 l.append(lineLength(coords))
             else:
                 ff.append(fb[i_start[i]:])
-                coords = get_freeboundary_points(tm_mesh,ff[i])
+                coords = get_freeboundary_points(tri,ff[i])
                 l.append(lineLength(coords))
 
 
