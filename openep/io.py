@@ -34,8 +34,8 @@ def load_mat(filename, exclude_pattern=".*#.*"):
                 arr_val = np.array(value)
 
                 # ignore references for now
-                if arr_val.dtype != object:
-                    dat[key] = arr_val
+                # if arr_val.dtype != object:
+                dat[key] = arr_val
 
         f.visititems(_visitor)  # visit all items in the file and populate dat
 
