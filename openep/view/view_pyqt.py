@@ -2,6 +2,7 @@
 GUI code for OpenEp
 '''
 
+from logging import setLogRecordFactory
 from PyQt5 import QtWidgets as qtw
 import pyvista as pv
 from pyvistaqt import QtInteractor, MainWindow
@@ -31,48 +32,58 @@ class OpenEpGUI(qtw.QWidget):
         self.maxval = 2
 
 
+
     def initUI(self):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
 
-        # LAYOUTS
+        # # LAYOUTS
         self.mainLayout = qtw.QVBoxLayout(self)
+        self.menulayout = qtw.QGridLayout(self)
         self.labelLayout = qtw.QFormLayout(self)
         self.buttonLayout = qtw.QHBoxLayout(self)
 
-        
+        # MenuBar
+        menubar=qtw.QMenuBar()
+        self.menulayout.addWidget(menubar, 0, 0)
+        actionFile = menubar.addMenu("File")
+        actionFile.addAction("NewPlot")
+        actionFile.addSeparator()
+        actionFile.addAction("Quit")
+        menubar.addMenu("Edit")
+        menubar.addMenu("View")
+        menubar.addMenu("Help")
+
+        # Label
         mainLabel1 = qtw.QLabel('OpenEp Tool',self)
         self.labelLayout.addWidget(mainLabel1)
         mainLabel2 = qtw.QLabel( 'The Open Source solution for electrophysiology data analysis',self)
         self.labelLayout.addWidget(mainLabel2)
 
-
-
-        # Button 1
+        # # Button 1
         button1 = qtw.QPushButton('Load OpenEp Data', self)
         button1.setGeometry(200,150,100,40)
         button1.clicked.connect(self.on_click)
 
 
-        # Button 2
+        # # Button 2
         button2 = qtw.QPushButton('Plot Voltage Map', self)
         button2.setGeometry(200,150,100,40)
         button2.clicked.connect(self.on_click2)
 
-        # Adding buttons to the horizontal layout
+        # # Adding buttons to the horizontal layout
         self.buttonLayout.addWidget(button1)
         self.buttonLayout.addWidget(button2)
 
         self.labelLayout.addRow(self.buttonLayout)
 
-        # Plot
+        # # Plot
         self.frame = qtw.QFrame()
         self.plotLayout = qtw.QHBoxLayout()
         self.plotter = QtInteractor(self.frame)
         self.plotLayout.addWidget(self.plotter.interactor)
 
-        # QDock Widget
-        
+        # # QDock Widget
         self.plotter1 = QtInteractor(self.frame)
         
         self.dock_plot = qtw.QDockWidget("Dockable", self)
@@ -85,7 +96,7 @@ class OpenEpGUI(qtw.QWidget):
 
 
 
-        # VoltThresholds limit
+        # # VoltThresholds limit
         self.limitLayout = qtw.QFormLayout(self)
         self.lowerlimit = qtw.QLineEdit()
         self.upperlimit = qtw.QLineEdit()
@@ -101,6 +112,7 @@ class OpenEpGUI(qtw.QWidget):
 
 
         # Nesting Layouts and setting the main layout
+        self.mainLayout.addLayout(self.menulayout)
         self.mainLayout.addLayout(self.labelLayout)
         self.mainLayout.addLayout(self.plotLayout)
         self.mainLayout.addLayout(self.limitLayout)
