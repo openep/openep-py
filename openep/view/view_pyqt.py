@@ -46,10 +46,27 @@ class OpenEpGUI(qtw.QWidget):
         # MenuBar
         menubar=qtw.QMenuBar()
         self.menulayout.addWidget(menubar, 0, 0)
-        actionFile = menubar.addMenu("File")
-        actionFile.addAction("NewPlot")
-        actionFile.addSeparator()
-        actionFile.addAction("Quit")
+        file_menu = menubar.addMenu("File")
+        
+        plot_menu =qtw.QMenu('Plots',self)
+        voltage_map_plot_act = qtw.QAction('3-D Voltage Map',self)
+        voltage_map_electrogram_plot_act  = qtw.QAction('Electrogram Plot',self)
+        historgram_plot_act = qtw.QAction('Histogram Plot',self)
+        egm_plot_act = qtw.QAction('EGM Plot',self)
+
+
+        plot_menu.addAction(voltage_map_plot_act)
+        plot_menu.addAction(voltage_map_electrogram_plot_act)
+        plot_menu.addAction(historgram_plot_act)
+        plot_menu.addAction(egm_plot_act)
+
+        file_menu.addMenu(plot_menu)
+
+
+
+        file_menu.addSeparator()
+        file_menu.addAction("Quit")
+
         menubar.addMenu("Edit")
         menubar.addMenu("View")
         menubar.addMenu("Help")
@@ -93,8 +110,6 @@ class OpenEpGUI(qtw.QWidget):
         self.plotLayout.addWidget(self.dock_plot)
         
         
-
-
 
         # # VoltThresholds limit
         self.limitLayout = qtw.QFormLayout(self)
