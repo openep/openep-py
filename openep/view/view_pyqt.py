@@ -50,15 +50,18 @@ class OpenEpGUI(qtw.QWidget):
         
         plot_menu =qtw.QMenu('Plots',self)
         voltage_map_plot_act = qtw.QAction('3-D Voltage Map',self)
-        voltage_map_electrogram_plot_act  = qtw.QAction('Electrogram Plot',self)
-        historgram_plot_act = qtw.QAction('Histogram Plot',self)
-        egm_plot_act = qtw.QAction('EGM Plot',self)
+        self.voltage_map_electrogram_plot_act  = qtw.QAction('Electrogram Plot',self)
+        self.historgram_plot_act = qtw.QAction('Histogram Plot',self)
+        self.egm_plot_act = qtw.QAction('EGM Plot',self)
 
 
+        voltage_map_plot_act.triggered.connect(self.on_click2)
         plot_menu.addAction(voltage_map_plot_act)
-        plot_menu.addAction(voltage_map_electrogram_plot_act)
-        plot_menu.addAction(historgram_plot_act)
-        plot_menu.addAction(egm_plot_act)
+        
+
+        plot_menu.addAction(self.voltage_map_electrogram_plot_act)
+        plot_menu.addAction(self.historgram_plot_act)
+        plot_menu.addAction(self.egm_plot_act)
 
         file_menu.addMenu(plot_menu)
 
