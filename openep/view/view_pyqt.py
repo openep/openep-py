@@ -6,7 +6,7 @@ from logging import setLogRecordFactory
 from PyQt5 import QtWidgets as qtw
 import pyvista as pv
 from pyvistaqt import QtInteractor, MainWindow
-
+import numpy as np
 
 import sys
 sys.path.append('../openep')
@@ -50,7 +50,7 @@ class OpenEpGUI(qtw.QWidget):
         
         plot_menu =qtw.QMenu('Plots',self)
         voltage_map_plot_act = qtw.QAction('3-D Voltage Map',self)
-        self.voltage_map_electrogram_plot_act  = qtw.QAction('Electrogram Plot',self)
+        self.voltage_map_electroanatomic_plot_act  = qtw.QAction('Electroanatomic Plot',self)
         self.historgram_plot_act = qtw.QAction('Histogram Plot',self)
         self.egm_plot_act = qtw.QAction('EGM Plot',self)
 
@@ -58,8 +58,9 @@ class OpenEpGUI(qtw.QWidget):
         voltage_map_plot_act.triggered.connect(self.on_click2)
         plot_menu.addAction(voltage_map_plot_act)
         
-
-        plot_menu.addAction(self.voltage_map_electrogram_plot_act)
+        self.voltage_map_electroanatomic_plot_act.triggered.connect(self.plot_electroanatomic)
+        plot_menu.addAction(self.voltage_map_electroanatomic_plot_act)
+        
         plot_menu.addAction(self.historgram_plot_act)
         plot_menu.addAction(self.egm_plot_act)
 
@@ -104,13 +105,12 @@ class OpenEpGUI(qtw.QWidget):
         self.plotLayout.addWidget(self.plotter.interactor)
 
         # # QDock Widget
-        self.plotter1 = QtInteractor(self.frame)
-        
-        self.dock_plot = qtw.QDockWidget("Dockable", self)
-        self.dock_plot.setFloating(False)
-        self.dock_plot.setWidget(self.plotter1)
+        # self.plotter1 = QtInteractor(self.frame)
+        # self.dock_plot = qtw.QDockWidget("Dockable", self)
+        # self.dock_plot.setFloating(False)
+        # self.dock_plot.setWidget(self.plotter1)
 
-        self.plotLayout.addWidget(self.dock_plot)
+        # self.plotLayout.addWidget(self.dock_plot)
         
         
 
@@ -202,20 +202,82 @@ class OpenEpGUI(qtw.QWidget):
 
         
 
+        # self.plotter1.add_mesh(self.mesh,
+        #                       scalar_bar_args=self.sargs,
+        #                       annotations=False,
+        #                       show_edges=False,
+        #                       smooth_shading=True,
+        #                       scalars=self.volt,
+        #                       nan_color=self.nan_color,
+        #                       clim=[self.minval,self.maxval],
+        #                       cmap=self.cmap,
+        #                       below_color=self.below_color,
+        #                       above_color=self.above_color)
+
+
+
+    def plot_electroanatomic(self):
+
+
+        distance_thresh = 10
+
+
+
+        # Anatomic descriptions (Mesh) - nodes and indices
+        pts = self.ep_case.nodes
+        indices = self.ep_case.indices
+
+
+        # Electric data
+        # Locations – Cartesian co-ordinates, projected on to the surface 
+        locations = case_routines.get_electrogram_coordinates(self.ep_case,'type','bip')
+
+        i_egm = self.ep_case.electric['egm'].T
+        i_vp = case_routines.getMappingPointsWithinWoI(self.ep_case)
+        # macthing the shape of ivp with data
+        i_vp_egm = np.repeat(i_vp, repeats=i_egm.shape[1], axis=1)
+        # macthing the shape of ivp with coords
+        i_vp_locations = np.repeat(i_vp, repeats=locations.shape[1],axis=1)
+
+        # Replacing the values outside the window of interest with Nan values
+        i_egm[~i_vp_egm] = np.nan
+        locations[~i_vp_locations] = np.nan
+
+        # For each mapping point, n, find the voltage amplitude
+        max_volt = np.amax(a=i_egm,axis=1).reshape(len(i_egm),1)
+        min_volt = np.amin(a=i_egm,axis=1).reshape(len(i_egm),1)
+
+        amplitude_volt = np.subtract(max_volt,min_volt)
+
+        for indx in range(amplitude_volt.shape[1]):
+            temp_data = amplitude_volt[:,indx]
+            temp_coords = locations
+            i_nan = np.isnan(temp_data)
+            temp_data=temp_data[~i_nan]
+            temp_coords=temp_coords[~i_nan]
+
+
+            interp = case_routines.OpenEPDataInterpolator(method='rbf',distanceThreshold=distance_thresh,rbfConstant=1)
+            vertex_voltage_data = interp.interpolate(x0=temp_coords,d0=temp_data,x1=pts)
+
+        # # QDock Widget
+        self.plotter1 = QtInteractor(self.frame)
+        self.dock_plot = qtw.QDockWidget("Dockable", self)
+        self.dock_plot.setFloating(False)
+        self.dock_plot.setWidget(self.plotter1)
+
+        self.plotLayout.addWidget(self.dock_plot)
+
         self.plotter1.add_mesh(self.mesh,
-                              scalar_bar_args=self.sargs,
-                              annotations=False,
-                              show_edges=False,
-                              smooth_shading=True,
-                              scalars=self.volt,
-                              nan_color=self.nan_color,
-                              clim=[self.minval,self.maxval],
-                              cmap=self.cmap,
-                              below_color=self.below_color,
-                              above_color=self.above_color)
-
-
-
+                        scalar_bar_args=self.sargs,
+                        show_edges=False,
+                        smooth_shading=True,
+                        scalars=vertex_voltage_data,
+                        nan_color=self.nan_color,
+                        clim=[self.minval,self.maxval],
+                        cmap=self.cmap,
+                        below_color=self.below_color,
+                        above_color=self.above_color)
 
 
     def on_click3(self):
