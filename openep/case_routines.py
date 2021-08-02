@@ -126,6 +126,97 @@ def getWindowOfInterest(mesh_case,*args):
 
     return woi
 
+def get_egms_at_points(mesh_case,*args):
+    """
+    Access electrogram from stored in the openep data format
+    
+    Args:
+        mesh_case: openep case object
+        "iegm": str
+        "{:}" (default) |  [egm-indices (int)] | [start-egm-index-point  (int), stop-egm-index-point (int)] 
+        
+    Returns:
+            egm_traces: corresponding list of arrays of size:1x2500 each, containing the 'bip' and 'uni' voltages for the requested points
+            sample_range: list of all the sample range within the window-of-interest for the requested points
+    """
+    
+
+    egm_traces = []
+    sample_range = []
+    electric_egm_bip = []
+    electric_egm_uni = []
+    
+    n_standard_args = 1
+    i_egm = np.array(':')
+    n_arg_in = len(args)+1
+
+    buffer = 50
+    buffer = [-buffer,buffer]
+
+    woi = mesh_case.electric['annotations/woi'].T.astype(np.int64)
+    ref_annot = mesh_case.electric['annotations/referenceAnnot'].T.astype(np.int64)
+
+    if n_arg_in>n_standard_args:
+        for i in range(0,(n_arg_in-n_standard_args),2):
+            if np.char.lower(args[i]) == 'iegm':
+                i_egm = args[i+1]
+
+    if (type(i_egm)==str) and (np.char.compare_chararrays(i_egm,':','==',True)):
+        electric_egm_bip = mesh_case.electric["egm"].T
+        electric_egm_uni = mesh_case.electric["egmUni"].T
+        sample_range = (woi[:] + ref_annot[:]) + buffer
+
+        electric_egm_bip = np.array(electric_egm_bip).astype(float)
+        electric_egm_uni = np.array(electric_egm_uni).astype(float)
+
+        egm_traces.append(electric_egm_bip)
+        egm_traces.append(electric_egm_uni[:,:,0])
+        egm_traces.append(electric_egm_uni[:,:,1])  
+
+
+    else:
+        electric_egm_bip_raw = mesh_case.electric["egm"].T
+        electric_egm_bip_raw = electric_egm_bip_raw.astype(float)
+        electric_egm_uni_raw = mesh_case.electric["egmUni"].T
+        electric_egm_uni_raw = electric_egm_uni_raw.astype(float)
+
+        
+        if len(i_egm)==2:
+            start_indx = i_egm[0]
+            end_indx = i_egm[1]+1
+
+            if (end_indx > len(electric_egm_bip_raw)):
+                raise IndexError('egm index out of range')
+
+            else:
+                for i in range(start_indx,end_indx):
+                    egm_traces.append(electric_egm_bip_raw[i])
+                    egm_traces.append(electric_egm_uni_raw[i,:,0])
+                    egm_traces.append(electric_egm_uni_raw[i,:,1])
+                    sample_range.append((woi[i] + ref_annot[i])+ buffer )
+                egm_traces = egm_traces[::-1]    
+
+        else:
+            if (i_egm[0] > (len(electric_egm_bip_raw)-1)):
+                raise IndexError('egm index out of range')
+
+            else:
+                egm_traces.append(electric_egm_bip_raw[i_egm])
+                egm_traces.append(electric_egm_uni_raw[i_egm,:,0])
+                egm_traces.append(electric_egm_uni_raw[i_egm,:,1])
+                electric_egm_bip.append(electric_egm_bip_raw[i_egm].astype(float))
+                electric_egm_uni.append(electric_egm_uni_raw[i_egm].astype(float))
+                sample_range = woi[i_egm]+ref_annot[i_egm]
+                sample_range = sample_range + buffer
+
+                egm_traces = egm_traces[::-1]
+    
+
+    return {'egm_traces':egm_traces,'sample_range':sample_range}
+
+
+
+
 def distBetweenPoints(A, B):
     '''
     DISTBETWEENPOINTS returns the distance from A to B. A and B are specified
