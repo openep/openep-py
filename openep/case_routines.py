@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 from scipy.interpolate import LinearNDInterpolator as linterp
 from scipy.interpolate import NearestNDInterpolator as nearest
@@ -215,6 +216,28 @@ def get_egms_at_points(mesh_case,*args):
     return {'egm_traces':egm_traces,'sample_range':sample_range}
 
 
+def plot_egm(egmtraces,sample_range):
+    """
+    Plots the electrogram for a single index point
+
+    Args:
+        egmtraces - 3xn array of voltages (bip and uni)
+        sample_range - 2x1 list of list of the sample range within the window-of-interest for the requested single point
+    
+    Returns:
+        Plot of the electrogram voltages
+
+    """
+    # Plotting the egms
+    fig,axs = plt.subplots(nrows=1,ncols=1)
+    seperation = 7
+
+    for i in range(len(egmtraces)):
+        y = egmtraces[i][0][sample_range[0]:sample_range[1]]
+        t = np.arange(sample_range[0],sample_range[1],1)
+        axs.plot(t,y+(seperation*i))
+        axs.get_yaxis().set_visible(False)
+    plt.show()
 
 
 def distBetweenPoints(A, B):
