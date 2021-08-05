@@ -61,7 +61,11 @@ class OpenEpGUI(qtw.QWidget):
         self.voltage_map_electroanatomic_plot_act.triggered.connect(self.plot_electroanatomic)
         plot_menu.addAction(self.voltage_map_electroanatomic_plot_act)
         
+        self.historgram_plot_act.triggered.connect(self.plot_histogram)
         plot_menu.addAction(self.historgram_plot_act)
+
+
+        self.egm_plot_act.triggered.connect(self.plot_egm)
         plot_menu.addAction(self.egm_plot_act)
 
         file_menu.addMenu(plot_menu)
@@ -100,9 +104,15 @@ class OpenEpGUI(qtw.QWidget):
 
         # # Plot
         self.frame = qtw.QFrame()
-        self.plotLayout = qtw.QHBoxLayout()
+        # self.plotLayout = qtw.QHBoxLayout()
+        self.plotLayout = qtw.QGridLayout()
+        self.plotLayout.setColumnStretch(0,5)
+        self.plotLayout.setColumnStretch(1,5)
+
+
+
         self.plotter = QtInteractor(self.frame)
-        self.plotLayout.addWidget(self.plotter.interactor)
+        self.plotLayout.addWidget(self.plotter.interactor,0,0)
 
         # # QDock Widget
         # self.plotter1 = QtInteractor(self.frame)
@@ -262,11 +272,11 @@ class OpenEpGUI(qtw.QWidget):
 
         # # QDock Widget
         self.plotter1 = QtInteractor(self.frame)
-        self.dock_plot = qtw.QDockWidget("Dockable", self)
+        self.dock_plot = qtw.QDockWidget("ElectroAnatomic Plot", self)
         self.dock_plot.setFloating(False)
         self.dock_plot.setWidget(self.plotter1)
 
-        self.plotLayout.addWidget(self.dock_plot)
+        self.plotLayout.addWidget(self.dock_plot,0,1)
 
         self.plotter1.add_mesh(self.mesh,
                         scalar_bar_args=self.sargs,
@@ -279,6 +289,29 @@ class OpenEpGUI(qtw.QWidget):
                         below_color=self.below_color,
                         above_color=self.above_color)
 
+        
+
+
+    def plot_egm(self):
+        self.plotter2 = QtInteractor(self.frame)
+        self.dock_plot1 = qtw.QDockWidget("EGM Plot", self)
+        self.dock_plot.setFloating(False)
+        self.dock_plot.setWidget(self.plotter1)
+
+        self.plotLayout.addWidget(self.dock_plot,1,1)
+        pass
+
+    def plot_histogram(self):
+        self.plotter3 = QtInteractor(self.frame)
+        self.dock_plot2 = qtw.QDockWidget("Histogram Plot", self)
+        self.dock_plot.setFloating(False)
+        self.dock_plot.setWidget(self.plotter1)
+
+        self.plotLayout.addWidget(self.dock_plot,1,0)
+
+
+
+        pass
 
     def on_click3(self):
         self.minval = float(self.lowerlimit.text())
