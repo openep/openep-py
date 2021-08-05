@@ -25,7 +25,7 @@ i_egm = ep_case.electric['egm'].T
 print('i_egm\n',i_egm)
 i_vp = case_routines.getMappingPointsWithinWoI(ep_case)
 print('i_vp\n',i_vp)
-# macthing the shape of ivp with data
+# macthing the shape of ivp with dataW
 i_vp_egm = np.repeat(i_vp, repeats=i_egm.shape[1], axis=1)
 print('i_vp_egm',i_vp_egm)
 # macthing the shape of ivp with coords

@@ -1,43 +1,84 @@
 import sys
-from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QPushButton, QAction
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import pyqtSlot
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from PyQt5.QtWidgets import QApplication, QWidget
 
-class App(QMainWindow):
-    
+class Canvas(FigureCanvas):
+    def __init__(self, parent):
+        fig, self.ax = plt.subplots(figsize=(5, 4), dpi=200)
+        super().__init__(fig)
+        self.setParent(parent)
+
+        """ 
+        Matplotlib Script
+        """
+        t = np.arange(0.0, 2.0, 0.01)
+        s = 1 + np.sin(2 * np.pi * t)
+        
+        self.ax.plot(t, s)
+
+        self.ax.set(xlabel='time (s)', ylabel='voltage (mV)',
+               title='About as simple as it gets, folks')
+        self.ax.grid()
+
+class AppDemo(QWidget)      :
     def __init__(self):
         super().__init__()
-        self.title = 'PyQt5 menu - pythonspot.com'
-        self.left = 10
-        self.top = 10
-        self.width = 640
-        self.height = 400
-        self.initUI()
+        self.resize(1600, 800)
+
+        chart = Canvas(self)
+
+app = QApplication(sys.argv)        
+demo = AppDemo()
+demo.show()
+sys.exit(app.exec_())
+
+
+
+
+
+
+# import sys
+# from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QPushButton, QAction
+# from PyQt5.QtGui import QIcon
+# from PyQt5.QtCore import pyqtSlot
+
+# class App(QMainWindow):
     
-    def initUI(self):
-        self.setWindowTitle(self.title)
-        self.setGeometry(self.left, self.top, self.width, self.height)
+#     def __init__(self):
+#         super().__init__()
+#         self.title = 'PyQt5 menu - pythonspot.com'
+#         self.left = 10
+#         self.top = 10
+#         self.width = 640
+#         self.height = 400
+#         self.initUI()
+    
+#     def initUI(self):
+#         self.setWindowTitle(self.title)
+#         self.setGeometry(self.left, self.top, self.width, self.height)
         
-        mainMenu = self.menuBar()
-        fileMenu = mainMenu.addMenu('File')
-        editMenu = mainMenu.addMenu('Edit')
-        viewMenu = mainMenu.addMenu('View')
-        searchMenu = mainMenu.addMenu('Search')
-        toolsMenu = mainMenu.addMenu('Tools')
-        helpMenu = mainMenu.addMenu('Help')
+#         mainMenu = self.menuBar()
+#         fileMenu = mainMenu.addMenu('File')
+#         editMenu = mainMenu.addMenu('Edit')
+#         viewMenu = mainMenu.addMenu('View')
+#         searchMenu = mainMenu.addMenu('Search')
+#         toolsMenu = mainMenu.addMenu('Tools')
+#         helpMenu = mainMenu.addMenu('Help')
         
-        exitButton = QAction(QIcon('exit24.png'), 'Exit', self)
-        exitButton.setShortcut('Ctrl+Q')
-        exitButton.setStatusTip('Exit application')
-        exitButton.triggered.connect(self.close)
-        fileMenu.addAction(exitButton)
+#         exitButton = QAction(QIcon('exit24.png'), 'Exit', self)
+#         exitButton.setShortcut('Ctrl+Q')
+#         exitButton.setStatusTip('Exit application')
+#         exitButton.triggered.connect(self.close)
+#         fileMenu.addAction(exitButton)
     
-        self.show()
+#         self.show()
     
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    ex = App()
-    sys.exit(app.exec_())
+# if __name__ == '__main__':
+#     app = QApplication(sys.argv)
+#     ex = App()
+#     sys.exit(app.exec_())
 
 
 
