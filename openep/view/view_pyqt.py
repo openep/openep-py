@@ -4,9 +4,13 @@ GUI code for OpenEp
 
 from logging import setLogRecordFactory
 from PyQt5 import QtWidgets as qtw
+from matplotlib.figure import Figure
 import pyvista as pv
 from pyvistaqt import QtInteractor, MainWindow
 import numpy as np
+
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
 
 import sys
 sys.path.append('../openep')
@@ -145,11 +149,6 @@ class OpenEpGUI(qtw.QWidget):
         self.mainLayout.addLayout(self.plotLayout)
         self.mainLayout.addLayout(self.limitLayout)
         self.setLayout(self.mainLayout)
-
-
-
-
-
 
 
     def on_click(self):
@@ -293,24 +292,45 @@ class OpenEpGUI(qtw.QWidget):
 
 
     def plot_egm(self):
-        self.plotter2 = QtInteractor(self.frame)
-        self.dock_plot1 = qtw.QDockWidget("EGM Plot", self)
-        self.dock_plot.setFloating(False)
-        self.dock_plot.setWidget(self.plotter1)
+        # self.figure = Figure()
+        # self.canvas = FigureCanvas(self.figure)
+        self.canvas = FigureCanvas(plt.figure(figsize=(15,6),facecolor='gray'))
+        # self.chart = FigureCanvas(plt.Figure())
+        # fig, self.ax = plt.subplots(nrows=1,ncols=1,figsize=(3, 2), dpi=200)
+        
+        self.ax = self.canvas.figure.subplots(nrows=1,ncols=1)
+        # self.ax = self.figure.add_subplot(111)
+        self.egm = case_routines.get_egms_at_points(self.ep_case,"iegm",[1])
+        self.egm_traces = self.egm['egm_traces'][0]
+        self.sample_range = self.egm['sample_range'][0]
+        seperation = 7
 
-        self.plotLayout.addWidget(self.dock_plot,1,1)
-        pass
+        for i in range(len(self.egm_traces)):
+            y = self.egm_traces[i][self.sample_range[0]:self.sample_range[1]]
+            t = np.arange(self.sample_range[0],self.sample_range[1],1)
+            self.ax.plot(t,y+(seperation*i))
+            self.ax.get_yaxis().set_visible(False)
+            self.ax.set_xlabel('Samples')
+        
+        # toolbar = NavigationToolbar(self.canvas,self)
+        # self.chart = egm_Canvas(self)
+        # self.plotter2 = QtInteractor(self.frame)
+        self.dock_plot1 = qtw.QDockWidget("EGM Plot", self)
+        self.dock_plot1.setFloating(False)
+        self.dock_plot1.setWidget(self.canvas)
+        # self.dock_plot1.setWidget(toolbar)
+
+
+        self.plotLayout.addWidget(self.dock_plot1,1,1)
+        # pass
 
     def plot_histogram(self):
         self.plotter3 = QtInteractor(self.frame)
         self.dock_plot2 = qtw.QDockWidget("Histogram Plot", self)
-        self.dock_plot.setFloating(False)
-        self.dock_plot.setWidget(self.plotter1)
+        self.dock_plot2.setFloating(False)
+        self.dock_plot2.setWidget(self.plotter3)
 
-        self.plotLayout.addWidget(self.dock_plot,1,0)
-
-
-
+        self.plotLayout.addWidget(self.dock_plot2,1,0)
         pass
 
     def on_click3(self):
@@ -327,6 +347,32 @@ class OpenEpGUI(qtw.QWidget):
                               cmap=self.cmap,
                               below_color=self.below_color,
                               above_color=self.above_color)
+
+
+class egm_Canvas(FigureCanvas):
+    def __init__(self, parent):
+        fig, self.ax = plt.subplots(nrows=1,ncols=1,figsize=(3, 2), dpi=200)
+        super().__init__(fig)
+        self.setParent(parent)
+
+        """ 
+        Matplotlib Script
+        """
+        
+        self.egm = case_routines.get_egms_at_points(self.ep_case,"iegm",[1])
+        self.egm_traces = self.egm['egm_traces']
+        self.sample_range = self.egm['sample_range']
+        seperation = 7
+
+        for i in range(len(self.egm_traces)):
+            y = self.egm_traces[i][0][self.sample_range[0]:self.sample_range[1]]
+            t = np.arange(self.sample_range[0],self.sample_range[1],1)
+            self.ax.plot(t,y+(seperation*i))
+            self.ax.get_yaxis().set_visible(False)
+        plt.show()
+        
+
+
 
 def main():
     # Create an instance of Qapplication
