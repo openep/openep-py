@@ -292,29 +292,26 @@ class OpenEpGUI(qtw.QWidget):
 
 
     def plot_egm(self):
-        # self.figure = Figure()
-        # self.canvas = FigureCanvas(self.figure)
-        self.canvas = FigureCanvas(plt.figure(figsize=(15,6),facecolor='gray'))
-        # self.chart = FigureCanvas(plt.Figure())
-        # fig, self.ax = plt.subplots(nrows=1,ncols=1,figsize=(3, 2), dpi=200)
-        
-        self.ax = self.canvas.figure.subplots(nrows=1,ncols=1)
-        # self.ax = self.figure.add_subplot(111)
+        self.fig,self.ax = plt.subplots(ncols=1,nrows=1)
+        self.fig.set_facecolor('gray')
+        self.canvas = FigureCanvas(self.fig)
+
         self.egm = case_routines.get_egms_at_points(self.ep_case,"iegm",[1])
-        self.egm_traces = self.egm['egm_traces'][0]
+        self.egm_traces = self.egm['egm_traces']
         self.sample_range = self.egm['sample_range'][0]
         seperation = 7
 
         for i in range(len(self.egm_traces)):
-            y = self.egm_traces[i][self.sample_range[0]:self.sample_range[1]]
+            y = self.egm_traces[i][0][self.sample_range[0]:self.sample_range[1]]
             t = np.arange(self.sample_range[0],self.sample_range[1],1)
             self.ax.plot(t,y+(seperation*i))
             self.ax.get_yaxis().set_visible(False)
             self.ax.set_xlabel('Samples')
         
+        
         # toolbar = NavigationToolbar(self.canvas,self)
         # self.chart = egm_Canvas(self)
-        # self.plotter2 = QtInteractor(self.frame)
+
         self.dock_plot1 = qtw.QDockWidget("EGM Plot", self)
         self.dock_plot1.setFloating(False)
         self.dock_plot1.setWidget(self.canvas)
