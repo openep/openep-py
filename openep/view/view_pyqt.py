@@ -34,6 +34,7 @@ class OpenEpGUI(qtw.QWidget):
         self.thresholds = False
         self.minval = 0
         self.maxval = 2
+        self.egm_point = 0
 
 
 
@@ -271,11 +272,13 @@ class OpenEpGUI(qtw.QWidget):
 
 
     def plot_egm(self):
+        self.egm_point = int(self.egmselect.text())
+
         self.fig,self.ax = plt.subplots(ncols=1,nrows=1)
         self.fig.set_facecolor('gray')
         self.canvas = FigureCanvas(self.fig)
 
-        self.egm = case_routines.get_egms_at_points(self.ep_case,"iegm",[1])
+        self.egm = case_routines.get_egms_at_points(self.ep_case,"iegm",[self.egm_point])
         self.egm_traces = self.egm['egm_traces']
         self.sample_range = self.egm['sample_range'][0]
         seperation = 7
