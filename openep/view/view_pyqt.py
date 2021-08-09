@@ -108,26 +108,15 @@ class OpenEpGUI(qtw.QWidget):
 
         # # Plot
         self.frame = qtw.QFrame()
-        # self.plotLayout = qtw.QHBoxLayout()
         self.plotLayout = qtw.QGridLayout()
         self.plotLayout.setColumnStretch(0,5)
         self.plotLayout.setColumnStretch(1,5)
 
 
-
         self.plotter = QtInteractor(self.frame)
         self.plotLayout.addWidget(self.plotter.interactor,0,0)
-
-        # # QDock Widget
-        # self.plotter1 = QtInteractor(self.frame)
-        # self.dock_plot = qtw.QDockWidget("Dockable", self)
-        # self.dock_plot.setFloating(False)
-        # self.dock_plot.setWidget(self.plotter1)
-
-        # self.plotLayout.addWidget(self.dock_plot)
         
         
-
         # # VoltThresholds limit
         self.limitLayout = qtw.QFormLayout(self)
         self.lowerlimit = qtw.QLineEdit()
@@ -141,6 +130,17 @@ class OpenEpGUI(qtw.QWidget):
         button3.setGeometry(200,150,100,40)
         button3.clicked.connect(self.on_click3)
         self.limitLayout.addRow(button3)
+
+        # selecting the Egm points
+        self.egmselect = qtw.QLineEdit()
+        self.egmselect.setText(str(0))
+        self.limitLayout.addRow('Egm Point',self.egmselect)
+
+        button_egmselect = qtw.QPushButton('Set Egm Point', self)
+        button_egmselect.setGeometry(200,150,100,40)
+        button_egmselect.clicked.connect(self.plot_egm)
+        self.limitLayout.addRow(button_egmselect)
+
 
 
         # Nesting Layouts and setting the main layout
@@ -209,33 +209,14 @@ class OpenEpGUI(qtw.QWidget):
             self.plotter.add_lines(self.freeboundary_points['FreeboundaryPoints'][indx],color='black',width=5)
             self.plotter.reset_camera()
 
-        
-
-        # self.plotter1.add_mesh(self.mesh,
-        #                       scalar_bar_args=self.sargs,
-        #                       annotations=False,
-        #                       show_edges=False,
-        #                       smooth_shading=True,
-        #                       scalars=self.volt,
-        #                       nan_color=self.nan_color,
-        #                       clim=[self.minval,self.maxval],
-        #                       cmap=self.cmap,
-        #                       below_color=self.below_color,
-        #                       above_color=self.above_color)
-
 
 
     def plot_electroanatomic(self):
 
-
         distance_thresh = 10
-
-
-
         # Anatomic descriptions (Mesh) - nodes and indices
         pts = self.ep_case.nodes
         indices = self.ep_case.indices
-
 
         # Electric data
         # Locations – Cartesian co-ordinates, projected on to the surface 
@@ -288,8 +269,6 @@ class OpenEpGUI(qtw.QWidget):
                         below_color=self.below_color,
                         above_color=self.above_color)
 
-        
-
 
     def plot_egm(self):
         self.fig,self.ax = plt.subplots(ncols=1,nrows=1)
@@ -310,16 +289,13 @@ class OpenEpGUI(qtw.QWidget):
         
         
         # toolbar = NavigationToolbar(self.canvas,self)
-        # self.chart = egm_Canvas(self)
-
         self.dock_plot1 = qtw.QDockWidget("EGM Plot", self)
         self.dock_plot1.setFloating(False)
         self.dock_plot1.setWidget(self.canvas)
         # self.dock_plot1.setWidget(toolbar)
 
-
         self.plotLayout.addWidget(self.dock_plot1,1,1)
-        # pass
+
 
     def plot_histogram(self):
         self.plotter3 = QtInteractor(self.frame)
@@ -333,7 +309,6 @@ class OpenEpGUI(qtw.QWidget):
     def on_click3(self):
         self.minval = float(self.lowerlimit.text())
         self.maxval = float(self.upperlimit.text())
-        # self.plotter.clear()
         self.plotter.add_mesh(self.mesh,
                               scalar_bar_args=self.sargs,
                               show_edges=False,
@@ -344,31 +319,7 @@ class OpenEpGUI(qtw.QWidget):
                               cmap=self.cmap,
                               below_color=self.below_color,
                               above_color=self.above_color)
-
-
-class egm_Canvas(FigureCanvas):
-    def __init__(self, parent):
-        fig, self.ax = plt.subplots(nrows=1,ncols=1,figsize=(3, 2), dpi=200)
-        super().__init__(fig)
-        self.setParent(parent)
-
-        """ 
-        Matplotlib Script
-        """
         
-        self.egm = case_routines.get_egms_at_points(self.ep_case,"iegm",[1])
-        self.egm_traces = self.egm['egm_traces']
-        self.sample_range = self.egm['sample_range']
-        seperation = 7
-
-        for i in range(len(self.egm_traces)):
-            y = self.egm_traces[i][0][self.sample_range[0]:self.sample_range[1]]
-            t = np.arange(self.sample_range[0],self.sample_range[1],1)
-            self.ax.plot(t,y+(seperation*i))
-            self.ax.get_yaxis().set_visible(False)
-        plt.show()
-        
-
 
 
 def main():
