@@ -11,23 +11,17 @@ import trimesh as tm
 plot = False
 volt = 0
 
-def lineLength(h):
-    
-    '''
+def lineLength(h):   
+    """
     Calculates the Length of a line
     
     Args:
-        h: mx3 matrix of cartesian co-ordinates representing the line
-        the X,Y, Z data are received directly in a matrix of the form:
-         [ x_1  y_1  z_1 ]
-         [ x_2  y_2  z_2 ]
-         [ ...  ...  ... ]
-         [ x_n  y_n  z_n ]
+        h (float): mx3 array of cartesian co-ordinates representing the line
          
     Returns:
-        l - length of the line as a float
-    '''
-#   remove any Nan values
+        float: mx1 array of length of the line    
+    """
+    #   remove any Nan values
     data = h[~np.isnan(h)].reshape(h.shape[0],h.shape[1])
         
     dx = np.diff(data[:,0])
@@ -42,13 +36,14 @@ def lineLength(h):
 
 def create_pymesh(mesh_case):
 
-    '''
+    """
     Create a pymesh object
     Args:
+        mesh_case (obj): Case object from a given openep file
 
     Returns:
-
-    '''
+        Pyvista PolyData (obj) - triangulated surface object from Numpy arrays of the vertices and faces
+    """
 
     pts = mesh_case.nodes
     tri = mesh_case.indices.astype(int)
@@ -58,7 +53,6 @@ def create_pymesh(mesh_case):
     x = tri[:,0].reshape(len(tri[:,0]),1)
     y = tri[:,1].reshape(len(tri[:,1]),1)
     z = tri[:,2].reshape(len(tri[:,2]),1)
-
 
     for item in tri:
         size_tri.append(len(item))
@@ -73,14 +67,14 @@ def create_pymesh(mesh_case):
 
 def get_freeboundaries(tri):
 
-    '''
+    """
     Args:
-        tri - Trimesh Object
+        tri (obj) - Trimesh Object containing a triangular 3D mesh
 
     Returns:
-           freeboundaries - Array of connected free boundary indices
-           l - the lengths of the freeboundaries
-    '''
+           int: freeboundaries - Array of free boundary indices
+           float: fb_vertex_nodes - mx3 array of cartesian co-ordinates of the freeboundaries
+    """
 
     freeboundary_vertex_nodes = []
     freeboundaries = []
@@ -110,25 +104,6 @@ def get_freeboundary_points(tri,fb):
     trimesh_points = tri.vertices
     fb = fb[:,0]
     coords = np.array(list(trimesh_points[fb])).astype(np.float64)
-    
-    # for i in freeboundary_vertex_nodes:
-    #     x_values.append(trimesh_points[i][:,0])
-    #     y_values.append(trimesh_points[i][:,1])
-    #     z_values.append(trimesh_points[i][:,2])
-
-    # x_values_array = []
-    # y_values_array = []
-    # z_values_array = []
-
-
-    # for i in range(no_of_freeboundaries):
-    #     x_values_array.append(x_values[i].reshape(len(x_values[i]),1))
-    #     y_values_array.append(y_values[i].reshape(len(y_values[i]),1))
-    #     z_values_array.append(z_values[i].reshape(len(z_values[i]),1))
-    #     freeboundary_points.append(np.concatenate((x_values_array[i],
-    #                                         y_values_array[i],
-    #                                         z_values_array[i]),
-    #                                         axis=1))
     
     return coords
 
