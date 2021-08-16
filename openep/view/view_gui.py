@@ -214,42 +214,7 @@ class OpenEpGUI(qtw.QWidget):
 
     def plot_electroanatomic(self):
 
-        distance_thresh = 10
-        # Anatomic descriptions (Mesh) - nodes and indices
-        pts = self.ep_case.nodes
-        indices = self.ep_case.indices
-
-        # Electric data
-        # Locations – Cartesian co-ordinates, projected on to the surface 
-        locations = case_routines.get_electrogram_coordinates(self.ep_case,'type','bip')
-
-        i_egm = self.ep_case.electric['egm'].T
-        i_vp = case_routines.getMappingPointsWithinWoI(self.ep_case)
-        # macthing the shape of ivp with data
-        i_vp_egm = np.repeat(i_vp, repeats=i_egm.shape[1], axis=1)
-        # macthing the shape of ivp with coords
-        i_vp_locations = np.repeat(i_vp, repeats=locations.shape[1],axis=1)
-
-        # Replacing the values outside the window of interest with Nan values
-        i_egm[~i_vp_egm] = np.nan
-        locations[~i_vp_locations] = np.nan
-
-        # For each mapping point, n, find the voltage amplitude
-        max_volt = np.amax(a=i_egm,axis=1).reshape(len(i_egm),1)
-        min_volt = np.amin(a=i_egm,axis=1).reshape(len(i_egm),1)
-
-        amplitude_volt = np.subtract(max_volt,min_volt)
-
-        for indx in range(amplitude_volt.shape[1]):
-            temp_data = amplitude_volt[:,indx]
-            temp_coords = locations
-            i_nan = np.isnan(temp_data)
-            temp_data=temp_data[~i_nan]
-            temp_coords=temp_coords[~i_nan]
-
-
-            interp = case_routines.OpenEPDataInterpolator(method='rbf',distanceThreshold=distance_thresh,rbfConstant=1)
-            vertex_voltage_data = interp.interpolate(x0=temp_coords,d0=temp_data,x1=pts)
+        voltage_data = draw.get_voltage_electroanatomic(self.ep_case)
 
         # # QDock Widget
         self.plotter1 = QtInteractor(self.frame)
@@ -263,7 +228,7 @@ class OpenEpGUI(qtw.QWidget):
                         scalar_bar_args=self.sargs,
                         show_edges=False,
                         smooth_shading=True,
-                        scalars=vertex_voltage_data,
+                        scalars=voltage_data,
                         nan_color=self.nan_color,
                         clim=[self.minval,self.maxval],
                         cmap=self.cmap,
