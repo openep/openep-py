@@ -1,5 +1,6 @@
 from numpy.lib.function_base import _ARGUMENT_LIST
 from openep import mesh_routines as openep_mesh
+from openep import case_routines as case_routines
 
 import numpy as np
 import trimesh as tm
@@ -338,11 +339,11 @@ def get_anatomical_structures(mesh_case, plot, **kwargs):
     return {'FreeboundaryPoints':freeboundary_points,'Lengths':l, 'Area':a, 'tr':tr}
 
 
-def draw_map(ep_case,volt,freeboundary_color,cmap,freeboundary_width,minval,maxval,volt_below_color, volt_above_color, nan_color, plot,**kwargs):
+def draw_map(mesh_case,volt,freeboundary_color,cmap,freeboundary_width,minval,maxval,volt_below_color, volt_above_color, nan_color, plot,**kwargs):
     """
     plots an OpenEp Voltage Map
     Args:
-        ep_case(obj): openep Case object.
+        mesh_case(obj): openep Case object.
         volt (str or nx1 array): 'bip' or interpolated voltagae values. 
         freeboundary_color(str or rgb list): color of the freeboundaries.
         cmap (str): name of the colormap, for eg: jet_r.
@@ -367,10 +368,10 @@ def draw_map(ep_case,volt,freeboundary_color,cmap,freeboundary_width,minval,maxv
         str or 3 item list: volt_above_color,Color for all the voltage values above upper threshold
     """
     # Create a PyMesh
-    py_mesh = create_pymesh(ep_case)
+    py_mesh = create_pymesh(mesh_case)
     
     if volt == 'bip':
-        volt = ep_case.fields['bip']
+        volt = mesh_case.fields['bip']
     else:
         volt = volt
 
@@ -386,7 +387,7 @@ def draw_map(ep_case,volt,freeboundary_color,cmap,freeboundary_width,minval,maxv
                           below_label='  ',
                           above_label='  ')
 
-        freebound = get_anatomical_structures(ep_case,plot=False)
+        freebound = get_anatomical_structures(mesh_case,plot=False)
         p.add_mesh(py_mesh,
                scalar_bar_args=sargs,
                show_edges=False,
@@ -416,4 +417,44 @@ def draw_map(ep_case,volt,freeboundary_color,cmap,freeboundary_width,minval,maxv
             'volt_below_color':volt_below_color,
             'volt_above_color':volt_above_color}
 
-    
+def get_voltage_electroanatomic(mesh_case):
+    distance_thresh = 10
+    rbf_constant_value = 1
+
+    # Anatomic descriptions (Mesh) - nodes and indices
+    pts = mesh_case.nodes
+    indices = mesh_case.indices
+
+    # Electric data
+    # Locations – Cartesian co-ordinates, projected on to the surface 
+    locations = case_routines.get_electrogram_coordinates(mesh_case,'type','bip')
+
+    i_egm = mesh_case.electric['egm'].T
+    i_vp = case_routines.getMappingPointsWithinWoI(mesh_case)
+    # macthing the shape of ivp with data
+    i_vp_egm = np.repeat(i_vp, repeats=i_egm.shape[1], axis=1)
+    # macthing the shape of ivp with coords
+    i_vp_locations = np.repeat(i_vp, repeats=locations.shape[1],axis=1)
+
+    # Replacing the values outside the window of interest with Nan values
+    i_egm[~i_vp_egm] = np.nan
+    locations[~i_vp_locations] = np.nan
+
+    # For each mapping point, n, find the voltage amplitude
+    max_volt = np.amax(a=i_egm,axis=1).reshape(len(i_egm),1)
+    min_volt = np.amin(a=i_egm,axis=1).reshape(len(i_egm),1)
+
+    amplitude_volt = np.subtract(max_volt,min_volt)
+
+    for indx in range(amplitude_volt.shape[1]):
+        temp_data = amplitude_volt[:,indx]
+        temp_coords = locations
+        i_nan = np.isnan(temp_data)
+        temp_data=temp_data[~i_nan]
+        temp_coords=temp_coords[~i_nan]
+
+
+        interp = case_routines.OpenEPDataInterpolator(method='rbf',distanceThreshold=distance_thresh,rbfConstant=rbf_constant_value)
+        vertex_voltage_data = interp.interpolate(x0=temp_coords,d0=temp_data,x1=pts)
+
+    return vertex_voltage_data    
