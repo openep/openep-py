@@ -82,7 +82,7 @@ class OpenEpGUI(qtw.QWidget):
         voltage_map_plot_act.triggered.connect(self.on_click2)
         plot_menu.addAction(voltage_map_plot_act)
         
-        self.voltage_map_electroanatomic_plot_act.triggered.connect(self.plot_electroanatomic)
+        self.voltage_map_electroanatomic_plot_act.triggered.connect(self.plot_interpolated_voltage)
         plot_menu.addAction(self.voltage_map_electroanatomic_plot_act)
         
         self.historgram_plot_act.triggered.connect(self.plot_histogram)
@@ -231,13 +231,13 @@ class OpenEpGUI(qtw.QWidget):
 
 
 
-    def plot_electroanatomic(self):
+    def plot_interpolated_voltage(self):
 
         voltage_data = draw.get_voltage_electroanatomic(self.ep_case)
 
         # # QDock Widget
         self.plotter1 = QtInteractor(self.frame)
-        self.dock_plot = qtw.QDockWidget("ElectroAnatomic Plot", self)
+        self.dock_plot = qtw.QDockWidget("Interpolated Voltage Plot", self)
         self.dock_plot.setFloating(False)
         self.dock_plot.setWidget(self.plotter1)
 
