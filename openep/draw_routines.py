@@ -11,15 +11,15 @@ import trimesh as tm
 plot = False
 volt = 0
 
-def lineLength(h):   
+def line_length(h):   
     """
-    Calculates the Length of a line
+    Calculates the Length of a line.
     
     Args:
-        h (float): mx3 array of cartesian co-ordinates representing the line
+        h (float): mx3 array of cartesian co-ordinates representing the line.
          
     Returns:
-        float: mx1 array of length of the line    
+        float: l, mx1 array of length of the line.    
     """
     #   remove any Nan values
     data = h[~np.isnan(h)].reshape(h.shape[0],h.shape[1])
@@ -37,12 +37,12 @@ def lineLength(h):
 def create_pymesh(mesh_case):
 
     """
-    Create a pymesh object
+    Creates a pymesh object.
     Args:
-        mesh_case (obj): Case object from a given openep file
+        mesh_case (obj): Case object from a given openep file.
 
     Returns:
-        Pyvista PolyData (obj) - triangulated surface object from Numpy arrays of the vertices and faces
+        obj:  mesh, Pyvista PolyData object, triangulated surface object from Numpy arrays of the vertices and faces.
     """
 
     pts = mesh_case.nodes
@@ -68,12 +68,12 @@ def create_pymesh(mesh_case):
 def get_freeboundaries(tri):
 
     """
+    Gets the freeboundary/outlines of the 3-D mesh and returns the indices.
     Args:
-        tri (obj) - Trimesh Object containing a triangular 3D mesh
+        tri (obj): Trimesh Object containing a triangular 3D mesh.
 
     Returns:
-           int: freeboundaries - Array of free boundary indices
-           float: fb_vertex_nodes - mx3 array of cartesian co-ordinates of the freeboundaries
+           int: freeboundaries,list of mx2 array of freeboundary indices.
     """
 
     freeboundary_vertex_nodes = []
@@ -94,12 +94,20 @@ def get_freeboundaries(tri):
 
     freeboundaries = np.array(freeboundaries).astype(np.int64)
     
-    return {'freeboundary':freeboundaries,
-            'fb_vertex_nodes':freeboundary_vertex_nodes}
-
+    return {'freeboundary':freeboundaries}
 
 
 def get_freeboundary_points(tri,fb):
+    """
+    Returns the coords of the vertices of the freeboundary/outlines. 
+    Args:
+        tri (obj): Trimesh Object containing a triangular 3D mesh.
+
+
+    Returns:
+        float: coords, mx3 Array of coords of the vertices of the freeboundary/outlines.   
+    """
+    
 
     trimesh_points = tri.vertices
     fb = fb[:,0]
@@ -109,6 +117,15 @@ def get_freeboundary_points(tri,fb):
 
 
 def free_boundary(tri):
+    """
+    Returns an array of connected free boundaries/outlines and the length of each of the freeboundary/outline.
+    Args:
+        tri (obj): Trimesh Object containing a triangular 3D mesh.
+    
+    Returns:
+        int: connected_freeboundary, mx2 array of connectecd freeboundary indices.
+        float: length, list containing the length of each of the freeboundaries/outlines.
+    """
     
     l = []
 
@@ -135,17 +152,17 @@ def free_boundary(tri):
     if not list(i_start):
         ff.append(np.array(fb))
         coords = get_freeboundary_points(tri,ff[0])
-        l.append(lineLength(coords))
+        l.append(line_length(coords))
     else:
         for i in range(i_start.shape[0]):
             if i<(i_start.shape[0]-1):
                 np.array(ff.append(fb[i_start[i]:i_start[i+1]]))
                 coords = get_freeboundary_points(tri,ff[i])
-                l.append(lineLength(coords))
+                l.append(line_length(coords))
             else:
                 ff.append(fb[i_start[i]:])
                 coords = get_freeboundary_points(tri,ff[i])
-                l.append(lineLength(coords))
+                l.append(line_length(coords))
 
 
 
@@ -156,7 +173,7 @@ def free_boundary(tri):
 
 
 
-def drawFreeBoundaries(mesh_case,
+def draw_free_boundaries(mesh_case,
                        fb_points,
                        fb_col,
                        fb_width,
@@ -165,23 +182,23 @@ def drawFreeBoundaries(mesh_case,
                        smooth_shading,
                        use_transparency,
                        lighting,**kwargs):
-    '''
+    """
     Draws the boundaries at the edge of a TriSurface mesh with each freeboundary rendered with the colors mentioned in the fb_col 
     Args:
-        mesh_case         : openep Case object
-        fb_points         : m x 3 coordinate point arrays
-        fb_col            : list of RGB colors For eg: fb_col = ['blue','yellow','green','red','orange','brown','magenta']
-        fb_width          : Float
-        mesh_surf_color   : RGB values between 0 and 1
-        opacity           : Float - any value in the range 0-1 
-        smooth_shading    : Boolean - True | False  
-        use_transparency  : Boolean - True | False
-        lighting          : Boolean - True | False
+        mesh_case (obj): openep Case object.
+        fb_points (float): m x 3 coordinate point arrays.
+        fb_col (str): list of RGB colors For eg: fb_col = ['blue','yellow','green','red','orange','brown','magenta'].
+        fb_width (float): width of the freeboundary line.
+        mesh_surf_color (int): RGB values between 0 and 1.
+        opacity (float): any value in the range between 0 and 1.
+        smooth_shading (boolean): True for shading, False otherwise.
+        use_transparency (boolean): True for applying transparency, False otherwise.
+        lighting (boolean): True for lighting, False otherwise.
+        **kwargs: Arbitrary keyword arguments.
     
     Returns:
-        p                 : pyvista plotter handle
-
-    '''
+       obj: p, pyvista plotter handle.
+    """
 
     # Create a pymesh of the openep case
     py_mesh = create_pymesh(mesh_case)
@@ -204,30 +221,29 @@ def drawFreeBoundaries(mesh_case,
                         width=fb_width)    
     return p
 
-def getAnatomicalStructures(mesh_case, plot, **kwargs):
+def get_anatomical_structures(mesh_case, plot, **kwargs):
     
-    '''
-    GETANATOMICALSTRUCTURES Returns the free boundaries (anatomical 
-    structures) described in ep_case and plots them if plot=True with drawFreeBoundaries()
-    
-    Args:
-        mesh_case : Case
-        
-    Returns:
-        FreeboundaryPoints : m x 3 matrix of the freeboundary coordinate points of each anatomical structure
-        l                  : array of lengths [perimeters] of each anatomical structure
-        a                  : array of areas of each anatomical structure
-        tr                 : array of trimesh objects of each anatomical structure
-    
-    
-    GETANATOMICALSTRUCTURES identifies all the anatomical structures of a 
-    given data set. Anatomical structures are boundary regions that have been 
-    added to an anatomical model in the clinical mapping system. For example, 
+    """
+    Returns the free boundaries (anatomical 
+    structures) described in ep_case and plots them if plot=True with draw_free_boundaries()
+    Anatomical structures are boundary regions that have been added to an anatomical model in the clinical mapping system. 
+    For example, 
     with respect of left atrial ablation, anatomical structures may represent 
     the pulmonary vein ostia, mitral valve annulus or left atrial appendage 
     ostium.
+    
+    Args:
+        mesh_case (obj): openep Case object.
+        plot (boolean): True to plot, False otherwise.
+        **kwargs: Arbitrary keyword arguments.
+
         
-    '''
+    Returns:
+        float: FreeboundaryPoints,m x 3 matrix of the freeboundary coordinate points of each anatomical structure.
+        float: l,array of lengths [perimeters] of each anatomical structure.
+        float: a,array of areas of each anatomical structure.
+        obj: tr, array of trimesh objects of each anatomical structure.     
+    """
 
     a = []
     l = []
@@ -297,7 +313,7 @@ def getAnatomicalStructures(mesh_case, plot, **kwargs):
             
 
         tr.append(tm.Trimesh(vertices=X,faces=TRI))
-        lineLen = lineLength(coords)
+        lineLen = line_length(coords)
         a.append(round(tr[i].area,4))
         l.append(lineLen)
         print('Perimeter is :',l[i],'| Area is:',a[i])
@@ -306,7 +322,7 @@ def getAnatomicalStructures(mesh_case, plot, **kwargs):
         col = ['blue','yellow','green','red','orange','brown','magenta']
         fb_width = 3
         mesh_surf = [0.5,0.5,0.5]
-        p = drawFreeBoundaries(mesh_case=mesh_case,
+        p = draw_free_boundaries(mesh_case=mesh_case,
                                fb_points=freeboundary_points,
                                fb_col = col,
                                fb_width = fb_width,
@@ -323,51 +339,35 @@ def getAnatomicalStructures(mesh_case, plot, **kwargs):
         
     return {'FreeboundaryPoints':freeboundary_points,'Lengths':l, 'Area':a, 'tr':tr}
 
-def create_pymesh(mesh_case):
 
-    pts = mesh_case.nodes
-    tri = mesh_case.indices.astype(int)
-    np.set_printoptions(suppress=True)
-    size_tri = []
-
-    x = tri[:,0].reshape(len(tri[:,0]),1)
-    y = tri[:,1].reshape(len(tri[:,1]),1)
-    z = tri[:,2].reshape(len(tri[:,2]),1)
-
-
-    for item in tri:
-        size_tri.append(len(item))
-
-    size_tri_list = size_tri
-    size_tri_arr = np.array(size_tri,dtype=np.int).reshape(len(size_tri),1)
-
-    face = np.hstack(np.concatenate((size_tri_arr,tri),axis=1)).astype(int)
-    mesh = pv.PolyData(pts,face)
-
-    return mesh
-
-
-    
-
-def DrawMap(ep_case,volt,freeboundary_color,cmap,freeboundary_width,minval,maxval,volt_below_color, volt_above_color, nan_color, plot,**kwargs):
-    '''
-    DrawMap - plots an OpenEp Map
+def draw_map(ep_case,volt,freeboundary_color,cmap,freeboundary_width,minval,maxval,volt_below_color, volt_above_color, nan_color, plot,**kwargs):
+    """
+    plots an OpenEp Voltage Map
     Args:
-        ep_case,
-        volt (str | nx1 array) - 'bip' | interpolated voltagae values 
-        freeboundary_color,
-        cmap,
-        freeboundary_width,
-        minval,
-        maxval,
-        volt_below_color, 
-        volt_above_color, 
-        nan_color, 
-        plot
+        ep_case(obj): openep Case object.
+        volt (str or nx1 array): 'bip' or interpolated voltagae values. 
+        freeboundary_color(str or rgb list): color of the freeboundaries.
+        cmap (str): name of the colormap, for eg: jet_r.
+        freeboundary_width (float): width of the freeboundary line.
+        minval(float): Voltage lower threshold value.
+        maxval(float): Voltage upper threshold value.
+        volt_below_color(str or 3 item list): Color for all the voltage values below lower threshold.
+        volt_above_color(str or 3 item list): Color for all the voltage values above upper threshold.
+        nan_color(str or 3 item list): Color for all the nan voltage values in the openep dataset. 
+        plot (boolean): True to plot, False otherwise.
+        **kwargs: Arbitrary keyword arguments.
 
     Returns:
-
-    '''
+        vtk.vtkActor(obj): p, VTK actor of the mesh.
+        obj: pyvista-mesh, Pyvista PolyData object, triangulated surface object from Numpy arrays of the vertices and faces.
+        str or nx1 array: volt, 'bip' or interpolated voltagae values.
+        str or 3 item list: nan_color, Color for all the nan voltage values in the openep dataset.
+        float: minval,Voltage lower threshold value.
+        float: maxval,Voltage upper threshold value.
+        str: cmap,name of the colormap.
+        str or 3 item list: volt_below_color,Color for all the voltage values below lower threshold
+        str or 3 item list: volt_above_color,Color for all the voltage values above upper threshold
+    """
     # Create a PyMesh
     py_mesh = create_pymesh(ep_case)
     
@@ -388,7 +388,7 @@ def DrawMap(ep_case,volt,freeboundary_color,cmap,freeboundary_width,minval,maxva
                           below_label='  ',
                           above_label='  ')
 
-        freebound = getAnatomicalStructures(ep_case,plot=False)
+        freebound = get_anatomical_structures(ep_case,plot=False)
         p.add_mesh(py_mesh,
                scalar_bar_args=sargs,
                show_edges=False,
