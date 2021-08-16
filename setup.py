@@ -20,5 +20,5 @@ setup(
     author_email="steven.williams@ed.ac.uk",
     packages=find_packages(),
     install_requires=requirements,
-    entry_points={"console_scripts": ['openep=openep.view.view_pyqt:main']},
+    entry_points={"console_scripts": ['openep=openep.view.view_gui:main']},
 )
