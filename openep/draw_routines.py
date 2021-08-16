@@ -1,11 +1,9 @@
 from numpy.lib.function_base import _ARGUMENT_LIST
 from openep import mesh_routines as openep_mesh
 
-
-import pyvista as pv
 import numpy as np
-from matplotlib.cm import jet, rainbow, jet_r, seismic
 import trimesh as tm
+import pyvista as pv
 
 # GLOBAL VARIABLES
 plot = False
@@ -358,7 +356,7 @@ def draw_map(ep_case,volt,freeboundary_color,cmap,freeboundary_width,minval,maxv
         **kwargs: Arbitrary keyword arguments.
 
     Returns:
-        vtk.vtkActor(obj): p, VTK actor of the mesh.
+        obj: p, VTK actor of the mesh.
         obj: pyvista-mesh, Pyvista PolyData object, triangulated surface object from Numpy arrays of the vertices and faces.
         str or nx1 array: volt, 'bip' or interpolated voltagae values.
         str or 3 item list: nan_color, Color for all the nan voltage values in the openep dataset.
