@@ -28,17 +28,18 @@ __all__ = ["OpenEPDataInterpolator"]
 
 
 def get_reference_annotation(mesh_case,*args):
-    '''
-    get_reference_annotation Returns the value of the reference annotation
+    """
+    Returns the value of the reference annotation
     
     Args:
-        mesh_case: openep case object
-        'iegm': str
-        {:} (default) | integer | range(start int, stop int)
+        mesh_case (obj): openep case object
+        'iegm'(str): iegm in string format 
+        ':' (str) or (list)  or range(start int, stop int): The electrogram point(s) for which the reference of annotation is required
+        *args: Variable length argument list.
         
     Returns:
-            int value of the reference annotation for the corresponding iegm values
-    '''
+        int: ref, lists of the reference annotation for the corresponding iegm values
+    """
     
     n_standard_args = 1
     i_egm = np.array(':')
@@ -64,81 +65,75 @@ def get_reference_annotation(mesh_case,*args):
     return ref
 
 
-def getMappingPointsWithinWoI(mesh_case):
-    '''
-    GETMAPPINGPOINTSWITHINWOI Returns the indices of the mapping points with
+def get_mapping_points_within_woi(mesh_case):
+    """
+    Returns the indices of the mapping points with
     annotated local activation time within the window of interest
 
     Args:
-        mesh_case: Case
+        mesh_case (obj): openep case object
 
     Returns:
-        logical array list of valid points; indexes into mesh_case.electric
-    '''
+        bool: m x 1 logical array of valid points; True if point is within woi, False otherwise. 
+        indexes into mesh_case.electric
+    """
 
     # reference annotation
-    referenceAnnot = mesh_case.electric['annotations/referenceAnnot'].T
+    reference_annot = mesh_case.electric['annotations/referenceAnnot'].T
 
     # woi
     woi = mesh_case.electric['annotations/woi'].T
 
     # Extract the region of the electrogram of interest for each mapping point, n
-    woi = woi + referenceAnnot
+    woi = woi + reference_annot
 
     # MapAnnot
-    mapAnnot = mesh_case.electric['annotations/mapAnnot'].T
+    map_annot = mesh_case.electric['annotations/mapAnnot'].T
 
-    iPoint = np.ones(shape=mapAnnot.shape, dtype=np.bool)
+    i_point = np.ones(shape=map_annot.shape, dtype=np.bool)
 
     # Remove the data points that are outside the region of interest
-    for indx in range(mapAnnot.size):
-        if (mapAnnot[indx] < woi[indx, 0]) or (mapAnnot[indx] > woi[indx, 1]):
-            iPoint[indx] = False
+    for indx in range(map_annot.size):
+        if (map_annot[indx] < woi[indx, 0]) or (map_annot[indx] > woi[indx, 1]):
+            i_point[indx] = False
         else:
-            iPoint[indx] = True
+            i_point[indx] = True
 
-    return iPoint
+    return i_point
 
 
 
-def getWindowOfInterest(mesh_case,*args):
+def get_window_of_interest(mesh_case,*args):
 
-    '''
-    GETWINDOWOFINTERST Returns the window of interest
-
+    """
+    Returns the window of interest
     Args:
-        mesh_case:                                                  Case
-        'iEgm':                                                     str
-        {:} (default) | integer | range(start int, stop int)        str (default) | int | int array
-         - The electrogram point(s) for which the window of interst is required
-
-    Usage:
-    woi = getWindowOfInterest(userdata) - returns the entire array of woi values from the case dataset
-    woi = getWindowOfInterest(userdata, 'iEgm', 1) - returns the 1st woi value
-    woi = getWindowOfInterest(userdata, 'iEgm', [100,150]) - returns the 100th and 150th woi value
-    woi = getWindowOfInterest(userdata, 'iEgm', range(12,20)) - returns a range of woi values starting from 12th to 19th 
-
-    Returns:
-        m x 2 arrays of window of interest      
-    '''
-
-    nStandardArgs = 1
-    iEgm = np.array(':')
+        mesh_case (obj): openep case object
+        'iegm'(str): iegm in string format 
+        ':' (str) or (list)  or range(start int, stop int): The electrogram point(s) for which the window of interst is required
+        *args: Variable length argument list.
     
-    nargin = len(args)+1
-    if nargin>nStandardArgs:
-        for i in range(0,(nargin-nStandardArgs),2):
+    Returns:
+        int: mx2 arrays of window of interest      
+    """
+
+    n_standard_args = 1
+    i_egm = np.array(':')
+    
+    n_arg_in = len(args)+1
+    if n_arg_in>n_standard_args:
+        for i in range(0,(n_arg_in-n_standard_args),2):
             if np.char.lower(args[i]) == 'iegm':
-                iEgm = args[i+1]
+                i_egm = args[i+1]
     woi = []
-    if (type(iEgm)==str) and (np.char.compare_chararrays(iEgm,':','==',True)):
+    if (type(i_egm)==str) and (np.char.compare_chararrays(i_egm,':','==',True)):
         woi = mesh_case.electric['annotations/woi'].T
         woi = woi.astype(int)
         
     else:
-        woi_raw = ep_case.electric['annotations/woi'].T
+        woi_raw = mesh_case.electric['annotations/woi'].T
         woi_raw = woi_raw.astype(int)
-        for i in iEgm:
+        for i in i_egm:
             woi.append(woi_raw[i])
     
     woi = np.array(woi)
@@ -150,13 +145,14 @@ def get_egms_at_points(mesh_case,*args):
     Access electrogram from stored in the openep data format
     
     Args:
-        mesh_case: openep case object
-        "iegm": str
-        "{:}" (default) |  [egm-indices (int)] | [start-egm-index-point  (int), stop-egm-index-point (int)] 
+        mesh_case (obj): openep case object
+        'iegm'(str): iegm in string format 
+        ':' (str) or (list)  or range(start int, stop int): The electrogram point(s) for which the window of interst is required
+        *args: Variable length argument list.
         
     Returns:
-            egm_traces: corresponding list of arrays of size:1x2500 each, containing the 'bip' and 'uni' voltages for the requested points
-            sample_range: list of all the sample range within the window-of-interest for the requested points
+        float: egm_traces,corresponding list of arrays, containing the 'bip' and 'uni' voltages for the requested points
+        int: sample_range,list of all the sample range within the window-of-interest for the requested points
     """
     
 
@@ -231,7 +227,7 @@ def get_egms_at_points(mesh_case,*args):
                 egm_traces = egm_traces[::-1]
     
 
-    return {'egm_traces':egm_traces,'sample_range':sample_range}
+    return {'egm_traces':egm_traces,'sample_range':sample_range[0]}
 
 
 def plot_egm(egmtraces,sample_range):
@@ -239,12 +235,11 @@ def plot_egm(egmtraces,sample_range):
     Plots the electrogram for a single index point
 
     Args:
-        egmtraces - 3xn array of voltages (bip and uni)
-        sample_range - 2x1 list of list of the sample range within the window-of-interest for the requested single point
+        egmtraces(float): list of array of voltages (bip and uni)
+        sample_range(int):list of the sample range within the window-of-interest for the requested single point
     
     Returns:
-        Plot of the electrogram voltages
-
+        matplotlib.pyplot: plt, plot of the electrogram voltages
     """
     # Plotting the egms
     fig,axs = plt.subplots(nrows=1,ncols=1)
@@ -258,24 +253,24 @@ def plot_egm(egmtraces,sample_range):
     plt.show()
 
 
-def distBetweenPoints(A, B):
-    '''
-    DISTBETWEENPOINTS returns the distance from A to B. A and B are specified
+def dist_between_points(A, B):
+    """
+    Returns the distance from A to B. A and B are specified
     as row vectors [x, y, z] or matrices, with rows representing different
     points. If npoints in A and B are different A must specify one and only 
     one point.
 
     Args:
-        A: row vectors of size mx3 
-        B: row vectors of size mx3
+        A(float): row vectors of size mx3 
+        B(float): row vectors of size mx3
 
     Returns:
-        returns an array of distance between the points in the row vectors 
+        float: d,returns an array of distance between the points in the row vectors 
 
-    '''
+    """
 
-    diffsq = np.square(np.subtract(A, B))
-    d = np.sqrt(np.sum(diffsq, axis=1)).reshape(B.shape[0], 1)
+    diff_sq = np.square(np.subtract(A, B))
+    d = np.sqrt(np.sum(diff_sq, axis=1)).reshape(B.shape[0], 1)
 
     return d
 
@@ -294,32 +289,29 @@ def calculate_point_distance_max(points, test_points, max_distance):
 
 
 def get_electrogram_coordinates(mesh_case, *args):
-    '''
+    """
     Function which returns the 3-D Cartesian Coordinates of the electrodes used to record the electrograms
     It returns the "bip" coordinates by defualt if "type" not specified when calling the function
 
     Args:
         mesh_case (obj): Case object from a given openep file
-        "type" (str):  
-        "bip" | "uni" (str): 
-
+        "type" (str): "type" in string format 
+        "bip" or "uni" (str): specify the voltage type in string format 
         *args: Variable length argument list.
-        **kwargs: Arbitrary keyword arguments.
-
 
     Returns:
-        mx3 array: if "type","bip" else mx3x2 array: if "type","uni"
+        float: x, mx3 array,if "type","bip" else mx3x2 array: if "type","uni"
     
     Raises:
         ValueError: If "uni" voltage field is not in the openep file (mesh_case.electric.egmUniX)
 
-    '''
+    """
     n_standard_args = 1
     v_type = "bip"
     
-    nargin = len(args)+1
-    if nargin>n_standard_args:
-        for i in range(0,(nargin-n_standard_args),2):
+    n_arg_in = len(args)+1
+    if n_arg_in>n_standard_args:
+        for i in range(0,(n_arg_in-n_standard_args),2):
             if np.char.lower(args[i]) == "type":
                 v_type = args[i+1]
     
@@ -331,15 +323,15 @@ def get_electrogram_coordinates(mesh_case, *args):
             raise ValueError("There is no unipolar data associated with this openep case")
             
         else:
-            x = mesh_case.electric['egmUniX'].T
+            x = mesh_case.electric["egmUniX"].T
         
     return x
 
 
 class LinearNDInterpolatorExt(object):
-    ''' 
+    """ 
     Interpolation Method - Python implementation of ScatteredInterpolation
-    '''
+    """
 
     def __init__(self, points, values):
         self.funcinterp = linterp(points, values)
@@ -646,7 +638,7 @@ class OpenEPDataInterpolator():
         cPts = self.x0[id]
         cPts = np.array(cPts[:, 0])
 
-        d = distBetweenPoints(cPts, self.x1)
+        d = dist_between_points(cPts, self.x1)
 
         thresholdDistance = np.zeros(shape=d.shape, dtype=np.bool)
         thresholdDistance[d > self.distanceThreshold] = 1
