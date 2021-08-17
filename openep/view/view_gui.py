@@ -20,6 +20,8 @@
 '''
 GUI code for OpenEp
 '''
+import sys
+sys.path.append('../openep')
 
 from logging import setLogRecordFactory
 from PyQt5 import QtWidgets as qtw
@@ -28,12 +30,8 @@ import pyvista as pv
 from pyvistaqt import QtInteractor, MainWindow
 import numpy as np
 from copy import deepcopy
-
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
-
-import sys
-sys.path.append('../openep')
 
 from openep import io as openep_io
 from openep import case as openep_case
@@ -72,19 +70,24 @@ class OpenEpGUI(qtw.QWidget):
         menubar=qtw.QMenuBar()
         self.menulayout.addWidget(menubar, 0, 0)
         file_menu = menubar.addMenu("File")
-        
+
+        self.load_case_act = qtw.QAction("Open File...")
+        self.load_case_act.triggered.connect(self.load_data)
+        file_menu.addAction(self.load_case_act)
+        file_menu.addSeparator()
+
         plot_menu =qtw.QMenu("Plots",self)
         voltage_map_plot_act = qtw.QAction("3-D Voltage Map",self)
-        self.voltage_map_electroanatomic_plot_act  = qtw.QAction("Interpolated Voltage Plot",self)
+        self.voltage_map_interpolated_plot_act  = qtw.QAction("Interpolated Voltage Plot",self)
         self.historgram_plot_act = qtw.QAction("Histogram Plot",self)
         self.egm_plot_act = qtw.QAction("EGM Plot",self)
 
 
-        voltage_map_plot_act.triggered.connect(self.on_click2)
+        voltage_map_plot_act.triggered.connect(self.plot_3d_map)
         plot_menu.addAction(voltage_map_plot_act)
         
-        self.voltage_map_electroanatomic_plot_act.triggered.connect(self.plot_interpolated_voltage)
-        plot_menu.addAction(self.voltage_map_electroanatomic_plot_act)
+        self.voltage_map_interpolated_plot_act.triggered.connect(self.plot_interpolated_voltage)
+        plot_menu.addAction(self.voltage_map_interpolated_plot_act)
         
         self.historgram_plot_act.triggered.connect(self.plot_histogram)
         plot_menu.addAction(self.historgram_plot_act)
@@ -98,7 +101,11 @@ class OpenEpGUI(qtw.QWidget):
 
 
         file_menu.addSeparator()
-        file_menu.addAction("Quit")
+
+        self.quit_app_act = qtw.QAction("Quit")
+        self.quit_app_act.triggered.connect(qtw.qApp.quit)
+        file_menu.addAction(self.quit_app_act)
+
 
         menubar.addMenu("Edit")
         menubar.addMenu("View")
@@ -111,14 +118,13 @@ class OpenEpGUI(qtw.QWidget):
         self.labelLayout.addWidget(mainLabel2)
 
         # # Button 1
-        button1 = qtw.QPushButton("Load OpenEp Data", self)
-        button1.setGeometry(200,150,100,40)
-        button1.clicked.connect(self.on_click)
+        button_load_data = qtw.QPushButton("Load OpenEp Data", self)
+        button_load_data.setGeometry(200,150,100,40)
+        button_load_data.clicked.connect(self.load_data)
 
 
         # # Adding buttons to the horizontal layout
-        self.buttonLayout.addWidget(button1)
-        # self.buttonLayout.addWidget(button2)
+        self.buttonLayout.addWidget(button_load_data)
 
         self.labelLayout.addRow(self.buttonLayout)
 
@@ -141,10 +147,10 @@ class OpenEpGUI(qtw.QWidget):
         self.limitLayout.addRow("Voltage Threshold - Lower", self.lowerlimit)
         self.limitLayout.addRow("Voltage Threshold - Upper", self.upperlimit)
 
-        button3 = qtw.QPushButton("Set Voltage Thresholds", self)
-        button3.setGeometry(200,150,100,40)
-        button3.clicked.connect(self.update_voltage_threshold)
-        self.limitLayout.addRow(button3)
+        button_set_thresholds = qtw.QPushButton("Set Voltage Thresholds", self)
+        button_set_thresholds.setGeometry(200,150,100,40)
+        button_set_thresholds.clicked.connect(self.update_voltage_threshold)
+        self.limitLayout.addRow(button_set_thresholds)
 
         # selecting the Egm points
         self.egmselect = qtw.QLineEdit()
@@ -166,7 +172,7 @@ class OpenEpGUI(qtw.QWidget):
         self.setLayout(self.mainLayout)
 
 
-    def on_click(self):
+    def load_data(self):
         print("Please wait: Loading Data ... ")
         # Loading file from a Dialog Box
         dlg = qtw.QFileDialog()
@@ -201,7 +207,6 @@ class OpenEpGUI(qtw.QWidget):
 
             # Interpolated voltage data
             self.voltage_data = draw.get_voltage_electroanatomic(self.ep_case)
-
             self.sargs = dict(interactive=True, 
                             n_labels=2,
                             label_font_size=18,
@@ -209,7 +214,7 @@ class OpenEpGUI(qtw.QWidget):
                             above_label="  ")
 
 
-    def on_click2(self):
+    def plot_3d_map(self):
         self.minval = float(self.lowerlimit.text())
         self.maxval = float(self.upperlimit.text())
         
@@ -283,11 +288,9 @@ class OpenEpGUI(qtw.QWidget):
             self.ax.set_xlabel("Samples")
         
         
-        # toolbar = NavigationToolbar(self.canvas,self)
         self.dock_plot1 = qtw.QDockWidget("EGM Plot", self)
         self.dock_plot1.setFloating(False)
         self.dock_plot1.setWidget(self.canvas)
-        # self.dock_plot1.setWidget(toolbar)
 
         self.plotLayout.addWidget(self.dock_plot1,1,1)
 
@@ -302,7 +305,7 @@ class OpenEpGUI(qtw.QWidget):
         pass
 
     def update_voltage_threshold(self):
-        self.on_click2()
+        self.plot_3d_map()
         self.plot_interpolated_voltage()
 
 
