@@ -355,16 +355,9 @@ class LinearNDInterpolatorExt(object):
 
 
 def LocalSmoothing(x0, x1, smoothingLength):
-    # print(len(x1))
-    # print(len(x0))
     f_dash = np.zeros(shape=(len(x1), 1), dtype=np.float64)
     df_dash = np.zeros(shape=(len(x1), 3), dtype=np.float64)
     [idx, dists] = calculate_point_distance_max(x0, x1, smoothingLength)
-
-    # for item in idx:
-    #     print(item)
-    # print(np.array(dists).shape)
-    # no_smooth = 
 
     return [f_dash, df_dash]
 

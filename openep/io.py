@@ -16,9 +16,9 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-'''
+"""
 Module containing functions to load OpenEP dataset
-'''
+"""
 
 import os
 import numpy as np
@@ -48,7 +48,10 @@ def load_mat(filename, exclude_pattern=".*#.*"):
         dat = {}
 
         def _visitor(key, value):
-            if isinstance(value, h5py.Dataset) and re.search(exclude_pattern, key) is None:
+            if (
+                isinstance(value, h5py.Dataset)
+                and re.search(exclude_pattern, key) is None
+            ):
                 arr_val = np.array(value)
 
                 # ignore references for now

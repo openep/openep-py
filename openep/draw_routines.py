@@ -29,28 +29,32 @@ import pyvista as pv
 plot = False
 volt = 0
 
-def line_length(h):   
+
+def line_length(h):
     """
     Calculates the Length of a line.
-    
+
     Args:
         h (float): mx3 array of cartesian co-ordinates representing the line.
-         
+
     Returns:
-        float: l, mx1 array of length of the line.    
+        float: l, mx1 array of length of the line.
     """
     #   remove any Nan values
-    data = h[~np.isnan(h)].reshape(h.shape[0],h.shape[1])
-        
-    dx = np.diff(data[:,0])
-    dy = np.diff(data[:,1])
-    dz = np.diff(data[:,2])
-    
+    data = h[~np.isnan(h)].reshape(h.shape[0], h.shape[1])
+
+    dx = np.diff(data[:, 0])
+    dy = np.diff(data[:, 1])
+    dz = np.diff(data[:, 2])
+
     l = 0
     for i in range(len(dx)):
-        l = np.round(l+ np.sqrt(np.square(dx[i]) + np.square(dy[i]) + np.square(dz[i])),4)
-        
+        l = np.round(
+            l + np.sqrt(np.square(dx[i]) + np.square(dy[i]) + np.square(dz[i])), 4
+        )
+
     return l
+
 
 def create_pymesh(mesh_case):
 
@@ -68,20 +72,21 @@ def create_pymesh(mesh_case):
     np.set_printoptions(suppress=True)
     size_tri = []
 
-    x = tri[:,0].reshape(len(tri[:,0]),1)
-    y = tri[:,1].reshape(len(tri[:,1]),1)
-    z = tri[:,2].reshape(len(tri[:,2]),1)
+    x = tri[:, 0].reshape(len(tri[:, 0]), 1)
+    y = tri[:, 1].reshape(len(tri[:, 1]), 1)
+    z = tri[:, 2].reshape(len(tri[:, 2]), 1)
 
     for item in tri:
         size_tri.append(len(item))
 
     size_tri_list = size_tri
-    size_tri_arr = np.array(size_tri,dtype=np.int).reshape(len(size_tri),1)
+    size_tri_arr = np.array(size_tri, dtype=np.int).reshape(len(size_tri), 1)
 
-    face = np.hstack(np.concatenate((size_tri_arr,tri),axis=1)).astype(int)
-    mesh = pv.PolyData(pts,face)
+    face = np.hstack(np.concatenate((size_tri_arr, tri), axis=1)).astype(int)
+    mesh = pv.PolyData(pts, face)
 
     return mesh
+
 
 def get_freeboundaries(tri):
 
@@ -101,36 +106,36 @@ def get_freeboundaries(tri):
     mesh_outline_entities = tri.outline().entities
     no_of_freeboundaries = len(mesh_outline_entities)
 
-
-     # Find all the freeboundary facets
+    # Find all the freeboundary facets
     for i in range(no_of_freeboundaries):
-        freeboundary_vertex_nodes.append(tri_outline["entities"][i]['points'])
+        freeboundary_vertex_nodes.append(tri_outline["entities"][i]["points"])
 
         # creating an array of fb values with the index of the points
-        for j in range(len(freeboundary_vertex_nodes[i])-1):
-            freeboundaries.append([freeboundary_vertex_nodes[i][j], freeboundary_vertex_nodes[i][j+1]]) 
+        for j in range(len(freeboundary_vertex_nodes[i]) - 1):
+            freeboundaries.append(
+                [freeboundary_vertex_nodes[i][j], freeboundary_vertex_nodes[i][j + 1]]
+            )
 
     freeboundaries = np.array(freeboundaries).astype(np.int64)
-    
-    return {'freeboundary':freeboundaries}
+
+    return {"freeboundary": freeboundaries}
 
 
-def get_freeboundary_points(tri,fb):
+def get_freeboundary_points(tri, fb):
     """
-    Returns the coords of the vertices of the freeboundary/outlines. 
+    Returns the coords of the vertices of the freeboundary/outlines.
     Args:
         tri (obj): Trimesh Object containing a triangular 3D mesh.
 
 
     Returns:
-        float: coords, mx3 Array of coords of the vertices of the freeboundary/outlines.   
+        float: coords, mx3 Array of coords of the vertices of the freeboundary/outlines.
     """
-    
 
     trimesh_points = tri.vertices
-    fb = fb[:,0]
+    fb = fb[:, 0]
     coords = np.array(list(trimesh_points[fb])).astype(np.float64)
-    
+
     return coords
 
 
@@ -139,69 +144,66 @@ def free_boundary(tri):
     Returns an array of connected free boundaries/outlines and the length of each of the freeboundary/outline.
     Args:
         tri (obj): Trimesh Object containing a triangular 3D mesh.
-    
+
     Returns:
         int: connected_freeboundary, mx2 array of connectecd freeboundary indices.
         float: length, list containing the length of each of the freeboundaries/outlines.
     """
-    
+
     l = []
 
     f_fall = get_freeboundaries(tri)
-    fb = f_fall['freeboundary']
+    fb = f_fall["freeboundary"]
 
-    test_set=np.array(list(np.zeros((fb.shape[0],fb.shape[1]))))
+    test_set = np.array(list(np.zeros((fb.shape[0], fb.shape[1]))))
     test_set[:] = np.nan
-    test_set[:,0] = fb[:,0]
+    test_set[:, 0] = fb[:, 0]
 
-    #exctracting the contents of 2nd columm fb array into the testset
-    second_col_fb = list(map(lambda x:x, fb[:,1][0:len(fb)-1]))
-    second_col_fb.insert(0,fb[:,1][-1])
+    # exctracting the contents of 2nd columm fb array into the testset
+    second_col_fb = list(map(lambda x: x, fb[:, 1][0 : len(fb) - 1]))
+    second_col_fb.insert(0, fb[:, 1][-1])
     second_col_fb = np.array(second_col_fb)
-    
+
     # Assigning the values of the second column to the 2nd column of testset
-    test_set[:,1] = second_col_fb
+    test_set[:, 1] = second_col_fb
 
     # isstat
-    i_start = np.where(np.diff(a=test_set,n=1,axis=1).astype(np.int64))[0]
-    
+    i_start = np.where(np.diff(a=test_set, n=1, axis=1).astype(np.int64))[0]
+
     ff = []
 
     if not list(i_start):
         ff.append(np.array(fb))
-        coords = get_freeboundary_points(tri,ff[0])
+        coords = get_freeboundary_points(tri, ff[0])
         l.append(line_length(coords))
     else:
         for i in range(i_start.shape[0]):
-            if i<(i_start.shape[0]-1):
-                np.array(ff.append(fb[i_start[i]:i_start[i+1]]))
-                coords = get_freeboundary_points(tri,ff[i])
+            if i < (i_start.shape[0] - 1):
+                np.array(ff.append(fb[i_start[i] : i_start[i + 1]]))
+                coords = get_freeboundary_points(tri, ff[i])
                 l.append(line_length(coords))
             else:
-                ff.append(fb[i_start[i]:])
-                coords = get_freeboundary_points(tri,ff[i])
+                ff.append(fb[i_start[i] :])
+                coords = get_freeboundary_points(tri, ff[i])
                 l.append(line_length(coords))
 
+    return {"connected_freeboundary": ff, "length": l}
 
 
-    return {'connected_freeboundary':ff,
-            'length':l}
-
-
-
-
-
-def draw_free_boundaries(mesh_case,
-                       fb_points,
-                       fb_col,
-                       fb_width,
-                       mesh_surf_color,
-                       opacity,
-                       smooth_shading,
-                       use_transparency,
-                       lighting,**kwargs):
+def draw_free_boundaries(
+    mesh_case,
+    fb_points,
+    fb_col,
+    fb_width,
+    mesh_surf_color,
+    opacity,
+    smooth_shading,
+    use_transparency,
+    lighting,
+    **kwargs
+):
     """
-    Draws the boundaries at the edge of a TriSurface mesh with each freeboundary rendered with the colors mentioned in the fb_col 
+    Draws the boundaries at the edge of a TriSurface mesh with each freeboundary rendered with the colors mentioned in the fb_col
     Args:
         mesh_case (obj): openep Case object.
         fb_points (float): m x 3 coordinate point arrays.
@@ -213,157 +215,171 @@ def draw_free_boundaries(mesh_case,
         use_transparency (boolean): True for applying transparency, False otherwise.
         lighting (boolean): True for lighting, False otherwise.
         **kwargs: Arbitrary keyword arguments.
-    
+
     Returns:
        obj: p, pyvista plotter handle.
     """
 
     # Create a pymesh of the openep case
     py_mesh = create_pymesh(mesh_case)
-    
+
     #     Freeboundary Color
-    fb_col = ['blue','yellow','green','red','orange','brown','magenta']
+    fb_col = ["blue", "yellow", "green", "red", "orange", "brown", "magenta"]
 
     p = pv.Plotter()
-    
-    p.add_mesh(py_mesh, 
-               color=mesh_surf_color,
-               opacity=opacity,
-               smooth_shading=smooth_shading,
-               use_transparency=use_transparency,
-               lighting=lighting)
-    
+
+    p.add_mesh(
+        py_mesh,
+        color=mesh_surf_color,
+        opacity=opacity,
+        smooth_shading=smooth_shading,
+        use_transparency=use_transparency,
+        lighting=lighting,
+    )
+
     for indx in range(len(fb_points)):
-            p.add_lines(fb_points[indx],
-                        color=fb_col[indx],
-                        width=fb_width)    
+        p.add_lines(fb_points[indx], color=fb_col[indx], width=fb_width)
     return p
 
+
 def get_anatomical_structures(mesh_case, plot, **kwargs):
-    
+
     """
-    Returns the free boundaries (anatomical 
+    Returns the free boundaries (anatomical
     structures) described in ep_case and plots them if plot=True with draw_free_boundaries()
-    Anatomical structures are boundary regions that have been added to an anatomical model in the clinical mapping system. 
-    For example, 
-    with respect of left atrial ablation, anatomical structures may represent 
-    the pulmonary vein ostia, mitral valve annulus or left atrial appendage 
+    Anatomical structures are boundary regions that have been added to an anatomical model in the clinical mapping system.
+    For example,
+    with respect of left atrial ablation, anatomical structures may represent
+    the pulmonary vein ostia, mitral valve annulus or left atrial appendage
     ostium.
-    
+
     Args:
         mesh_case (obj): openep Case object.
         plot (boolean): True to plot, False otherwise.
         **kwargs: Arbitrary keyword arguments.
 
-        
+
     Returns:
         float: FreeboundaryPoints,m x 3 matrix of the freeboundary coordinate points of each anatomical structure.
         float: l,array of lengths [perimeters] of each anatomical structure.
         float: a,array of areas of each anatomical structure.
-        obj: tr, array of trimesh objects of each anatomical structure.     
+        obj: tr, array of trimesh objects of each anatomical structure.
     """
 
     a = []
     l = []
 
     tr = []
-    
+
     x_values = []
     y_values = []
     z_values = []
-    
+
     freeboundary_points = []
     freeboundary_vertex_nodes = []
-    
-    
+
     pts = mesh_case.nodes
     face = mesh_case.indices.astype(int)
-        
-    tm_mesh = tm.Trimesh(vertices=pts,
-                        faces=face, 
-                        process=False)
 
-       
+    tm_mesh = tm.Trimesh(vertices=pts, faces=face, process=False)
+
     freeboundary = tm_mesh.outline().to_dict()
     mesh_outline_entities = tm_mesh.outline().entities
 
     for i in range(len(mesh_outline_entities)):
-        freeboundary_vertex_nodes.append(freeboundary["entities"][i]['points'])
-                
-    
+        freeboundary_vertex_nodes.append(freeboundary["entities"][i]["points"])
+
     # mesh Vertices - finding the coordinates/points of the freeboundaries
     trimesh_points = tm_mesh.vertices
 
     for i in freeboundary_vertex_nodes:
-        x_values.append(trimesh_points[i][:,0])
-        y_values.append(trimesh_points[i][:,1])
-        z_values.append(trimesh_points[i][:,2])
+        x_values.append(trimesh_points[i][:, 0])
+        y_values.append(trimesh_points[i][:, 1])
+        z_values.append(trimesh_points[i][:, 2])
 
     x_values_array = []
     y_values_array = []
     z_values_array = []
 
-
     for i in range(len(mesh_outline_entities)):
-        x_values_array.append(x_values[i].reshape(len(x_values[i]),1))
-        y_values_array.append(y_values[i].reshape(len(y_values[i]),1))
-        z_values_array.append(z_values[i].reshape(len(z_values[i]),1))
-        freeboundary_points.append(np.concatenate((x_values_array[i],
-                                            y_values_array[i],
-                                            z_values_array[i]),
-                                            axis=1))
+        x_values_array.append(x_values[i].reshape(len(x_values[i]), 1))
+        y_values_array.append(y_values[i].reshape(len(y_values[i]), 1))
+        z_values_array.append(z_values[i].reshape(len(z_values[i]), 1))
+        freeboundary_points.append(
+            np.concatenate(
+                (x_values_array[i], y_values_array[i], z_values_array[i]), axis=1
+            )
+        )
 
     for i in range(len(freeboundary_points)):
         coords = freeboundary_points[i]
-        centre = np.round(np.mean(coords,0),3)
-        centre = centre.reshape(1,len(centre))
+        centre = np.round(np.mean(coords, 0), 3)
+        centre = centre.reshape(1, len(centre))
 
         # Create a Trirep of the boundary
-        X = np.vstack((centre,coords))
+        X = np.vstack((centre, coords))
         numpts = X.shape[0]
-        A = np.zeros(((numpts-1),1),dtype=np.int64)
-        B = np.array(range(1,numpts)).T
-        B = B.reshape(len(B),1)
-        C = np.array(range(2,numpts)).T
-        C = C.reshape(len(C),1)
-        C = np.vstack((C,1))
-        TRI = np.concatenate((A,B,C),axis=1)
-            
+        A = np.zeros(((numpts - 1), 1), dtype=np.int64)
+        B = np.array(range(1, numpts)).T
+        B = B.reshape(len(B), 1)
+        C = np.array(range(2, numpts)).T
+        C = C.reshape(len(C), 1)
+        C = np.vstack((C, 1))
+        TRI = np.concatenate((A, B, C), axis=1)
 
-        tr.append(tm.Trimesh(vertices=X,faces=TRI))
+        tr.append(tm.Trimesh(vertices=X, faces=TRI))
         lineLen = line_length(coords)
-        a.append(round(tr[i].area,4))
+        a.append(round(tr[i].area, 4))
         l.append(lineLen)
-        print('Perimeter is :',l[i],'| Area is:',a[i])
-        
+        print("Perimeter is :", l[i], "| Area is:", a[i])
+
     if plot:
-        col = ['blue','yellow','green','red','orange','brown','magenta']
+        col = ["blue", "yellow", "green", "red", "orange", "brown", "magenta"]
         fb_width = 3
-        mesh_surf = [0.5,0.5,0.5]
-        p = draw_free_boundaries(mesh_case=mesh_case,
-                               fb_points=freeboundary_points,
-                               fb_col = col,
-                               fb_width = fb_width,
-                               mesh_surf_color = mesh_surf,
-                               opacity = 0.2,
-                               smooth_shading= True,
-                               use_transparency=False,
-                               lighting=False,
-                               **kwargs)
-            
-        p.background_color='White'
+        mesh_surf = [0.5, 0.5, 0.5]
+        p = draw_free_boundaries(
+            mesh_case=mesh_case,
+            fb_points=freeboundary_points,
+            fb_col=col,
+            fb_width=fb_width,
+            mesh_surf_color=mesh_surf,
+            opacity=0.2,
+            smooth_shading=True,
+            use_transparency=False,
+            lighting=False,
+            **kwargs
+        )
+
+        p.background_color = "White"
         p.show()
-    
-        
-    return {'FreeboundaryPoints':freeboundary_points,'Lengths':l, 'Area':a, 'tr':tr}
+
+    return {
+        "FreeboundaryPoints": freeboundary_points,
+        "Lengths": l,
+        "Area": a,
+        "tr": tr,
+    }
 
 
-def draw_map(mesh_case,volt,freeboundary_color,cmap,freeboundary_width,minval,maxval,volt_below_color, volt_above_color, nan_color, plot,**kwargs):
+def draw_map(
+    mesh_case,
+    volt,
+    freeboundary_color,
+    cmap,
+    freeboundary_width,
+    minval,
+    maxval,
+    volt_below_color,
+    volt_above_color,
+    nan_color,
+    plot,
+    **kwargs
+):
     """
     plots an OpenEp Voltage Map
     Args:
         mesh_case(obj): openep Case object.
-        volt (str or nx1 array): 'bip' or interpolated voltagae values. 
+        volt (str or nx1 array): 'bip' or interpolated voltagae values.
         freeboundary_color(str or rgb list): color of the freeboundaries.
         cmap (str): name of the colormap, for eg: jet_r.
         freeboundary_width (float): width of the freeboundary line.
@@ -371,7 +387,7 @@ def draw_map(mesh_case,volt,freeboundary_color,cmap,freeboundary_width,minval,ma
         maxval(float): Voltage upper threshold value.
         volt_below_color(str or 3 item list): Color for all the voltage values below lower threshold.
         volt_above_color(str or 3 item list): Color for all the voltage values above upper threshold.
-        nan_color(str or 3 item list): Color for all the nan voltage values in the openep dataset. 
+        nan_color(str or 3 item list): Color for all the nan voltage values in the openep dataset.
         plot (boolean): True to plot, False otherwise.
         **kwargs: Arbitrary keyword arguments.
 
@@ -388,9 +404,9 @@ def draw_map(mesh_case,volt,freeboundary_color,cmap,freeboundary_width,minval,ma
     """
     # Create a PyMesh
     py_mesh = create_pymesh(mesh_case)
-    
-    if volt == 'bip':
-        volt = mesh_case.fields['bip']
+
+    if volt == "bip":
+        volt = mesh_case.fields["bip"]
     else:
         volt = volt
 
@@ -400,41 +416,49 @@ def draw_map(mesh_case,volt,freeboundary_color,cmap,freeboundary_width,minval,ma
     if plot:
 
         # Plot OpenEp mesh
-        sargs = dict(interactive=True, 
-                          n_labels=2,
-                          label_font_size=18,
-                          below_label='  ',
-                          above_label='  ')
+        sargs = dict(
+            interactive=True,
+            n_labels=2,
+            label_font_size=18,
+            below_label="  ",
+            above_label="  ",
+        )
 
-        freebound = get_anatomical_structures(mesh_case,plot=False)
-        p.add_mesh(py_mesh,
-               scalar_bar_args=sargs,
-               show_edges=False,
-               smooth_shading=True,
-               scalars=volt,
-               nan_color=nan_color,
-               clim=[minval,maxval],
-               cmap=cmap,
-               below_color=volt_below_color,
-               above_color=volt_above_color)
+        freebound = get_anatomical_structures(mesh_case, plot=False)
+        p.add_mesh(
+            py_mesh,
+            scalar_bar_args=sargs,
+            show_edges=False,
+            smooth_shading=True,
+            scalars=volt,
+            nan_color=nan_color,
+            clim=[minval, maxval],
+            cmap=cmap,
+            below_color=volt_below_color,
+            above_color=volt_above_color,
+        )
 
-    
         # Plot free Boundary - Lines
-        for indx in range(len(freebound['FreeboundaryPoints'])):
-            p.add_lines((freebound['FreeboundaryPoints'][indx]),
-                        color=freeboundary_color,
-                        width=freeboundary_width)
+        for indx in range(len(freebound["FreeboundaryPoints"])):
+            p.add_lines(
+                (freebound["FreeboundaryPoints"][indx]),
+                color=freeboundary_color,
+                width=freeboundary_width,
+            )
         p.show()
 
-    return {'hsurf':p,
-            'pyvista-mesh':py_mesh,
-            'volt':volt,
-            'nan_color':nan_color,
-            'minval':minval,
-            'maxval':maxval,
-            'cmap':cmap,
-            'volt_below_color':volt_below_color,
-            'volt_above_color':volt_above_color}
+    return {
+        "hsurf": p,
+        "pyvista-mesh": py_mesh,
+        "volt": volt,
+        "nan_color": nan_color,
+        "minval": minval,
+        "maxval": maxval,
+        "cmap": cmap,
+        "volt_below_color": volt_below_color,
+        "volt_above_color": volt_above_color,
+    }
+
 
 def get_voltage_electroanatomic(mesh_case):
     distance_thresh = 10
@@ -445,35 +469,38 @@ def get_voltage_electroanatomic(mesh_case):
     indices = mesh_case.indices
 
     # Electric data
-    # Locations – Cartesian co-ordinates, projected on to the surface 
-    locations = case_routines.get_electrogram_coordinates(mesh_case,'type','bip')
+    # Locations – Cartesian co-ordinates, projected on to the surface
+    locations = case_routines.get_electrogram_coordinates(mesh_case, "type", "bip")
 
-    i_egm = mesh_case.electric['egm'].T
+    i_egm = mesh_case.electric["egm"].T
     i_vp = case_routines.getMappingPointsWithinWoI(mesh_case)
     # macthing the shape of ivp with data
     i_vp_egm = np.repeat(i_vp, repeats=i_egm.shape[1], axis=1)
     # macthing the shape of ivp with coords
-    i_vp_locations = np.repeat(i_vp, repeats=locations.shape[1],axis=1)
+    i_vp_locations = np.repeat(i_vp, repeats=locations.shape[1], axis=1)
 
     # Replacing the values outside the window of interest with Nan values
     i_egm[~i_vp_egm] = np.nan
     locations[~i_vp_locations] = np.nan
 
     # For each mapping point, n, find the voltage amplitude
-    max_volt = np.amax(a=i_egm,axis=1).reshape(len(i_egm),1)
-    min_volt = np.amin(a=i_egm,axis=1).reshape(len(i_egm),1)
+    max_volt = np.amax(a=i_egm, axis=1).reshape(len(i_egm), 1)
+    min_volt = np.amin(a=i_egm, axis=1).reshape(len(i_egm), 1)
 
-    amplitude_volt = np.subtract(max_volt,min_volt)
+    amplitude_volt = np.subtract(max_volt, min_volt)
 
     for indx in range(amplitude_volt.shape[1]):
-        temp_data = amplitude_volt[:,indx]
+        temp_data = amplitude_volt[:, indx]
         temp_coords = locations
         i_nan = np.isnan(temp_data)
-        temp_data=temp_data[~i_nan]
-        temp_coords=temp_coords[~i_nan]
+        temp_data = temp_data[~i_nan]
+        temp_coords = temp_coords[~i_nan]
 
+        interp = case_routines.OpenEPDataInterpolator(
+            method="rbf",
+            distanceThreshold=distance_thresh,
+            rbfConstant=rbf_constant_value,
+        )
+        vertex_voltage_data = interp.interpolate(x0=temp_coords, d0=temp_data, x1=pts)
 
-        interp = case_routines.OpenEPDataInterpolator(method='rbf',distanceThreshold=distance_thresh,rbfConstant=rbf_constant_value)
-        vertex_voltage_data = interp.interpolate(x0=temp_coords,d0=temp_data,x1=pts)
-
-    return vertex_voltage_data    
+    return vertex_voltage_data

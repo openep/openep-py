@@ -17,11 +17,12 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-'''
+"""
 GUI code for OpenEp
-'''
+"""
 import sys
-sys.path.append('../openep')
+
+sys.path.append("../openep")
 
 from logging import setLogRecordFactory
 from PyQt5 import QtWidgets as qtw
@@ -31,7 +32,10 @@ from pyvistaqt import QtInteractor, MainWindow
 import numpy as np
 from copy import deepcopy
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.backend_qt5agg import (
+    FigureCanvasQTAgg as FigureCanvas,
+    NavigationToolbar2QT as NavigationToolbar,
+)
 
 from openep import io as openep_io
 from openep import case as openep_case
@@ -54,8 +58,6 @@ class OpenEpGUI(qtw.QWidget):
         self.maxval = 2
         self.egm_point = 0
 
-
-
     def initUI(self):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
@@ -67,7 +69,7 @@ class OpenEpGUI(qtw.QWidget):
         self.buttonLayout = qtw.QHBoxLayout(self)
 
         # MenuBar
-        menubar=qtw.QMenuBar()
+        menubar = qtw.QMenuBar()
         self.menulayout.addWidget(menubar, 0, 0)
         file_menu = menubar.addMenu("File")
 
@@ -76,29 +78,29 @@ class OpenEpGUI(qtw.QWidget):
         file_menu.addAction(self.load_case_act)
         file_menu.addSeparator()
 
-        plot_menu =qtw.QMenu("Plots",self)
-        voltage_map_plot_act = qtw.QAction("3-D Voltage Map",self)
-        self.voltage_map_interpolated_plot_act  = qtw.QAction("Interpolated Voltage Plot",self)
-        self.historgram_plot_act = qtw.QAction("Histogram Plot",self)
-        self.egm_plot_act = qtw.QAction("EGM Plot",self)
-
+        plot_menu = qtw.QMenu("Plots", self)
+        voltage_map_plot_act = qtw.QAction("3-D Voltage Map", self)
+        self.voltage_map_interpolated_plot_act = qtw.QAction(
+            "Interpolated Voltage Plot", self
+        )
+        self.historgram_plot_act = qtw.QAction("Histogram Plot", self)
+        self.egm_plot_act = qtw.QAction("EGM Plot", self)
 
         voltage_map_plot_act.triggered.connect(self.plot_3d_map)
         plot_menu.addAction(voltage_map_plot_act)
-        
-        self.voltage_map_interpolated_plot_act.triggered.connect(self.plot_interpolated_voltage)
+
+        self.voltage_map_interpolated_plot_act.triggered.connect(
+            self.plot_interpolated_voltage
+        )
         plot_menu.addAction(self.voltage_map_interpolated_plot_act)
-        
+
         self.historgram_plot_act.triggered.connect(self.plot_histogram)
         plot_menu.addAction(self.historgram_plot_act)
-
 
         self.egm_plot_act.triggered.connect(self.plot_egm)
         plot_menu.addAction(self.egm_plot_act)
 
         file_menu.addMenu(plot_menu)
-
-
 
         file_menu.addSeparator()
 
@@ -106,29 +108,29 @@ class OpenEpGUI(qtw.QWidget):
         self.quit_app_act.triggered.connect(qtw.qApp.quit)
         file_menu.addAction(self.quit_app_act)
 
-
         menubar.addMenu("Edit")
         menubar.addMenu("View")
         menubar.addMenu("Help")
 
         # Label
-        mainLabel1 = qtw.QLabel("OpenEp Tool",self)
+        mainLabel1 = qtw.QLabel("OpenEp Tool", self)
         self.labelLayout.addWidget(mainLabel1)
-        mainLabel2 = qtw.QLabel( "The Open Source solution for electrophysiology data analysis",self)
+        mainLabel2 = qtw.QLabel(
+            "The Open Source solution for electrophysiology data analysis", self
+        )
         self.labelLayout.addWidget(mainLabel2)
 
         self.labelLayout.addRow(self.buttonLayout)
 
         # Plot
         self.plotLayout = qtw.QGridLayout()
-        self.plotLayout.setColumnStretch(0,5)
-        self.plotLayout.setColumnStretch(1,5)
+        self.plotLayout.setColumnStretch(0, 5)
+        self.plotLayout.setColumnStretch(1, 5)
 
         self.frame = qtw.QFrame()
         self.plotter = QtInteractor(self.frame)
-        self.plotLayout.addWidget(self.plotter.interactor,0,0)
+        self.plotLayout.addWidget(self.plotter.interactor, 0, 0)
 
-        
         # # VoltThresholds limit
         self.limitLayout = qtw.QFormLayout(self)
         self.lowerlimit = qtw.QLineEdit()
@@ -139,21 +141,19 @@ class OpenEpGUI(qtw.QWidget):
         self.limitLayout.addRow("Voltage Threshold - Upper", self.upperlimit)
 
         button_set_thresholds = qtw.QPushButton("Set Voltage Thresholds", self)
-        button_set_thresholds.setGeometry(200,150,100,40)
+        button_set_thresholds.setGeometry(200, 150, 100, 40)
         button_set_thresholds.clicked.connect(self.update_voltage_threshold)
         self.limitLayout.addRow(button_set_thresholds)
 
         # selecting the Egm points
         self.egmselect = qtw.QLineEdit()
         self.egmselect.setText(str(0))
-        self.limitLayout.addRow("Egm Point",self.egmselect)
+        self.limitLayout.addRow("Egm Point", self.egmselect)
 
         button_egmselect = qtw.QPushButton("Set Egm Point", self)
-        button_egmselect.setGeometry(200,150,100,40)
+        button_egmselect.setGeometry(200, 150, 100, 40)
         button_egmselect.clicked.connect(self.plot_egm)
         self.limitLayout.addRow(button_egmselect)
-
-
 
         # Nesting Layouts and setting the main layout
         self.mainLayout.addLayout(self.menulayout)
@@ -161,7 +161,6 @@ class OpenEpGUI(qtw.QWidget):
         self.mainLayout.addLayout(self.plotLayout)
         self.mainLayout.addLayout(self.limitLayout)
         self.setLayout(self.mainLayout)
-
 
     def load_data(self):
         print("Please wait: Loading Data ... ")
@@ -172,17 +171,19 @@ class OpenEpGUI(qtw.QWidget):
         if dlg.exec_():
             filenames = dlg.selectedFiles()
             self.ep_case = openep_io.load_case(filenames[0])
-            surf = draw.draw_map(self.ep_case,
-                            volt="bip",
-                            cmap="jet_r",
-                            freeboundary_color="black",
-                            freeboundary_width=5,
-                            minval=self.minval,
-                            maxval=self.maxval,
-                            volt_below_color="brown", 
-                            volt_above_color="magenta", 
-                            nan_color="gray",
-                            plot=False)
+            surf = draw.draw_map(
+                self.ep_case,
+                volt="bip",
+                cmap="jet_r",
+                freeboundary_color="black",
+                freeboundary_width=5,
+                minval=self.minval,
+                maxval=self.maxval,
+                volt_below_color="brown",
+                volt_above_color="magenta",
+                nan_color="gray",
+                plot=False,
+            )
 
             self.mesh = surf["pyvista-mesh"]
             self.mesh1 = deepcopy(self.mesh)
@@ -194,38 +195,45 @@ class OpenEpGUI(qtw.QWidget):
             self.cmap = surf["cmap"]
             self.below_color = surf["volt_below_color"]
             self.above_color = surf["volt_above_color"]
-            self.freeboundary_points = draw.get_anatomical_structures(self.ep_case,plot=False)
+            self.freeboundary_points = draw.get_anatomical_structures(
+                self.ep_case, plot=False
+            )
 
             # Interpolated voltage data
             self.voltage_data = draw.get_voltage_electroanatomic(self.ep_case)
-            self.sargs = dict(interactive=True, 
-                            n_labels=2,
-                            label_font_size=18,
-                            below_label="  ",
-                            above_label="  ")
-
+            self.sargs = dict(
+                interactive=True,
+                n_labels=2,
+                label_font_size=18,
+                below_label="  ",
+                above_label="  ",
+            )
 
     def plot_3d_map(self):
         self.minval = float(self.lowerlimit.text())
         self.maxval = float(self.upperlimit.text())
-        
-        self.plotter.add_mesh(self.mesh1,
-                              scalar_bar_args=self.sargs,
-                              annotations=False,
-                              show_edges=False,
-                              smooth_shading=True,
-                              scalars=self.volt,
-                              nan_color=self.nan_color,
-                              clim=[self.minval,self.maxval],
-                              cmap=self.cmap,
-                              below_color=self.below_color,
-                              above_color=self.above_color)
-        
+
+        self.plotter.add_mesh(
+            self.mesh1,
+            scalar_bar_args=self.sargs,
+            annotations=False,
+            show_edges=False,
+            smooth_shading=True,
+            scalars=self.volt,
+            nan_color=self.nan_color,
+            clim=[self.minval, self.maxval],
+            cmap=self.cmap,
+            below_color=self.below_color,
+            above_color=self.above_color,
+        )
+
         for indx in range(len(self.freeboundary_points["FreeboundaryPoints"])):
-            self.plotter.add_lines(self.freeboundary_points["FreeboundaryPoints"][indx],color="black",width=5)
+            self.plotter.add_lines(
+                self.freeboundary_points["FreeboundaryPoints"][indx],
+                color="black",
+                width=5,
+            )
             self.plotter.reset_camera()
-
-
 
     def plot_interpolated_voltage(self):
 
@@ -239,52 +247,55 @@ class OpenEpGUI(qtw.QWidget):
         self.dock_plot.setFloating(False)
         self.dock_plot.setWidget(self.plotter1)
 
-        self.plotLayout.addWidget(self.dock_plot,0,1)
+        self.plotLayout.addWidget(self.dock_plot, 0, 1)
 
-        self.plotter1.add_mesh(self.mesh2,
-                        scalar_bar_args=self.sargs,
-                        show_edges=False,
-                        smooth_shading=True,
-                        scalars=self.voltage_data,
-                        nan_color=self.nan_color,
-                        clim=[self.minval,self.maxval],
-                        cmap=self.cmap,
-                        below_color=self.below_color,
-                        above_color=self.above_color)
+        self.plotter1.add_mesh(
+            self.mesh2,
+            scalar_bar_args=self.sargs,
+            show_edges=False,
+            smooth_shading=True,
+            scalars=self.voltage_data,
+            nan_color=self.nan_color,
+            clim=[self.minval, self.maxval],
+            cmap=self.cmap,
+            below_color=self.below_color,
+            above_color=self.above_color,
+        )
 
         for indx in range(len(self.freeboundary_points["FreeboundaryPoints"])):
-            self.plotter1.add_lines(self.freeboundary_points["FreeboundaryPoints"][indx],color="black",width=5)
+            self.plotter1.add_lines(
+                self.freeboundary_points["FreeboundaryPoints"][indx],
+                color="black",
+                width=5,
+            )
             self.plotter1.reset_camera()
-
-        
-
 
     def plot_egm(self):
         self.egm_point = int(self.egmselect.text())
 
-        self.fig,self.ax = plt.subplots(ncols=1,nrows=1)
+        self.fig, self.ax = plt.subplots(ncols=1, nrows=1)
         self.fig.set_facecolor("gray")
         self.canvas = FigureCanvas(self.fig)
 
-        self.egm = case_routines.get_egms_at_points(self.ep_case,"iegm",[self.egm_point])
-        self.egm_traces = self.egm['egm_traces']
+        self.egm = case_routines.get_egms_at_points(
+            self.ep_case, "iegm", [self.egm_point]
+        )
+        self.egm_traces = self.egm["egm_traces"]
         self.sample_range = self.egm["sample_range"][0]
         seperation = 7
 
         for i in range(len(self.egm_traces)):
-            y = self.egm_traces[i][0][self.sample_range[0]:self.sample_range[1]]
-            t = np.arange(self.sample_range[0],self.sample_range[1],1)
-            self.ax.plot(t,y+(seperation*i))
+            y = self.egm_traces[i][0][self.sample_range[0] : self.sample_range[1]]
+            t = np.arange(self.sample_range[0], self.sample_range[1], 1)
+            self.ax.plot(t, y + (seperation * i))
             self.ax.get_yaxis().set_visible(False)
             self.ax.set_xlabel("Samples")
-        
-        
+
         self.dock_plot1 = qtw.QDockWidget("EGM Plot", self)
         self.dock_plot1.setFloating(False)
         self.dock_plot1.setWidget(self.canvas)
 
-        self.plotLayout.addWidget(self.dock_plot1,1,1)
-
+        self.plotLayout.addWidget(self.dock_plot1, 1, 1)
 
     def plot_histogram(self):
         self.plotter3 = QtInteractor(self.frame)
@@ -292,7 +303,7 @@ class OpenEpGUI(qtw.QWidget):
         self.dock_plot2.setFloating(False)
         self.dock_plot2.setWidget(self.plotter3)
 
-        self.plotLayout.addWidget(self.dock_plot2,1,0)
+        self.plotLayout.addWidget(self.dock_plot2, 1, 0)
         pass
 
     def update_voltage_threshold(self):
@@ -307,6 +318,7 @@ def main():
     window = OpenEpGUI()
     window.show()
     sys.exit(app.exec_())
+
 
 if __name__ == "__main__":
     main()

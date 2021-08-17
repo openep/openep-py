@@ -28,19 +28,26 @@ from .case import Case
 
 from matplotlib.cm import jet_r
 
-__all__ = ["compute_field", "calculate_per_triangle_field", "calculate_point_distance_max", "calculate_vertex_path",
-           "calculate_vertex_distance", "calculate_mesh_volume", "calculate_field_area"]
+__all__ = [
+    "compute_field",
+    "calculate_per_triangle_field",
+    "calculate_point_distance_max",
+    "calculate_vertex_path",
+    "calculate_vertex_distance",
+    "calculate_mesh_volume",
+    "calculate_field_area",
+]
 
 
 def compute_field(
-        mesh,
-        fieldname,
-        minval=0,
-        maxval=1,
-        color_map=jet_r,
-        below_color=(180, 180, 180, 255),
-        above_color=(255, 0, 255, 255),
-        nan_color=(180, 180, 180, 255),
+    mesh,
+    fieldname,
+    minval=0,
+    maxval=1,
+    color_map=jet_r,
+    below_color=(180, 180, 180, 255),
+    above_color=(255, 0, 255, 255),
+    nan_color=(180, 180, 180, 255),
 ) -> np.ndarray:
     case = mesh._kwargs["parent_obj"]
     field = case.fields[fieldname]
@@ -119,7 +126,9 @@ def calculate_per_triangle_field(mesh: Trimesh, field: np.ndarray) -> np.ndarray
     return field[mesh.faces].mean(axis=1)
 
 
-def calculate_mesh_volume(mesh_case: Union[Case, Trimesh], fill_holes: bool = True) -> float:
+def calculate_mesh_volume(
+    mesh_case: Union[Case, Trimesh], fill_holes: bool = True
+) -> float:
     """
     Calculate the volume of a mesh.
 
@@ -140,7 +149,9 @@ def calculate_mesh_volume(mesh_case: Union[Case, Trimesh], fill_holes: bool = Tr
     return mesh.volume
 
 
-def calculate_field_area(mesh_case: Union[Case, Trimesh], field: np.ndarray, threshold: float) -> float:
+def calculate_field_area(
+    mesh_case: Union[Case, Trimesh], field: np.ndarray, threshold: float
+) -> float:
     """
     Calculate the area of triangles whose values are at or below the given threshold.
 
@@ -161,7 +172,9 @@ def calculate_field_area(mesh_case: Union[Case, Trimesh], field: np.ndarray, thr
     return selected_areas.sum()
 
 
-def calculate_vertex_distance(mesh_case: Union[Case, Trimesh], start_idx: int, end_idx: int) -> float:
+def calculate_vertex_distance(
+    mesh_case: Union[Case, Trimesh], start_idx: int, end_idx: int
+) -> float:
     """
     Calculate the euclidean distance from vertex at `start_idx` to `end_idx`.
 
@@ -180,7 +193,9 @@ def calculate_vertex_distance(mesh_case: Union[Case, Trimesh], start_idx: int, e
     return np.linalg.norm(start_vertex - end_vertex)
 
 
-def calculate_vertex_path(mesh_case: Union[Case, Trimesh], start_idx: int, end_idx: int) -> np.ndarray:
+def calculate_vertex_path(
+    mesh_case: Union[Case, Trimesh], start_idx: int, end_idx: int
+) -> np.ndarray:
     """
     Calculate the path from vertex at `start_idx` to `end_idx` as a path of vertices through the mesh.
 
@@ -195,7 +210,7 @@ def calculate_vertex_path(mesh_case: Union[Case, Trimesh], start_idx: int, end_i
     mesh = get_mesh(mesh_case)
     graph = create_edge_graph(mesh)
 
-    path = nx.shortest_path(graph, source=start_idx, target=end_idx, weight='length')
+    path = nx.shortest_path(graph, source=start_idx, target=end_idx, weight="length")
 
     return np.array(path, int)
 
