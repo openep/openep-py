@@ -355,7 +355,7 @@ def LocalSmoothing(x0, x1, smoothingLength):
 
 
 def rbfAssemble(x, phi, const, smooth):
-    import numpy as np
+    # import numpy as np
 
     xShape = x.shape
     if len(xShape) == 2:
@@ -585,10 +585,9 @@ def rbf_scipy(x0, d0, x1, rbfConstant):
 
 
 class OpenEPDataInterpolator():
-    '''
-    OPENEPDATAINTERPOLATOR Creates objects for performing spatial
-    interpolation for OpenEP data
-    '''
+    """
+    Creates objects for performing spatial interpolation for OpenEP data
+    """
 
     def __init__(self, method, distanceThreshold, rbfConstant):
         self.method = method

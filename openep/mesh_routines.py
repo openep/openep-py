@@ -78,7 +78,7 @@ def compute_field(
 
 def get_mesh(mesh_case: Union[Case, Trimesh]) -> Trimesh:
     """
-    If `mesh_case` is a Case object, create a mesh from it without backfaces, normals, or recentering. If `mesh_case`
+    If mesh_case is a Case object, create a mesh from it without backfaces, normals, or recentering. If `mesh_case`
     is a mesh, return this directly. This routine is useful for defining others to accept either type.
     """
     if isinstance(mesh_case, Case):
@@ -117,7 +117,7 @@ def calculate_per_triangle_field(mesh: Trimesh, field: np.ndarray) -> np.ndarray
     calculated as the triangle value.
 
     Args:
-        mesh: Trimesh object
+        mesh (obj): Trimesh object
         field: per-vertex field to convert
 
     Returns:
@@ -133,7 +133,7 @@ def calculate_mesh_volume(
     Calculate the volume of a mesh.
 
     Args:
-        mesh_case: if a Case object, a mesh is created from it, otherwise it is the mesh to calculate the volume for
+        mesh_case (obj): if a Case object, a mesh is created from it, otherwise it is the mesh to calculate the volume for
         fill_holes: if True, holes in the mesh are filled, if holes are present the volume is meaningless
 
     Returns:
@@ -156,12 +156,12 @@ def calculate_field_area(
     Calculate the area of triangles whose values are at or below the given threshold.
 
     Args:
-        mesh_case: Case or Trimesh object
+        mesh_case(obj): Case or Trimesh object
         field: field used to select triangles
-        threshold: value at or below which triangles are selected to include in calculation
+        threshold(float): value at or below which triangles are selected to include in calculation
 
     Returns:
-        Float total area of selected triangles
+        float: total area of selected triangles
     """
     mesh = get_mesh(mesh_case)
     areas = mesh.area_faces
@@ -179,12 +179,12 @@ def calculate_vertex_distance(
     Calculate the euclidean distance from vertex at `start_idx` to `end_idx`.
 
     Args:
-        mesh_case: Case or Trimesh object
-        start_idx: index of starting vertex
-        end_idx: index of ending vertex
+        mesh_case(obj): Case or Trimesh object
+        start_idx(int): index of starting vertex
+        end_idx(int): index of ending vertex
 
     Returns:
-        Float distance between vertices
+        float: distance between vertices
     """
     mesh = get_mesh(mesh_case)
     start_vertex = mesh.vertices[start_idx]
@@ -200,12 +200,12 @@ def calculate_vertex_path(
     Calculate the path from vertex at `start_idx` to `end_idx` as a path of vertices through the mesh.
 
     Args:
-        mesh_case: Case or Trimesh object
-        start_idx: index of starting vertex
-        end_idx: index of ending vertex
+        mesh_case(obj): Case or Trimesh object
+        start_idx(int): index of starting vertex
+        end_idx(int): index of ending vertex
 
     Returns:
-        Array of vertex indices defining the path
+        int: Array of vertex indices defining the path
     """
     mesh = get_mesh(mesh_case)
     graph = create_edge_graph(mesh)
