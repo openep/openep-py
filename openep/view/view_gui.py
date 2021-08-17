@@ -281,7 +281,7 @@ class OpenEpGUI(qtw.QWidget):
             self.ep_case, "iegm", [self.egm_point]
         )
         self.egm_traces = self.egm["egm_traces"]
-        self.sample_range = self.egm["sample_range"][0]
+        self.sample_range = self.egm["sample_range"]
         seperation = 7
 
         for i in range(len(self.egm_traces)):
