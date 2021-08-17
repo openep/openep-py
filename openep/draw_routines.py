@@ -473,7 +473,7 @@ def get_voltage_electroanatomic(mesh_case):
     locations = case_routines.get_electrogram_coordinates(mesh_case, "type", "bip")
 
     i_egm = mesh_case.electric["egm"].T
-    i_vp = case_routines.getMappingPointsWithinWoI(mesh_case)
+    i_vp = case_routines.get_mapping_points_within_woi(mesh_case)
     # macthing the shape of ivp with data
     i_vp_egm = np.repeat(i_vp, repeats=i_egm.shape[1], axis=1)
     # macthing the shape of ivp with coords
