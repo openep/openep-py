@@ -117,15 +117,6 @@ class OpenEpGUI(qtw.QWidget):
         mainLabel2 = qtw.QLabel( "The Open Source solution for electrophysiology data analysis",self)
         self.labelLayout.addWidget(mainLabel2)
 
-        # # Button 1
-        button_load_data = qtw.QPushButton("Load OpenEp Data", self)
-        button_load_data.setGeometry(200,150,100,40)
-        button_load_data.clicked.connect(self.load_data)
-
-
-        # # Adding buttons to the horizontal layout
-        self.buttonLayout.addWidget(button_load_data)
-
         self.labelLayout.addRow(self.buttonLayout)
 
         # Plot
