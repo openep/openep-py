@@ -172,6 +172,7 @@ def get_egms_at_points(mesh_case,filename,*args):
         
     Returns:
         float: egm_traces,corresponding list of arrays, containing the 'bip' and 'uni' voltages for the requested points
+        string: egm_names, corresponding list of the egm names.
         int: sample_range,list of all the sample range within the window-of-interest for the requested points
     """
     
