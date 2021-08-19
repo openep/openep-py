@@ -169,8 +169,8 @@ class OpenEpGUI(qtw.QWidget):
         dlg.setFileMode(qtw.QFileDialog.AnyFile)
 
         if dlg.exec_():
-            filenames = dlg.selectedFiles()
-            self.ep_case = openep_io.load_case(filenames[0])
+            self.filenames = dlg.selectedFiles()
+            self.ep_case = openep_io.load_case(self.filenames[0])
             surf = draw.draw_map(
                 self.ep_case,
                 volt="bip",
@@ -278,18 +278,24 @@ class OpenEpGUI(qtw.QWidget):
         self.canvas = FigureCanvas(self.fig)
 
         self.egm = case_routines.get_egms_at_points(
-            self.ep_case, "iegm", [self.egm_point]
+            self.ep_case, self.filenames[0],"iegm", [self.egm_point]
         )
         self.egm_traces = self.egm["egm_traces"]
         self.sample_range = self.egm["sample_range"]
-        seperation = 7
+        self.egm_name = self.egm["egm_names"][0]
+        seperation = 5
+
+        y_label =[self.egm_name]*len(self.egm_traces)
 
         for i in range(len(self.egm_traces)):
             y = self.egm_traces[i][0][self.sample_range[0] : self.sample_range[1]]
             t = np.arange(self.sample_range[0], self.sample_range[1], 1)
             self.ax.plot(t, y + (seperation * i))
-            self.ax.get_yaxis().set_visible(False)
-            self.ax.set_xlabel("Samples")
+        self.ax.get_yaxis().set_visible(True)
+        self.ax.set_xlabel("Samples")
+        self.ax.set_yticks(np.arange(0,len(self.egm_traces))*seperation)
+        self.ax.set_yticklabels(y_label)
+
 
         self.dock_plot1 = qtw.QDockWidget("EGM Plot", self)
         self.dock_plot1.setFloating(False)
