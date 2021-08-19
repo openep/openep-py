@@ -140,6 +140,24 @@ def get_window_of_interest(mesh_case,*args):
 
     return woi
 
+def get_egm_names(filename):
+    """
+    Returns the names of the egms
+    Args:
+        filename(str): file path to the openep dataset .mat file
+    Returns:
+        str: egm_names, list array of egm names
+    """
+    egm_names = []
+    dat=h5py.File(filename)
+    n_h5=dat["userdata/electric/names"][0]
+    for i in range(len(n_h5)):
+        names = dat[n_h5[i]]
+        names = np.array(names).tobytes().decode("utf-16")
+        egm_names.append(names)
+    egm_names = np.array(egm_names).flatten()
+    return egm_names
+
 def get_egms_at_points(mesh_case,*args):
     """
     Access electrogram from stored in the openep data format
