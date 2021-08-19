@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import LinearNDInterpolator as linterp
 from scipy.interpolate import NearestNDInterpolator as nearest
 from scipy.interpolate import Rbf
+import h5py
 
 __all__ = ["OpenEPDataInterpolator"]
 
@@ -158,12 +159,13 @@ def get_egm_names(filename):
     egm_names = np.array(egm_names).flatten()
     return egm_names
 
-def get_egms_at_points(mesh_case,*args):
+def get_egms_at_points(mesh_case,filename,*args):
     """
     Access electrogram from stored in the openep data format
     
     Args:
         mesh_case (obj): openep case object
+        filename(str): file path to the openep dataset .mat file
         'iegm'(str): iegm in string format 
         ':' (str) or (list)  or range(start int, stop int): The electrogram point(s) for which the window of interst is required
         *args: Variable length argument list.
@@ -174,17 +176,21 @@ def get_egms_at_points(mesh_case,*args):
     """
     
 
+    egm_names = []
     egm_traces = []
     sample_range = []
     electric_egm_bip = []
     electric_egm_uni = []
     
-    n_standard_args = 1
+    n_standard_args = 2
     i_egm = np.array(':')
     n_arg_in = len(args)+1
 
     buffer = 50
     buffer = [-buffer,buffer]
+
+    names = get_egm_names(filename)
+
 
     woi = mesh_case.electric['annotations/woi'].T.astype(np.int64)
     ref_annot = mesh_case.electric['annotations/referenceAnnot'].T.astype(np.int64)
@@ -204,7 +210,8 @@ def get_egms_at_points(mesh_case,*args):
 
         egm_traces.append(electric_egm_bip)
         egm_traces.append(electric_egm_uni[:,:,0])
-        egm_traces.append(electric_egm_uni[:,:,1])  
+        egm_traces.append(electric_egm_uni[:,:,1])
+        egm_names.append(names)   
 
 
     else:
@@ -227,6 +234,7 @@ def get_egms_at_points(mesh_case,*args):
                     egm_traces.append(electric_egm_uni_raw[i,:,0])
                     egm_traces.append(electric_egm_uni_raw[i,:,1])
                     sample_range.append((woi[i] + ref_annot[i])+ buffer )
+                    egm_names.append(names[i])
                 egm_traces = egm_traces[::-1]    
 
         else:
@@ -239,13 +247,14 @@ def get_egms_at_points(mesh_case,*args):
                 egm_traces.append(electric_egm_uni_raw[i_egm,:,1])
                 electric_egm_bip.append(electric_egm_bip_raw[i_egm].astype(float))
                 electric_egm_uni.append(electric_egm_uni_raw[i_egm].astype(float))
+                egm_names.append(names[i_egm])
                 sample_range = woi[i_egm]+ref_annot[i_egm]
                 sample_range = sample_range + buffer
 
                 egm_traces = egm_traces[::-1]
     
 
-    return {'egm_traces':egm_traces,'sample_range':sample_range[0]}
+    return {'egm_traces':egm_traces,'egm_names':egm_names[0],'sample_range':sample_range[0]}
 
 
 def plot_egm(egmtraces,sample_range):
