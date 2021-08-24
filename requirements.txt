@@ -10,7 +10,3 @@ h5py
 PyQt5
 pyqtgraph
 cython
-operator
-functools
-sys
-time
