@@ -13,12 +13,12 @@ with open(os.path.join(source_dir, "requirements.txt")) as o:
     requirements = [str(r) for r in parse_requirements(o.read())]
 
 setup(
-    name=__appname__,
-    version=__version__,
-    description=__description__,
-    author=__author__,
-    author_email=__author_email__,
+    name="OpenEp",
+    version="0.1",
+    description="Open Source solution for electrophysiology data analysis",
+    author="Steven Williams",
+    author_email="steven.williams@ed.ac.uk",
     packages=find_packages(),
     install_requires=requirements,
-    entry_points={},
+    entry_points={"console_scripts": ['openep=openep.view.view_gui:main']},
 )

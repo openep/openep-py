@@ -26,14 +26,14 @@ __all__ = ["Case"]
 
 class Case:
     def __init__(
-            self,
-            name: str,
-            nodes: np.ndarray,
-            indices: np.ndarray,
-            fields: Dict[str, np.ndarray],
-            electric: Dict[str, np.ndarray],
-            rf: Dict[str, np.ndarray],
-            other_data: Optional[Dict[str, Any]] = None,
+        self,
+        name: str,
+        nodes: np.ndarray,
+        indices: np.ndarray,
+        fields: Dict[str, np.ndarray],
+        electric: Dict[str, np.ndarray],
+        rf: Dict[str, np.ndarray],
+        other_data: Optional[Dict[str, Any]] = None,
     ):
         self.name: str = name
         self.nodes: np.ndarray = nodes
@@ -46,7 +46,9 @@ class Case:
     def __repr__(self):
         return f"{self.name}( nodes: {self.nodes.shape} indices: {self.indices.shape} fields: {tuple(self.fields)} )"
 
-    def create_mesh(self, vertex_norms: bool = True, recenter: bool = True, back_faces: bool = True):
+    def create_mesh(
+        self, vertex_norms: bool = True, recenter: bool = True, back_faces: bool = True
+    ):
         """
         Create a new mesh object from the stored nodes and indices
 
@@ -57,7 +59,9 @@ class Case:
         """
         if back_faces:
             inds_inverted = self.indices[:, [0, 2, 1]]
-            inds = np.vstack([self.indices, inds_inverted])  # include each triangle twice for both surfaces
+            inds = np.vstack(
+                [self.indices, inds_inverted]
+            )  # include each triangle twice for both surfaces
         else:
             inds = self.indices
 
@@ -67,7 +71,9 @@ class Case:
             _ = mesh.vertex_normals  # compute vertex normals
 
         if recenter:
-            mesh.apply_translation(-mesh.centroid)  # recenter mesh to origin, helps with lighting in default scene
+            mesh.apply_translation(
+                -mesh.centroid
+            )  # recenter mesh to origin, helps with lighting in default scene
 
         return mesh
 

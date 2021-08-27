@@ -7,3 +7,6 @@ pymeshfix
 networkx
 shapely
 h5py
+PyQt5
+pyqtgraph
+cython
