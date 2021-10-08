@@ -39,7 +39,8 @@ def get_reference_annotation(mesh_case, *args):
     Args:
         mesh_case (obj): openep case object
         'iegm'(str): iegm in string format
-        ':' (str) or (list)  or range(start int, stop int): The electrogram point(s) for which the reference of annotation is required
+        ':' (str) or (list)  or range(start int, stop int): The electrogram point(s) for
+            which the reference of annotation is required
         *args: Variable length argument list.
 
     Returns:
@@ -113,7 +114,8 @@ def get_window_of_interest(mesh_case, *args):
     Args:
         mesh_case (obj): openep case object
         'iegm'(str): iegm in string format
-        ':' (str) or (list)  or range(start int, stop int): The electrogram point(s) for which the window of interst is required
+        ':' (str) or (list)  or range(start int, stop int): The electrogram point(s) for
+            which the window of interst is required
         *args: Variable length argument list.
 
     Returns:
@@ -171,13 +173,16 @@ def get_egms_at_points(mesh_case, filename, *args):
         mesh_case (obj): openep case object
         filename(str): file path to the openep dataset .mat file
         'iegm'(str): iegm in string format
-        ':' (str) or (list)  or range(start int, stop int): The electrogram point(s) for which the window of interst is required
+        ':' (str) or (list)  or range(start int, stop int): The electrogram point(s) for
+            which the window of interst is required
         *args: Variable length argument list.
 
     Returns:
-        float: egm_traces,corresponding list of arrays, containing the 'bip' and 'uni' voltages for the requested points
+        float: egm_traces,corresponding list of arrays, containing the 'bip' and 'uni'
+            voltages for the requested points
         string: egm_names, corresponding list of the egm names.
-        int: sample_range,list of all the sample range within the window-of-interest for the requested points
+        int: sample_range,list of all the sample range within the window-of-interest for
+            the requested points
     """
 
     egm_names = []
@@ -277,7 +282,7 @@ def plot_egm(egmtraces, sample_range):
     seperation = 7
 
     for i in range(len(egmtraces)):
-        y = egmtraces[i][0][sample_range[0] : sample_range[1]]
+        y = egmtraces[i][0][sample_range[0] : sample_range[1]]  # noqa E203
         t = np.arange(sample_range[0], sample_range[1], 1)
         axs.plot(t, y + (seperation * i))
         axs.get_yaxis().set_visible(False)
@@ -422,7 +427,6 @@ class rbfcreate:
             "Stats            ",
         ]
         m = len(Names)
-        n = len(Names[0])
         names = []
         for i in range(m):
             names.append(Names[i].lower())

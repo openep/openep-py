@@ -17,9 +17,7 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-from numpy.lib.function_base import _ARGUMENT_LIST
-from openep import mesh_routines as openep_mesh
-from openep import case_routines as case_routines
+from openep import case_routines
 
 import numpy as np
 import trimesh as tm
@@ -47,13 +45,13 @@ def line_length(h):
     dy = np.diff(data[:, 1])
     dz = np.diff(data[:, 2])
 
-    l = 0
+    length = 0
     for i in range(len(dx)):
-        l = np.round(
-            l + np.sqrt(np.square(dx[i]) + np.square(dy[i]) + np.square(dz[i])), 4
+        length = np.round(
+            length + np.sqrt(np.square(dx[i]) + np.square(dy[i]) + np.square(dz[i])), 4
         )
 
-    return l
+    return length
 
 
 def create_pymesh(mesh_case):
@@ -72,14 +70,9 @@ def create_pymesh(mesh_case):
     np.set_printoptions(suppress=True)
     size_tri = []
 
-    x = tri[:, 0].reshape(len(tri[:, 0]), 1)
-    y = tri[:, 1].reshape(len(tri[:, 1]), 1)
-    z = tri[:, 2].reshape(len(tri[:, 2]), 1)
-
     for item in tri:
         size_tri.append(len(item))
 
-    size_tri_list = size_tri
     size_tri_arr = np.array(size_tri, dtype=np.int).reshape(len(size_tri), 1)
 
     face = np.hstack(np.concatenate((size_tri_arr, tri), axis=1)).astype(int)
@@ -150,7 +143,7 @@ def free_boundary(tri):
         float: length, list containing the length of each of the freeboundaries/outlines.
     """
 
-    l = []
+    length = []
 
     f_fall = get_freeboundaries(tri)
     fb = f_fall["freeboundary"]
@@ -160,7 +153,7 @@ def free_boundary(tri):
     test_set[:, 0] = fb[:, 0]
 
     # exctracting the contents of 2nd columm fb array into the testset
-    second_col_fb = list(map(lambda x: x, fb[:, 1][0 : len(fb) - 1]))
+    second_col_fb = list(map(lambda x: x, fb[:, 1][0 : len(fb) - 1]))  # noqa: E203
     second_col_fb.insert(0, fb[:, 1][-1])
     second_col_fb = np.array(second_col_fb)
 
@@ -175,19 +168,19 @@ def free_boundary(tri):
     if not list(i_start):
         ff.append(np.array(fb))
         coords = get_freeboundary_points(tri, ff[0])
-        l.append(line_length(coords))
+        length.append(line_length(coords))
     else:
         for i in range(i_start.shape[0]):
             if i < (i_start.shape[0] - 1):
-                np.array(ff.append(fb[i_start[i] : i_start[i + 1]]))
+                np.array(ff.append(fb[i_start[i] : i_start[i + 1]]))  # noqa E203
                 coords = get_freeboundary_points(tri, ff[i])
-                l.append(line_length(coords))
+                length.append(line_length(coords))
             else:
-                ff.append(fb[i_start[i] :])
+                ff.append(fb[i_start[i]:])
                 coords = get_freeboundary_points(tri, ff[i])
-                l.append(line_length(coords))
+                length.append(line_length(coords))
 
-    return {"connected_freeboundary": ff, "length": l}
+    return {"connected_freeboundary": ff, "length": length}
 
 
 def draw_free_boundaries(
@@ -203,7 +196,9 @@ def draw_free_boundaries(
     **kwargs
 ):
     """
-    Draws the boundaries at the edge of a TriSurface mesh with each freeboundary rendered with the colors mentioned in the fb_col
+    Draws the boundaries at the edge of a TriSurface mesh with each freeboundary
+    rendered with the colors mentioned in the fb_col
+
     Args:
         mesh_case (obj): openep Case object.
         fb_points (float): m x 3 coordinate point arrays.
@@ -261,13 +256,13 @@ def get_anatomical_structures(mesh_case, plot, **kwargs):
 
     Returns:
         float: FreeboundaryPoints,m x 3 matrix of the freeboundary coordinate points of each anatomical structure.
-        float: l,array of lengths [perimeters] of each anatomical structure.
-        float: a,array of areas of each anatomical structure.
+        float: length,array of lengths [perimeters] of each anatomical structure.
+        float: area,array of areas of each anatomical structure.
         obj: tr, array of trimesh objects of each anatomical structure.
     """
 
-    a = []
-    l = []
+    area = []
+    length = []
 
     tr = []
 
@@ -329,9 +324,9 @@ def get_anatomical_structures(mesh_case, plot, **kwargs):
 
         tr.append(tm.Trimesh(vertices=X, faces=TRI))
         lineLen = line_length(coords)
-        a.append(round(tr[i].area, 4))
-        l.append(lineLen)
-        print("Perimeter is :", l[i], "| Area is:", a[i])
+        area.append(round(tr[i].area, 4))
+        length.append(lineLen)
+        print("Perimeter is :", length[i], "| Area is:", area[i])
 
     if plot:
         col = ["blue", "yellow", "green", "red", "orange", "brown", "magenta"]
@@ -355,8 +350,8 @@ def get_anatomical_structures(mesh_case, plot, **kwargs):
 
     return {
         "FreeboundaryPoints": freeboundary_points,
-        "Lengths": l,
-        "Area": a,
+        "Lengths": length,
+        "Area": area,
         "tr": tr,
     }
 
@@ -466,7 +461,6 @@ def get_voltage_electroanatomic(mesh_case):
 
     # Anatomic descriptions (Mesh) - nodes and indices
     pts = mesh_case.nodes
-    indices = mesh_case.indices
 
     # Electric data
     # Locations – Cartesian co-ordinates, projected on to the surface

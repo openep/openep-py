@@ -15,10 +15,3 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
-
-
-from ._version import __version__
-
-from .case import *
-from .case_routines import *
-from .mesh_routines import *

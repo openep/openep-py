@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from typing import Optional, Union
+from typing import Union
 import numpy as np
 
 from trimesh import Trimesh
