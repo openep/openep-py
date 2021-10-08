@@ -22,24 +22,16 @@ GUI code for OpenEp
 """
 import sys
 
-sys.path.append("../openep")
-
-from logging import setLogRecordFactory
 from PyQt5 import QtWidgets as qtw
-from matplotlib.figure import Figure
-import pyvista as pv
-from pyvistaqt import QtInteractor, MainWindow
+from pyvistaqt import QtInteractor
 import numpy as np
 from copy import deepcopy
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import (
-    FigureCanvasQTAgg as FigureCanvas,
-    NavigationToolbar2QT as NavigationToolbar,
+    FigureCanvasQTAgg as FigureCanvas
 )
 
 from openep import io as openep_io
-from openep import case as openep_case
-from openep import mesh_routines as openep_mesh
 from openep import case_routines as case_routines
 from openep import draw_routines as draw
 
@@ -288,7 +280,7 @@ class OpenEpGUI(qtw.QWidget):
         y_label = [self.egm_name] * len(self.egm_traces)
 
         for i in range(len(self.egm_traces)):
-            y = self.egm_traces[i][0][self.sample_range[0] : self.sample_range[1]]
+            y = self.egm_traces[i][0][self.sample_range[0] : self.sample_range[1]]  # noqa E203
             t = np.arange(self.sample_range[0], self.sample_range[1], 1)
             self.ax.plot(t, y + (seperation * i))
         self.ax.get_yaxis().set_visible(True)
