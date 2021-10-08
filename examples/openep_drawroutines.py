@@ -16,20 +16,12 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-import sys
-
-sys.path.append("/home/jra21/work/source/repos/opep")
 
 from openep import io as openep_io
-from openep import case as openep_case
-from openep import mesh_routines as openep_mesh
-from openep import case_routines as case_routines
 from openep import draw_routines as draw
-import numpy as np
-import matplotlib.pyplot as plt
 
 
-filename = "/home/jra21/work/source/repos/opep/examples/data/new_dataset_2.mat"
+filename = "data/new_dataset_2.mat"
 
 ep_case = openep_io.load_case(filename)
 
