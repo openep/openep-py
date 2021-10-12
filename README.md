@@ -9,14 +9,14 @@ The open source solution for electrophysiology data analysis
 # Installation
 # Using git clone
 Install this library from a git clone
+
 ```bash
 git clone https://github.com/openep/openep-py.git
 cd openep-py
-python3 setup.py install --user
+python3 -m pip install -e .
 ```
 
-# Using Pypi
-Install openp using pip3
-```bash
-$ pip3 install openep
-```
+By installing OpenEP with the above command, you can update to the latest version anytime by going to the `openep-py` directory and typing `git pull`.
+
+# Using PyPI
+We have not yet relased a version of OpenEP on PyPI, but we're working on it.
