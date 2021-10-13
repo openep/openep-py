@@ -19,7 +19,7 @@
 
 import numpy as np
 from typing import Any, Dict, Optional, Tuple
-import trimesh
+import pyvista
 
 __all__ = ["Case"]
 
@@ -58,21 +58,25 @@ class Case:
             back_faces: if True, calculate back face triangles
         """
         if back_faces:
-            inds_inverted = self.indices[:, [0, 2, 1]]
-            inds = np.vstack(
-                [self.indices, inds_inverted]
+            
+            inds = self.indices.reshape(-1, 4)            
+            inds_inverted = inds[:, [0, 1, 3, 2]]
+            
+            inds = np.concatenate(
+                [inds.ravel(), inds_inverted.ravel()]
             )  # include each triangle twice for both surfaces
         else:
             inds = self.indices
 
-        mesh = trimesh.Trimesh(self.nodes, inds, process=False, parent_obj=self)
-
+        mesh = pyvista.PolyData(self.nodes, inds)
+        
+        # TODO: Refactor to remove this statement and the vertex_norms parameter.
         if vertex_norms:
-            _ = mesh.vertex_normals  # compute vertex normals
+            _ = mesh.point_normals  # compute vertex normals
 
         if recenter:
-            mesh.apply_translation(
-                -mesh.centroid
+            mesh.translate(
+                -np.asarray(mesh.center)
             )  # recenter mesh to origin, helps with lighting in default scene
 
         return mesh
