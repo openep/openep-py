@@ -53,6 +53,20 @@ def line_length(h):
 
     return length
 
+def _create_trimesh(pyvista_mesh):
+    """Convert a pyvista mesh into a trimesh mesh.
+
+    Args:
+        pyvista_mesh (pyvista.PolyData): The pyvista mesh from which the trimesh mesh will be generated
+    
+    Returns:
+        trimesh_mesh (trimesh.Trimesh): The generated trimesh mesh
+    """
+    
+    vertices = pyvista_mesh.points
+    faces = pyvista_mesh.faces.reshape(pyvista_mesh.n_faces, 4)[:, 1:]  # ignore to number of vertices per face
+    
+    return tm.Trimesh(vertices, faces, process=False)
 
 def create_pymesh(mesh_case):
 
