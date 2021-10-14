@@ -16,42 +16,18 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-
-from openep import case_routines
+from dataclasses import dataclass
 
 import numpy as np
 import trimesh as tm
 import pyvista as pv
 
+from openep import case_routines
+
+# TOD0: remove global variables
 # GLOBAL VARIABLES
 plot = False
 volt = 0
-
-
-def line_length(h):
-    """
-    Calculates the Length of a line.
-
-    Args:
-        h (float): mx3 array of cartesian co-ordinates representing the line.
-
-    Returns:
-        float: l, mx1 array of length of the line.
-    """
-    #   remove any Nan values
-    data = h[~np.isnan(h)].reshape(h.shape[0], h.shape[1])
-
-    dx = np.diff(data[:, 0])
-    dy = np.diff(data[:, 1])
-    dz = np.diff(data[:, 2])
-
-    length = 0
-    for i in range(len(dx)):
-        length = np.round(
-            length + np.sqrt(np.square(dx[i]) + np.square(dy[i]) + np.square(dz[i])), 4
-        )
-
-    return length
 
 def _create_trimesh(pyvista_mesh):
     """Convert a pyvista mesh into a trimesh mesh.
@@ -79,6 +55,67 @@ def _create_pymesh(trimesh_mesh):
     """
     
     return pv.wrap(trimesh_mesh)
+@dataclass
+class FreeBoundary:
+    """Class for storing information on the free boundaries of a mesh."""
+    
+    freeboundary: np.ndarray
+    free_boundary_points: np.ndarray
+    n_boundaries: int
+    n_nodes_per_boundary: np.ndarray
+    
+    def __post_init__(self):
+        
+        start_indices = list(np.cumsum(self.n_nodes_per_boundary[:-1] - 1))
+        start_indices.insert(0, 0)
+        self._start_indices = np.asarray(start_indices)
+
+        stop_indices = start_indices[1:]
+        stop_indices.append(None)
+        self._stop_indices = np.asarray(stop_indices)
+    
+    def separate_boundaries(self):
+        """
+        Returns a list of numpy arrays where each array contains the indices of
+        node pairs in a single free boundary.
+        
+        """
+        
+        separate_boundaries = [
+            self.freeboundary[start:stop] for start, stop in zip(self._start_indices, self._stop_indices)
+        ]
+        
+        return separate_boundaries
+        
+
+    def calculate_lengths(self):
+        """
+        Returns the length of the perimeter of each free boundary.
+        """
+        
+        lengths = [
+            self._line_length(self.free_boundary_points[start:stop]) for
+                start, stop in zip(self._start_indices, self._stop_indices)
+        ]
+            
+        return np.asarray(lengths)
+
+    def _line_length(self, points):
+        """
+        Calculates the length of a line defined by the positions of a sequence of points.
+
+        Args:
+            points (ndarray): Nx3 array of cartesian coordinates of points along the line.
+
+        Returns:
+            length (float): length of the line
+        """
+        
+        distance_between_neighbours = np.sqrt(np.sum(np.square(np.diff(points, axis=0)), axis=1))
+        total_distance = np.sum(distance_between_neighbours)
+        
+        return float(total_distance)
+
 
 def get_freeboundaries(mesh):
 
@@ -114,7 +151,7 @@ def get_freeboundaries(mesh):
     # Get the {x,y,z} coordinates of the first node in each pair
     free_boundaries_points = tm_mesh.vertices[free_boundaries[:, 0]]
     
-    # TODO: return a tuple of numpy arrays rather than a dictionary
+    # TODO: return a FreeBoundary object rather than a dictionary
     return {
         "freeboundary": free_boundaries,
         "free_boundary_points": free_boundaries_points,
@@ -133,61 +170,8 @@ def get_freeboundary_points(mesh):
     """
     
     # TODO: Remove this function. get_freeboundaries() should be called directly.
-    #       return_points can be added as an optional keyword parameter
     
     return get_freeboundaries(mesh)['free_boundary_points']
-
-
-def free_boundary(tri):
-    """
-    Returns an array of connected free boundaries/outlines and the length of each of the freeboundary/outline.
-    Args:
-        tri (obj): Trimesh Object containing a triangular 3D mesh.
-
-    Returns:
-        int: connected_freeboundary, mx2 array of connectecd freeboundary indices.
-        float: length, list containing the length of each of the freeboundaries/outlines.
-    """
-
-    length = []
-
-    f_fall = get_freeboundaries(tri)
-    fb = f_fall["freeboundary"]
-
-    test_set = np.array(list(np.zeros((fb.shape[0], fb.shape[1]))))
-    test_set[:] = np.nan
-    test_set[:, 0] = fb[:, 0]
-
-    # exctracting the contents of 2nd columm fb array into the testset
-    second_col_fb = list(map(lambda x: x, fb[:, 1][0 : len(fb) - 1]))  # noqa: E203
-    second_col_fb.insert(0, fb[:, 1][-1])
-    second_col_fb = np.array(second_col_fb)
-
-    # Assigning the values of the second column to the 2nd column of testset
-    test_set[:, 1] = second_col_fb
-
-    # isstat
-    i_start = np.where(np.diff(a=test_set, n=1, axis=1).astype(np.int64))[0]
-
-    ff = []
-
-    if not list(i_start):
-        ff.append(np.array(fb))
-        coords = get_freeboundary_points(tri, ff[0])
-        length.append(line_length(coords))
-    else:
-        for i in range(i_start.shape[0]):
-            if i < (i_start.shape[0] - 1):
-                np.array(ff.append(fb[i_start[i] : i_start[i + 1]]))  # noqa E203
-                coords = get_freeboundary_points(tri, ff[i])
-                length.append(line_length(coords))
-            else:
-                ff.append(fb[i_start[i]:])
-                coords = get_freeboundary_points(tri, ff[i])
-                length.append(line_length(coords))
-
-    return {"connected_freeboundary": ff, "length": length}
-
 
 def draw_free_boundaries(
     mesh_case,
