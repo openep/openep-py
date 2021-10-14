@@ -82,45 +82,20 @@ def _create_pymesh(trimesh_mesh):
 
 def get_freeboundaries(mesh):
 
-    """
-    Gets the freeboundary/outlines of the 3-D mesh and returns the indices.
+    """Gets the freeboundary/outlines of the 3-D mesh and returns the indices.
+    
     Args:
-        tri (obj): Trimesh Object containing a triangular 3D mesh.
+        mesh (pyvista.PolyData): Open mesh for which the free boundaries will be determined.
 
     Returns:
-           int: freeboundaries,list of mx2 array of freeboundary indices.
+        freeboundaies_info (dict):
+            * freeboundary, Nx2 numpy array of indices of neighbouring points in the free boundaries
     """
 
-    freeboundary_vertex_nodes = []
-    freeboundaries = []
-
-    tri_outline = mesh.outline().to_dict()
-    mesh_outline_entities = mesh.outline().entities
-    no_of_freeboundaries = len(mesh_outline_entities)
-
-    # Find all the freeboundary facets
-    for i in range(no_of_freeboundaries):
-        freeboundary_vertex_nodes.append(tri_outline["entities"][i]["points"])
-
-        # creating an array of fb values with the index of the points
-        for j in range(len(freeboundary_vertex_nodes[i]) - 1):
-            freeboundaries.append(
-                [freeboundary_vertex_nodes[i][j], freeboundary_vertex_nodes[i][j + 1]]
-            )
-
-    freeboundaries = np.array(freeboundaries).astype(np.int64)
-
-    # TODO: this should return a numpy array rather than a dictionary
-    return {"freeboundary": freeboundaries}
-
-
-def get_freeboundaries(mesh):
-    
-    tm_mesh = openep.draw_routines._create_trimesh(mesh)
+    tm_mesh = _create_trimesh(mesh)
     
     # extract the boundary information
     boundaries = tm_mesh.outline()
-    boundaries_vertices = boundaries.vertices
     boundaries_lines = boundaries.entities
 
     # determine information about each boundary
@@ -136,13 +111,12 @@ def get_freeboundaries(mesh):
     keep_neighbours[n_nodes_per_boundary[:-1].cumsum()-1] = False
     free_boundaries = free_boundaries[keep_neighbours]
     
-    # TODO: this should return a numpy array rather than a dictionary
+    # TODO: return a tuple of numpy arrays rather than a dictionary
     return {
         "freeboundary": free_boundaries,
         "n_boundaries": n_boundaries,
         "n_nodes_per_boundary": n_nodes_per_boundary,
     }
-
 
 def get_freeboundary_points(tri, fb):
     """
