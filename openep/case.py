@@ -37,7 +37,7 @@ class Case:
     ):
         self.name: str = name
         self.nodes: np.ndarray = nodes
-        self.indices: np.ndarray = indices
+        self.indices: np.ndarray = indices.astype(int)
         self.fields: Dict[str, np.ndarray] = dict(fields)
         self.electric: Dict[str, np.ndarray] = dict(electric)
         self.rf: Dict[str, np.ndarray] = dict(rf)
@@ -47,7 +47,9 @@ class Case:
         return f"{self.name}( nodes: {self.nodes.shape} indices: {self.indices.shape} fields: {tuple(self.fields)} )"
 
     def create_mesh(
-        self, vertex_norms: bool = True, recenter: bool = True, back_faces: bool = True
+        self, vertex_norms: bool = True,
+        recenter: bool = True,
+        back_faces: bool = True,
     ):
         """
         Create a new mesh object from the stored nodes and indices
@@ -57,18 +59,19 @@ class Case:
             recenter: if True, recenter the mesh on the origin
             back_faces: if True, calculate back face triangles
         """
+        
+        indices = self.indices
+        num_points_per_face = np.full(shape=(len(indices)), fill_value=3, dtype=int)  # all faces have three vertices
+        faces = np.concatenate([num_points_per_face[:, np.newaxis], indices], axis=1)
+        
         if back_faces:
-            
-            inds = self.indices.reshape(-1, 4)            
-            inds_inverted = inds[:, [0, 1, 3, 2]]
-            
-            inds = np.concatenate(
-                [inds.ravel(), inds_inverted.ravel()]
-            )  # include each triangle twice for both surfaces
-        else:
-            inds = self.indices
+            indices_inverted = indices[:, [0, 2, 1]]
+            faces_inverted = np.concatenate([num_points_per_face[:, np.newaxis], indices_inverted], axis=1)
+            faces = np.vstack(
+                [faces, faces_inverted]
+            )  # include each face twice for both surfaces
 
-        mesh = pyvista.PolyData(self.nodes, inds)
+        mesh = pyvista.PolyData(self.nodes, faces.ravel())
         
         # TODO: Refactor to remove this statement and the vertex_norms parameter.
         if vertex_norms:
