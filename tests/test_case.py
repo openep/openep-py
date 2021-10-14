@@ -12,8 +12,10 @@ class CaseTests(TestCase):
     def setUp(self) -> None:
         cube = pyvista.read(CUBE)
         
+        indices = cube.faces.reshape(-1, 4)[:, 1:]  # ignore the number of vertices per face
         self.fakefield = cube.points[:, 0]
-        self.case = Case("Test", cube.points, cube.faces, {"fakefield": self.fakefield}, {}, {})
+        
+        self.case = Case("Test", cube.points, indices, {"fakefield": self.fakefield}, {}, {})
 
     def test_fields(self):
         assert_allclose(self.fakefield, self.case.fields['fakefield'])
