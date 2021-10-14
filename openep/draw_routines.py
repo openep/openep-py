@@ -68,34 +68,19 @@ def _create_trimesh(pyvista_mesh):
     
     return tm.Trimesh(vertices, faces, process=False)
 
-def create_pymesh(mesh_case):
+def _create_pymesh(trimesh_mesh):
+    """Convert a pyvista mesh into a trimesh mesh.
 
-    """
-    Creates a pymesh object.
     Args:
-        mesh_case (obj): Case object from a given openep file.
-
+        pyvista_mesh (pyvista.PolyData): The pyvista mesh from which the trimesh mesh will be generated
+    
     Returns:
-        obj:  mesh, Pyvista PolyData object, triangulated surface object from Numpy arrays of the vertices and faces.
+        trimesh_mesh (trimesh.Trimesh): The generated trimesh mesh
     """
+    
+    return pv.wrap(trimesh_mesh)
 
-    pts = mesh_case.nodes
-    tri = mesh_case.indices.astype(int)
-    np.set_printoptions(suppress=True)
-    size_tri = []
-
-    for item in tri:
-        size_tri.append(len(item))
-
-    size_tri_arr = np.array(size_tri, dtype=np.int).reshape(len(size_tri), 1)
-
-    face = np.hstack(np.concatenate((size_tri_arr, tri), axis=1)).astype(int)
-    mesh = pv.PolyData(pts, face)
-
-    return mesh
-
-
-def get_freeboundaries(tri):
+def get_freeboundaries(mesh):
 
     """
     Gets the freeboundary/outlines of the 3-D mesh and returns the indices.
@@ -109,8 +94,8 @@ def get_freeboundaries(tri):
     freeboundary_vertex_nodes = []
     freeboundaries = []
 
-    tri_outline = tri.outline().to_dict()
-    mesh_outline_entities = tri.outline().entities
+    tri_outline = mesh.outline().to_dict()
+    mesh_outline_entities = mesh.outline().entities
     no_of_freeboundaries = len(mesh_outline_entities)
 
     # Find all the freeboundary facets
@@ -125,7 +110,38 @@ def get_freeboundaries(tri):
 
     freeboundaries = np.array(freeboundaries).astype(np.int64)
 
+    # TODO: this should return a numpy array rather than a dictionary
     return {"freeboundary": freeboundaries}
+
+
+def get_freeboundaries(mesh):
+    
+    tm_mesh = openep.draw_routines._create_trimesh(mesh)
+    
+    # extract the boundary information
+    boundaries = tm_mesh.outline()
+    boundaries_vertices = boundaries.vertices
+    boundaries_lines = boundaries.entities
+
+    # determine information about each boundary
+    all_boundaries_nodes = np.concatenate([line.points for line in boundaries_lines])
+    n_nodes_per_boundary = np.asarray([line.points.size for line in boundaries_lines])
+    n_boundaries = tm_mesh.outline().entities.size
+
+    # Create an array pairs of neighbouring nodes for each boundary
+    free_boundaries = np.vstack([all_boundaries_nodes[:-1], all_boundaries_nodes[1:]]).T
+
+    # Ignore the neighbours that are part of different boundaries
+    keep_neighbours = np.full_like(free_boundaries[:, 0], fill_value=True, dtype=bool)
+    keep_neighbours[n_nodes_per_boundary[:-1].cumsum()-1] = False
+    free_boundaries = free_boundaries[keep_neighbours]
+    
+    # TODO: this should return a numpy array rather than a dictionary
+    return {
+        "freeboundary": free_boundaries,
+        "n_boundaries": n_boundaries,
+        "n_nodes_per_boundary": n_nodes_per_boundary,
+    }
 
 
 def get_freeboundary_points(tri, fb):
@@ -230,7 +246,11 @@ def draw_free_boundaries(
     """
 
     # Create a pymesh of the openep case
-    py_mesh = create_pymesh(mesh_case)
+    py_mesh = mesh_case.create_mesh(
+        vertex_norms=False,
+        recenter=False,  # TODO: Add a recenter parameter to draw_free_boundaries
+        back_faces=False,
+    )
 
     #     Freeboundary Color
     fb_col = ["blue", "yellow", "green", "red", "orange", "brown", "magenta"]
@@ -369,7 +389,8 @@ def get_anatomical_structures(mesh_case, plot, **kwargs):
         "tr": tr,
     }
 
-
+# TODO: This function should take a pyvista mesh to draw, rather than a Case object
+# TODO: draw_free_boundaries should be a keyword argument
 def draw_map(
     mesh_case,
     volt,
@@ -411,8 +432,12 @@ def draw_map(
         str or 3 item list: volt_below_color,Color for all the voltage values below lower threshold
         str or 3 item list: volt_above_color,Color for all the voltage values above upper threshold
     """
-    # Create a PyMesh
-    py_mesh = create_pymesh(mesh_case)
+    # Create a pymesh of the openep case
+    py_mesh = mesh_case.create_mesh(
+        vertex_norms=False,
+        recenter=False,  # TODO: Add a recenter parameter to draw_free_boundaries
+        back_faces=False,
+    )
 
     if volt == "bip":
         volt = mesh_case.fields["bip"]
