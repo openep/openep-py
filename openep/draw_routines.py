@@ -17,6 +17,7 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 from dataclasses import dataclass
+from typing import List
 
 import numpy as np
 import trimesh as tm
@@ -59,6 +60,7 @@ def _create_pymesh(trimesh_mesh):
 class FreeBoundary:
     """Class for storing information on the free boundaries of a mesh."""
     
+    mesh: pv.PolyData
     freeboundary: np.ndarray
     free_boundary_points: np.ndarray
     n_boundaries: int
@@ -73,6 +75,8 @@ class FreeBoundary:
         stop_indices = start_indices[1:]
         stop_indices.append(None)
         self._stop_indices = np.asarray(stop_indices)
+        
+        self._boundary_meshes = None
     
     def separate_boundaries(self):
         """
@@ -115,6 +119,45 @@ class FreeBoundary:
         total_distance = np.sum(distance_between_neighbours)
         
         return float(total_distance)
+    
+    def calculate_areas(self):
+        """
+        Returns the total area of the faces in each boundary.
+        """
+        
+        if self._boundary_meshes is None:
+            self._create_boundary_meshes()
+        
+        areas = [mesh.area for mesh in self._boundary_meshes]
+        
+        return np.asarray(areas)
+    
+    def _create_boundary_meshes(self):
+        """
+        Create a pyvista.PolyData mesh for each boundary.
+        """
+        
+        boundary_meshes = []
+        boundaries = self.separate_boundaries()
+        
+        for boundary in boundaries:
+            
+            points = self.mesh.points[boundary[:, 0]]
+            center = np.mean(points, axis=0)
+            points = np.vstack([center, points])
+            
+            num_points = points.shape[0]
+            n_vertices_per_node = np.full(num_points - 1, fill_value=3, dtype=int)
+            vertex_one = np.zeros(num_points - 1, dtype=int)  # all triangles include the central point
+            vertex_two = np.arange(1, num_points)
+            vertex_three = np.roll(vertex_two, shift=-1)
+            faces = np.vstack([n_vertices_per_node, vertex_one, vertex_two, vertex_three]).T.ravel()
+            
+            boundary_meshes.append(pv.PolyData(points, faces))
+        
+        self._boundary_meshes = boundary_meshes
+        
+        return None
 
 
 def get_freeboundaries(mesh):
@@ -125,7 +168,7 @@ def get_freeboundaries(mesh):
         mesh (pyvista.PolyData): Open mesh for which the free boundaries will be determined.
 
     Returns:
-        freeboundaies_info (dict):
+        freeboundaries_info (dict):
             * freeboundary, Nx2 numpy array of indices of neighbouring points in the free boundaries
     """
 
@@ -173,62 +216,52 @@ def get_freeboundary_points(mesh):
     
     return get_freeboundaries(mesh)['free_boundary_points']
 
+# TODO: draw_free_boundaries should be an optional parameter to draw_map
+#       Make this function private, and call from draw_map
 def draw_free_boundaries(
-    mesh_case,
-    fb_points,
-    fb_col,
-    fb_width,
-    mesh_surf_color,
-    opacity,
-    smooth_shading,
-    use_transparency,
-    lighting,
-    **kwargs
+    free_boundaries: FreeBoundary,
+    colours: List = ["blue", "yellow", "green", "red", "orange", "brown", "magenta"],
+    width: int = 10,
+    plotter: pv.Plotter = None,
 ):
     """
-    Draws the boundaries at the edge of a TriSurface mesh with each freeboundary
-    rendered with the colors mentioned in the fb_col
-
+    Draw the freeboundaries of a mesh.
+    
     Args:
-        mesh_case (obj): openep Case object.
-        fb_points (float): m x 3 coordinate point arrays.
-        fb_col (str): list of RGB colors For eg: fb_col = ['blue','yellow','green','red','orange','brown','magenta'].
-        fb_width (float): width of the freeboundary line.
-        mesh_surf_color (int): RGB values between 0 and 1.
-        opacity (float): any value in the range between 0 and 1.
-        smooth_shading (boolean): True for shading, False otherwise.
-        use_transparency (boolean): True for applying transparency, False otherwise.
-        lighting (boolean): True for lighting, False otherwise.
-        **kwargs: Arbitrary keyword arguments.
+        free_boundaries (FreeBoundary): FreeBoundary object. Can be generated using
+            openep.draw_routines.get_free_boundaries.
+        colours (list): colours to render the free boundaries.
+        width (int): width of the free boundary lines.
+        plotter (pyvista.Plotter): The free boundaries will be added to this plotting object.
+            If None, a new plotting object will be created and the mesh associated with the
+            free boundaries will also be plotted.
 
     Returns:
-       obj: p, pyvista plotter handle.
+        plotter (pyvista.Plotter): Plotting object with the free boundaries added.
+        
     """
-
-    # Create a pymesh of the openep case
-    py_mesh = mesh_case.create_mesh(
-        vertex_norms=False,
-        recenter=False,  # TODO: Add a recenter parameter to draw_free_boundaries
-        back_faces=False,
-    )
-
-    #     Freeboundary Color
-    fb_col = ["blue", "yellow", "green", "red", "orange", "brown", "magenta"]
-
-    p = pv.Plotter()
-
-    p.add_mesh(
-        py_mesh,
-        color=mesh_surf_color,
-        opacity=opacity,
-        smooth_shading=smooth_shading,
-        use_transparency=use_transparency,
-        lighting=lighting,
-    )
-
-    for indx in range(len(fb_points)):
-        p.add_lines(fb_points[indx], color=fb_col[indx], width=fb_width)
-    return p
+    
+    if plotter is None:
+        
+        plotter = pv.Plotter()
+        plotter.add_mesh(
+            free_boundaries.mesh,
+            color=[0.5, 0.5, 0.5],
+            smooth_shading=True,
+            show_edges=False,
+            use_transparency=False,
+            opacity=0.5,
+            lighting=False
+        )
+    
+    for boundary_index, boundary in enumerate(free_boundaries.separate_boundaries()):
+        
+        points = free_boundaries.mesh.points[boundary[:, 0]]
+        points = np.vstack([points, points[:1]])  # we need to close the loop
+        
+        plotter.add_lines(points, color=colours[boundary_index], width=width)
+    
+    return plotter
 
 
 def get_anatomical_structures(mesh_case, plot, **kwargs):
