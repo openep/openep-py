@@ -111,29 +111,31 @@ def get_freeboundaries(mesh):
     keep_neighbours[n_nodes_per_boundary[:-1].cumsum()-1] = False
     free_boundaries = free_boundaries[keep_neighbours]
     
+    # Get the {x,y,z} coordinates of the first node in each pair
+    free_boundaries_points = tm_mesh.vertices[free_boundaries[:, 0]]
+    
     # TODO: return a tuple of numpy arrays rather than a dictionary
     return {
         "freeboundary": free_boundaries,
+        "free_boundary_points": free_boundaries_points,
         "n_boundaries": n_boundaries,
         "n_nodes_per_boundary": n_nodes_per_boundary,
     }
 
-def get_freeboundary_points(tri, fb):
+def get_freeboundary_points(mesh):
     """
     Returns the coords of the vertices of the freeboundary/outlines.
     Args:
-        tri (obj): Trimesh Object containing a triangular 3D mesh.
-
+        mesh (pyvista.PolyData): Open mesh for which the coordinates of free boundaries will be determined.
 
     Returns:
-        float: coords, mx3 Array of coords of the vertices of the freeboundary/outlines.
+        positions (ndarray): Nx3 array of coordinates of the vertices of each freeboundary.
     """
-
-    trimesh_points = tri.vertices
-    fb = fb[:, 0]
-    coords = np.array(list(trimesh_points[fb])).astype(np.float64)
-
-    return coords
+    
+    # TODO: Remove this function. get_freeboundaries() should be called directly.
+    #       return_points can be added as an optional keyword parameter
+    
+    return get_freeboundaries(mesh)['free_boundary_points']
 
 
 def free_boundary(tri):
