@@ -21,14 +21,19 @@ from openep import io as openep_io
 from openep import draw_routines as draw
 
 
-filename = "data/new_dataset_2.mat"
+filename = "/Users/paul/github/openep-py/examples/data/new_dataset_2.mat"
 
 ep_case = openep_io.load_case(filename)
+mesh = ep_case.create_mesh(
+    vertex_norms=False,
+    recenter=False,
+    back_faces=False
+)
 
 # DrawVoltage Map
 hsurf = draw.draw_map(
-    ep_case,
-    volt="bip",
+    mesh,
+    volt=ep_case.fields["bip"],
     freeboundary_color="black",
     freeboundary_width=5,
     cmap="jet_r",
@@ -39,6 +44,3 @@ hsurf = draw.draw_map(
     nan_color="gray",
     plot=True,
 )
-
-# GetAnatomicalStructure and DrawFreeBoundaries on mesh
-# hsurf1 = draw.get_anatomical_structures(ep_case,plot=True)
