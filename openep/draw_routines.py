@@ -236,7 +236,7 @@ def draw_free_boundaries(
             smooth_shading=True,
             show_edges=False,
             use_transparency=False,
-            opacity=1,
+            opacity=0.2,
             lighting=False
         )
     
