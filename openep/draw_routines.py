@@ -263,129 +263,10 @@ def draw_free_boundaries(
     
     return plotter
 
-
-def get_anatomical_structures(mesh_case, plot, **kwargs):
-
-    """
-    Returns the free boundaries (anatomical
-    structures) described in ep_case and plots them if plot=True with draw_free_boundaries()
-    Anatomical structures are boundary regions that have been added to an anatomical model in the clinical mapping system.
-    For example,
-    with respect of left atrial ablation, anatomical structures may represent
-    the pulmonary vein ostia, mitral valve annulus or left atrial appendage
-    ostium.
-
-    Args:
-        mesh_case (obj): openep Case object.
-        plot (boolean): True to plot, False otherwise.
-        **kwargs: Arbitrary keyword arguments.
-
-
-    Returns:
-        float: FreeboundaryPoints,m x 3 matrix of the freeboundary coordinate points of each anatomical structure.
-        float: length,array of lengths [perimeters] of each anatomical structure.
-        float: area,array of areas of each anatomical structure.
-        obj: tr, array of trimesh objects of each anatomical structure.
-    """
-
-    area = []
-    length = []
-
-    tr = []
-
-    x_values = []
-    y_values = []
-    z_values = []
-
-    freeboundary_points = []
-    freeboundary_vertex_nodes = []
-
-    pts = mesh_case.nodes
-    face = mesh_case.indices.astype(int)
-
-    tm_mesh = tm.Trimesh(vertices=pts, faces=face, process=False)
-
-    freeboundary = tm_mesh.outline().to_dict()
-    mesh_outline_entities = tm_mesh.outline().entities
-
-    for i in range(len(mesh_outline_entities)):
-        freeboundary_vertex_nodes.append(freeboundary["entities"][i]["points"])
-
-    # mesh Vertices - finding the coordinates/points of the freeboundaries
-    trimesh_points = tm_mesh.vertices
-
-    for i in freeboundary_vertex_nodes:
-        x_values.append(trimesh_points[i][:, 0])
-        y_values.append(trimesh_points[i][:, 1])
-        z_values.append(trimesh_points[i][:, 2])
-
-    x_values_array = []
-    y_values_array = []
-    z_values_array = []
-
-    for i in range(len(mesh_outline_entities)):
-        x_values_array.append(x_values[i].reshape(len(x_values[i]), 1))
-        y_values_array.append(y_values[i].reshape(len(y_values[i]), 1))
-        z_values_array.append(z_values[i].reshape(len(z_values[i]), 1))
-        freeboundary_points.append(
-            np.concatenate(
-                (x_values_array[i], y_values_array[i], z_values_array[i]), axis=1
-            )
-        )
-
-    for i in range(len(freeboundary_points)):
-        coords = freeboundary_points[i]
-        centre = np.round(np.mean(coords, 0), 3)
-        centre = centre.reshape(1, len(centre))
-
-        # Create a Trirep of the boundary
-        X = np.vstack((centre, coords))
-        numpts = X.shape[0]
-        A = np.zeros(((numpts - 1), 1), dtype=np.int64)
-        B = np.array(range(1, numpts)).T
-        B = B.reshape(len(B), 1)
-        C = np.array(range(2, numpts)).T
-        C = C.reshape(len(C), 1)
-        C = np.vstack((C, 1))
-        TRI = np.concatenate((A, B, C), axis=1)
-
-        tr.append(tm.Trimesh(vertices=X, faces=TRI))
-        lineLen = line_length(coords)
-        area.append(round(tr[i].area, 4))
-        length.append(lineLen)
-        print("Perimeter is :", length[i], "| Area is:", area[i])
-
-    if plot:
-        col = ["blue", "yellow", "green", "red", "orange", "brown", "magenta"]
-        fb_width = 3
-        mesh_surf = [0.5, 0.5, 0.5]
-        p = draw_free_boundaries(
-            mesh_case=mesh_case,
-            fb_points=freeboundary_points,
-            fb_col=col,
-            fb_width=fb_width,
-            mesh_surf_color=mesh_surf,
-            opacity=0.2,
-            smooth_shading=True,
-            use_transparency=False,
-            lighting=False,
-            **kwargs
-        )
-
-        p.background_color = "White"
-        p.show()
-
-    return {
-        "FreeboundaryPoints": freeboundary_points,
-        "Lengths": length,
-        "Area": area,
-        "tr": tr,
-    }
-
 # TODO: This function should take a pyvista mesh to draw, rather than a Case object
 # TODO: draw_free_boundaries should be a keyword argument
 def draw_map(
-    mesh_case,
+    mesh,
     volt,
     freeboundary_color,
     cmap,
@@ -401,7 +282,7 @@ def draw_map(
     """
     plots an OpenEp Voltage Map
     Args:
-        mesh_case(obj): openep Case object.
+        mesh (PolyData): mesh to be drawn
         volt (str or nx1 array): 'bip' or interpolated voltagae values.
         freeboundary_color(str or rgb list): color of the freeboundaries.
         cmap (str): name of the colormap, for eg: jet_r.
@@ -425,12 +306,6 @@ def draw_map(
         str or 3 item list: volt_below_color,Color for all the voltage values below lower threshold
         str or 3 item list: volt_above_color,Color for all the voltage values above upper threshold
     """
-    # Create a pymesh of the openep case
-    py_mesh = mesh_case.create_mesh(
-        vertex_norms=False,
-        recenter=False,  # TODO: Add a recenter parameter to draw_free_boundaries
-        back_faces=False,
-    )
 
     if volt == "bip":
         volt = mesh_case.fields["bip"]
@@ -451,9 +326,9 @@ def draw_map(
             above_label="  ",
         )
 
-        freebound = get_anatomical_structures(mesh_case, plot=False)
+        freebound = get_freeboundaries(mesh)
         p.add_mesh(
-            py_mesh,
+            mesh,
             scalar_bar_args=sargs,
             show_edges=False,
             smooth_shading=True,
@@ -464,19 +339,15 @@ def draw_map(
             below_color=volt_below_color,
             above_color=volt_above_color,
         )
-
-        # Plot free Boundary - Lines
-        for indx in range(len(freebound["FreeboundaryPoints"])):
-            p.add_lines(
-                (freebound["FreeboundaryPoints"][indx]),
-                color=freeboundary_color,
-                width=freeboundary_width,
-            )
+        
+        freeboundaries =  FreeBoundary(mesh, **freebound)
+        draw_free_boundaries(freeboundaries, width=freeboundary_width, plotter=p)
+        
         p.show()
 
     return {
         "hsurf": p,
-        "pyvista-mesh": py_mesh,
+        "pyvista-mesh": mesh,
         "volt": volt,
         "nan_color": nan_color,
         "minval": minval,
