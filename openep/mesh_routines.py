@@ -194,6 +194,8 @@ def calculate_vertex_path(
 
     return np.array(path, int)
 
+# TODO: This function can be replaced by pyvista.geodesic
+#       Just need to handle the exception raised by pyvista.geodesic if there is no path
 def create_edge_graph(mesh: pyvista.PolyData) -> nx.Graph:
     """
     Create a Graph object of the mesh's edges with the length stored as property 'length'.
