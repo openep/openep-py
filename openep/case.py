@@ -47,9 +47,9 @@ class Case:
         return f"{self.name}( nodes: {self.nodes.shape} indices: {self.indices.shape} fields: {tuple(self.fields)} )"
 
     def create_mesh(
-        self, vertex_norms: bool = True,
+        self, vertex_norms: bool = False,
         recenter: bool = True,
-        back_faces: bool = True,
+        back_faces: bool = False,
     ):
         """
         Create a new mesh object from the stored nodes and indices
