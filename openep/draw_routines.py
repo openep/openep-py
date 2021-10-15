@@ -17,7 +17,7 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 from dataclasses import dataclass
-from typing import List
+from typing import List, Union
 
 import numpy as np
 import trimesh as tm
@@ -202,25 +202,11 @@ def get_freeboundaries(mesh):
         "n_nodes_per_boundary": n_nodes_per_boundary,
     }
 
-def get_freeboundary_points(mesh):
-    """
-    Returns the coords of the vertices of the freeboundary/outlines.
-    Args:
-        mesh (pyvista.PolyData): Open mesh for which the coordinates of free boundaries will be determined.
-
-    Returns:
-        positions (ndarray): Nx3 array of coordinates of the vertices of each freeboundary.
-    """
-    
-    # TODO: Remove this function. get_freeboundaries() should be called directly.
-    
-    return get_freeboundaries(mesh)['free_boundary_points']
-
 # TODO: draw_free_boundaries should be an optional parameter to draw_map
 #       Make this function private, and call from draw_map
 def draw_free_boundaries(
     free_boundaries: FreeBoundary,
-    colours: List = ["blue", "yellow", "green", "red", "orange", "brown", "magenta"],
+    colour: Union[str, List] = "black",
     width: int = 10,
     plotter: pv.Plotter = None,
 ):
@@ -230,7 +216,7 @@ def draw_free_boundaries(
     Args:
         free_boundaries (FreeBoundary): FreeBoundary object. Can be generated using
             openep.draw_routines.get_free_boundaries.
-        colours (list): colours to render the free boundaries.
+        colour (str, list): colour or list of colours to render the free boundaries.
         width (int): width of the free boundary lines.
         plotter (pyvista.Plotter): The free boundaries will be added to this plotting object.
             If None, a new plotting object will be created and the mesh associated with the
@@ -246,7 +232,7 @@ def draw_free_boundaries(
         plotter = pv.Plotter()
         plotter.add_mesh(
             free_boundaries.mesh,
-            color=[0.5, 0.5, 0.5],
+            color=colour,
             smooth_shading=True,
             show_edges=False,
             use_transparency=False,
@@ -254,6 +240,7 @@ def draw_free_boundaries(
             lighting=False
         )
     
+    colours = [colour] * 7 if isinstance(colour, str) else colour  # there are 7 anatomical regions
     for boundary_index, boundary in enumerate(free_boundaries.separate_boundaries()):
         
         points = free_boundaries.mesh.points[boundary[:, 0]]
@@ -263,8 +250,8 @@ def draw_free_boundaries(
     
     return plotter
 
-# TODO: This function should take a pyvista mesh to draw, rather than a Case object
 # TODO: draw_free_boundaries should be a keyword argument
+# TODO: should take a pyvista.Plotter object as an optional argument
 def draw_map(
     mesh,
     volt,
@@ -308,7 +295,7 @@ def draw_map(
     """
 
     if volt == "bip":
-        volt = mesh_case.fields["bip"]
+        volt = mesh.fields["bip"]
     else:
         volt = volt
 
@@ -341,7 +328,12 @@ def draw_map(
         )
         
         freeboundaries =  FreeBoundary(mesh, **freebound)
-        draw_free_boundaries(freeboundaries, width=freeboundary_width, plotter=p)
+        draw_free_boundaries(
+            freeboundaries,
+            colour=freeboundary_color,
+            width=freeboundary_width,
+            plotter=p
+        )
         
         p.show()
 
