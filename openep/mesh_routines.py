@@ -16,16 +16,10 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from typing import Union
 import numpy as np
-
-from trimesh import Trimesh
-import trimesh.repair
 import pyvista
 import pymeshfix
 import networkx as nx
-
-from .case import Case
 
 from matplotlib.cm import jet_r
 
@@ -38,6 +32,7 @@ __all__ = [
     "calculate_mesh_volume",
     "calculate_field_area",
 ]
+
 
 # TODO: remove this function as the `scalars` keyword of pyvista.Plotter().add_mesh can be used instead
 def compute_field(
@@ -76,6 +71,7 @@ def compute_field(
 
     return new_field
 
+
 def repair_mesh(mesh: pyvista.PolyData) -> pyvista.PolyData:
     """
     Repair the given mesh using pymeshfix.
@@ -84,6 +80,7 @@ def repair_mesh(mesh: pyvista.PolyData) -> pyvista.PolyData:
     mf.repair()
 
     return mf.mesh
+
 
 def calculate_per_triangle_field(mesh: pyvista.PolyData, field: np.ndarray) -> np.ndarray:
     """
@@ -122,6 +119,7 @@ def calculate_mesh_volume(
 
     return mesh.volume
 
+
 def calculate_field_area(
     mesh: pyvista.PolyData, field: np.ndarray, threshold: float
 ) -> float:
@@ -136,7 +134,7 @@ def calculate_field_area(
     Returns:
         float: total area of selected triangles
     """
-    
+
     areas = mesh.compute_cell_sizes(
         length=False,
         area=True,
@@ -194,17 +192,18 @@ def calculate_vertex_path(
 
     return np.array(path, int)
 
+
 # TODO: This function can be replaced by pyvista.geodesic
 #       Just need to handle the exception raised by pyvista.geodesic if there is no path
 def create_edge_graph(mesh: pyvista.PolyData) -> nx.Graph:
     """
     Create a Graph object of the mesh's edges with the length stored as property 'length'.
     """
-    
+
     # Avoid creating the graph unnecessarily
     if hasattr(mesh, "_graph"):
         return mesh._graph
-    
+
     faces = mesh.faces.reshape(-1, 4)[:, 1:]
 
     edges = np.vstack(
@@ -216,17 +215,18 @@ def create_edge_graph(mesh: pyvista.PolyData) -> nx.Graph:
     )
     edges.sort()  # ensure the lower index is in the first column
     unique_edges = np.unique(edges, axis=0)
-    
+
     edge_lengths = np.linalg.norm(mesh.points[unique_edges[:, 0]] - mesh.points[unique_edges[:, 1]], axis=1)
 
     graph = nx.Graph()
     graph.add_nodes_from(np.arange(mesh.n_points))  # ensure all nodes are present
     for edge, length in zip(unique_edges, edge_lengths):
         graph.add_edge(*edge, length=length)
-        
+
     mesh._graph = graph
 
     return graph
+
 
 def calculate_point_distance_max(points, test_points, max_distance):
     results = []

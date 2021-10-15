@@ -17,7 +17,7 @@ CUBE = resource_filename(__name__,
                          "PLY/cube.ply")
 
 SPHERE = resource_filename(__name__,
-                         "PLY/sphere.ply")
+                           "PLY/sphere.ply")
 
 BROKEN_SPHERE = resource_filename(__name__,
-                         "PLY/broken_sphere.ply")
+                                  "PLY/broken_sphere.ply")
