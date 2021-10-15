@@ -21,6 +21,7 @@ import numpy as np
 
 from trimesh import Trimesh
 import trimesh.repair
+import pyvista
 import pymeshfix
 import networkx as nx
 
@@ -38,7 +39,7 @@ __all__ = [
     "calculate_field_area",
 ]
 
-
+# TODO: remove this function as the `scalars` keyword of pyvista.Plotter().add_mesh can be used instead
 def compute_field(
     mesh,
     fieldname,
@@ -75,96 +76,73 @@ def compute_field(
 
     return new_field
 
-
-def get_mesh(mesh_case: Union[Case, Trimesh]) -> Trimesh:
-    """
-    If mesh_case is a Case object, create a mesh from it without backfaces, normals, or recentering. If `mesh_case`
-    is a mesh, return this directly. This routine is useful for defining others to accept either type.
-    """
-    if isinstance(mesh_case, Case):
-        return mesh_case.create_mesh(False, False, False)
-    else:
-        return mesh_case
-
-
-def repair_mesh(mesh: Trimesh) -> Trimesh:
+def repair_mesh(mesh: pyvista.PolyData) -> pyvista.PolyData:
     """
     Repair the given mesh using pymeshfix.
     """
-    mf = pymeshfix.MeshFix(mesh.vertices, mesh.faces)
+    mf = pymeshfix.MeshFix(mesh)
     mf.repair()
 
-    return Trimesh(mf.v, mf.f)
+    return mf.mesh
 
-
-def create_edge_graph(mesh: Trimesh) -> nx.Graph:
-    """
-    Create a Graph object of the mesh's edges with the length stored as property 'length'.
-    """
-    edges = mesh.edges_unique
-    edge_lengths = mesh.edges_unique_length
-
-    graph = nx.Graph()
-    for edge, length in zip(edges, edge_lengths):
-        graph.add_edge(*edge, length=length)
-
-    return graph
-
-
-def calculate_per_triangle_field(mesh: Trimesh, field: np.ndarray) -> np.ndarray:
+def calculate_per_triangle_field(mesh: pyvista.PolyData, field: np.ndarray) -> np.ndarray:
     """
     Calculate a per-triangle field from the given per-vertex field. For each triangle the mean of the vertex values is
     calculated as the triangle value.
 
     Args:
-        mesh (obj): Trimesh object
+        mesh (PolyData): PolyData mesh
         field: per-vertex field to convert
 
     Returns:
         np.ndarray per-triangle field
     """
-    return field[mesh.faces].mean(axis=1)
+    faces = mesh.faces.reshape(-1, 4)[:, 1:]
+    return field[faces].mean(axis=1)
 
 
 def calculate_mesh_volume(
-    mesh_case: Union[Case, Trimesh], fill_holes: bool = True
+    mesh: pyvista.PolyData,
+    fill_holes: bool = True,
 ) -> float:
     """
     Calculate the volume of a mesh.
 
     Args:
-        mesh_case (obj): if a Case object, a mesh is created from it, otherwise it is the mesh to calculate the volume for
-        fill_holes: if True, holes in the mesh are filled, if holes are present the volume is meaningless
+        mesh (PolyData): mesh for which the volume will be calculated
+        fill_holes: if True, holes in the mesh are filled. If holes are present the volume is meaningless unless
+        they are filled.
 
     Returns:
-        The volume float value
+        The volume of the mesh.
     """
-    mesh = get_mesh(mesh_case)
 
-    # try to fill simple holes, resorting to repair_mesh if needed
     if fill_holes:
-        if not trimesh.repair.fill_holes(mesh):
-            mesh = repair_mesh(mesh)
+        mesh = repair_mesh(mesh)
 
     return mesh.volume
 
-
 def calculate_field_area(
-    mesh_case: Union[Case, Trimesh], field: np.ndarray, threshold: float
+    mesh: pyvista.PolyData, field: np.ndarray, threshold: float
 ) -> float:
     """
     Calculate the area of triangles whose values are at or below the given threshold.
 
     Args:
-        mesh_case(obj): Case or Trimesh object
-        field: field used to select triangles
-        threshold(float): value at or below which triangles are selected to include in calculation
+        mesh (PolyData): pyvista mesh
+        field ndarray: field used to select triangles
+        threshold (float): value at or below which triangles are selected to include in calculation
 
     Returns:
         float: total area of selected triangles
     """
-    mesh = get_mesh(mesh_case)
-    areas = mesh.area_faces
+    
+    areas = mesh.compute_cell_sizes(
+        length=False,
+        area=True,
+        volume=False,
+    )['Area']
+
     tri_field = calculate_per_triangle_field(mesh, field)
     selection = tri_field <= threshold
     selected_areas = areas[selection]
@@ -173,47 +151,80 @@ def calculate_field_area(
 
 
 def calculate_vertex_distance(
-    mesh_case: Union[Case, Trimesh], start_idx: int, end_idx: int
+    mesh: pyvista.PolyData,
+    start_idx: int,
+    end_idx: int
 ) -> float:
     """
     Calculate the euclidean distance from vertex at `start_idx` to `end_idx`.
 
     Args:
-        mesh_case(obj): Case or Trimesh object
-        start_idx(int): index of starting vertex
-        end_idx(int): index of ending vertex
+        mesh (PolyData): Polydata mesh
+        start_index (int) : index of starting vertex
+        end_index (int) : index of ending vertex
 
     Returns:
         float: distance between vertices
     """
-    mesh = get_mesh(mesh_case)
-    start_vertex = mesh.vertices[start_idx]
-    end_vertex = mesh.vertices[end_idx]
+    start_vertex = mesh.points[start_idx]
+    end_vertex = mesh.points[end_idx]
 
     return np.linalg.norm(start_vertex - end_vertex)
 
 
 def calculate_vertex_path(
-    mesh_case: Union[Case, Trimesh], start_idx: int, end_idx: int
+    mesh: pyvista.PolyData,
+    start_idx: int,
+    end_idx: int
 ) -> np.ndarray:
     """
     Calculate the path from vertex at `start_idx` to `end_idx` as a path of vertices through the mesh.
 
     Args:
-        mesh_case(obj): Case or Trimesh object
-        start_idx(int): index of starting vertex
-        end_idx(int): index of ending vertex
+        mesh (PolyData): Polydata mesh
+        start_index (int) : index of starting vertex
+        end_index (int) : index of ending vertex
 
     Returns:
-        int: Array of vertex indices defining the path
+        ndarray: Array of vertex indices defining the path
     """
-    mesh = get_mesh(mesh_case)
-    graph = create_edge_graph(mesh)
 
+    graph = create_edge_graph(mesh)
     path = nx.shortest_path(graph, source=start_idx, target=end_idx, weight="length")
 
     return np.array(path, int)
 
+def create_edge_graph(mesh: pyvista.PolyData) -> nx.Graph:
+    """
+    Create a Graph object of the mesh's edges with the length stored as property 'length'.
+    """
+    
+    # Avoid creating the graph unnecessarily
+    if hasattr(mesh, "_graph"):
+        return mesh._graph
+    
+    faces = mesh.faces.reshape(-1, 4)[:, 1:]
+
+    edges = np.vstack(
+        [
+            faces[:, :2],
+            faces[:, 1:3],
+            faces[:, ::2],
+        ]
+    )
+    edges.sort()  # ensure the lower index is in the first column
+    unique_edges = np.unique(edges, axis=0)
+    
+    edge_lengths = np.linalg.norm(mesh.points[unique_edges[:, 0]] - mesh.points[unique_edges[:, 1]], axis=1)
+
+    graph = nx.Graph()
+    graph.add_nodes_from(np.arange(mesh.n_points))  # ensure all nodes are present
+    for edge, length in zip(unique_edges, edge_lengths):
+        graph.add_edge(*edge, length=length)
+        
+    mesh._graph = graph
+
+    return graph
 
 def calculate_point_distance_max(points, test_points, max_distance):
     results = []
