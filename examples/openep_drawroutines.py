@@ -24,11 +24,7 @@ from openep import draw_routines as draw
 filename = "/Users/paul/github/openep-py/examples/data/new_dataset_2.mat"
 
 ep_case = openep_io.load_case(filename)
-mesh = ep_case.create_mesh(
-    vertex_norms=False,
-    recenter=False,
-    back_faces=False
-)
+mesh = ep_case.create_mesh()
 
 # DrawVoltage Map
 hsurf = draw.draw_map(

@@ -5,11 +5,7 @@ import openep.draw_routines
 filename = "/Users/paul/github/openep-py/examples/data/new_dataset_2.mat"
 
 case = openep.io.load_case(filename)
-mesh = case.create_mesh(
-    vertex_norms=False,
-    recenter=False,
-    back_faces=False
-)
+mesh = case.create_mesh()
 
 # generate a FreeBoundary object
 free_boundaries = openep.draw_routines.get_freeboundaries(mesh)
