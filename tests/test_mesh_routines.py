@@ -18,7 +18,7 @@ class TestMeshRoutines(TestCase):
         self.cube = pyvista.read(CUBE)
         self.sphere = pyvista.read(SPHERE)
         self.broken_sphere = pyvista.read(BROKEN_SPHERE)  # sphere with holes
-        
+
         self._sphere_faces = self.sphere.faces.reshape(-1, 4)[:, 1:]
         self._sphere_triangles = self.sphere.points[self._sphere_faces]
         self._sphere_areas = self.sphere.compute_cell_sizes(
@@ -43,7 +43,7 @@ class TestMeshRoutines(TestCase):
         self.assertAlmostEqual(self.sphere.volume, vol, 2)
 
     def test_calculate_field_area(self):
-        
+
         xbelow0 = self._sphere_triangles[..., 0].mean(axis=1) <= 0  # select every triangle with mean x below YZ plane
         calculated_area = self._sphere_areas[xbelow0].sum()
 

@@ -25,49 +25,48 @@ import pyvista as pv
 
 from openep import case_routines
 
-# TOD0: remove global variables
-# GLOBAL VARIABLES
-plot = False
-volt = 0
 
 def _create_trimesh(pyvista_mesh):
     """Convert a pyvista mesh into a trimesh mesh.
 
     Args:
         pyvista_mesh (pyvista.PolyData): The pyvista mesh from which the trimesh mesh will be generated
-    
+
     Returns:
         trimesh_mesh (trimesh.Trimesh): The generated trimesh mesh
     """
-    
+
     vertices = pyvista_mesh.points
     faces = pyvista_mesh.faces.reshape(pyvista_mesh.n_faces, 4)[:, 1:]  # ignore to number of vertices per face
-    
+
     return tm.Trimesh(vertices, faces, process=False)
+
 
 def _create_pymesh(trimesh_mesh):
     """Convert a pyvista mesh into a trimesh mesh.
 
     Args:
         pyvista_mesh (pyvista.PolyData): The pyvista mesh from which the trimesh mesh will be generated
-    
+
     Returns:
         trimesh_mesh (trimesh.Trimesh): The generated trimesh mesh
     """
-    
+
     return pv.wrap(trimesh_mesh)
+
+
 @dataclass
 class FreeBoundary:
     """Class for storing information on the free boundaries of a mesh."""
-    
+
     mesh: pv.PolyData
     freeboundary: np.ndarray
     free_boundary_points: np.ndarray
     n_boundaries: int
     n_nodes_per_boundary: np.ndarray
-    
+
     def __post_init__(self):
-        
+
         start_indices = list(np.cumsum(self.n_nodes_per_boundary[:-1] - 1))
         start_indices.insert(0, 0)
         self._start_indices = np.asarray(start_indices)
@@ -75,33 +74,32 @@ class FreeBoundary:
         stop_indices = start_indices[1:]
         stop_indices.append(None)
         self._stop_indices = np.asarray(stop_indices)
-        
+
         self._boundary_meshes = None
-    
+
     def separate_boundaries(self):
         """
         Returns a list of numpy arrays where each array contains the indices of
         node pairs in a single free boundary.
-        
+
         """
-        
+
         separate_boundaries = [
             self.freeboundary[start:stop] for start, stop in zip(self._start_indices, self._stop_indices)
         ]
-        
+
         return separate_boundaries
-        
 
     def calculate_lengths(self):
         """
         Returns the length of the perimeter of each free boundary.
         """
-        
+
         lengths = [
             self._line_length(self.free_boundary_points[start:stop]) for
-                start, stop in zip(self._start_indices, self._stop_indices)
+            start, stop in zip(self._start_indices, self._stop_indices)
         ]
-            
+
         return np.asarray(lengths)
 
     def _line_length(self, points):
@@ -114,56 +112,55 @@ class FreeBoundary:
         Returns:
             length (float): length of the line
         """
-        
+
         distance_between_neighbours = np.sqrt(np.sum(np.square(np.diff(points, axis=0)), axis=1))
         total_distance = np.sum(distance_between_neighbours)
-        
+
         return float(total_distance)
-    
+
     def calculate_areas(self):
         """
         Returns the total area of the faces in each boundary.
         """
-        
+
         if self._boundary_meshes is None:
             self._create_boundary_meshes()
-        
+
         areas = [mesh.area for mesh in self._boundary_meshes]
-        
+
         return np.asarray(areas)
-    
+
     def _create_boundary_meshes(self):
         """
         Create a pyvista.PolyData mesh for each boundary.
         """
-        
+
         boundary_meshes = []
         boundaries = self.separate_boundaries()
-        
+
         for boundary in boundaries:
-            
+
             points = self.mesh.points[boundary[:, 0]]
             center = np.mean(points, axis=0)
             points = np.vstack([center, points])
-            
+
             num_points = points.shape[0]
             n_vertices_per_node = np.full(num_points - 1, fill_value=3, dtype=int)
             vertex_one = np.zeros(num_points - 1, dtype=int)  # all triangles include the central point
             vertex_two = np.arange(1, num_points)
             vertex_three = np.roll(vertex_two, shift=-1)
             faces = np.vstack([n_vertices_per_node, vertex_one, vertex_two, vertex_three]).T.ravel()
-            
+
             boundary_meshes.append(pv.PolyData(points, faces))
-        
+
         self._boundary_meshes = boundary_meshes
-        
+
         return None
 
 
 def get_freeboundaries(mesh):
-
     """Gets the freeboundary/outlines of the 3-D mesh and returns the indices.
-    
+
     Args:
         mesh (pyvista.PolyData): Open mesh for which the free boundaries will be determined.
 
@@ -173,7 +170,7 @@ def get_freeboundaries(mesh):
     """
 
     tm_mesh = _create_trimesh(mesh)
-    
+
     # extract the boundary information
     boundaries = tm_mesh.outline()
     boundaries_lines = boundaries.entities
@@ -190,10 +187,10 @@ def get_freeboundaries(mesh):
     keep_neighbours = np.full_like(free_boundaries[:, 0], fill_value=True, dtype=bool)
     keep_neighbours[n_nodes_per_boundary[:-1].cumsum()-1] = False
     free_boundaries = free_boundaries[keep_neighbours]
-    
+
     # Get the {x,y,z} coordinates of the first node in each pair
     free_boundaries_points = tm_mesh.vertices[free_boundaries[:, 0]]
-    
+
     # TODO: return a FreeBoundary object rather than a dictionary
     return {
         "freeboundary": free_boundaries,
@@ -201,6 +198,7 @@ def get_freeboundaries(mesh):
         "n_boundaries": n_boundaries,
         "n_nodes_per_boundary": n_nodes_per_boundary,
     }
+
 
 # TODO: draw_free_boundaries should be an optional parameter to draw_map
 #       Make this function private, and call from draw_map
@@ -212,7 +210,7 @@ def draw_free_boundaries(
 ):
     """
     Draw the freeboundaries of a mesh.
-    
+
     Args:
         free_boundaries (FreeBoundary): FreeBoundary object. Can be generated using
             openep.draw_routines.get_free_boundaries.
@@ -224,11 +222,11 @@ def draw_free_boundaries(
 
     Returns:
         plotter (pyvista.Plotter): Plotting object with the free boundaries added.
-        
+
     """
-    
+
     if plotter is None:
-        
+
         plotter = pv.Plotter()
         plotter.add_mesh(
             free_boundaries.mesh,
@@ -239,16 +237,17 @@ def draw_free_boundaries(
             opacity=0.2,
             lighting=False
         )
-    
+
     colours = [colour] * 7 if isinstance(colour, str) else colour  # there are 7 anatomical regions
     for boundary_index, boundary in enumerate(free_boundaries.separate_boundaries()):
-        
+
         points = free_boundaries.mesh.points[boundary[:, 0]]
         points = np.vstack([points, points[:1]])  # we need to close the loop
-        
+
         plotter.add_lines(points, color=colours[boundary_index], width=width)
-    
+
     return plotter
+
 
 # TODO: draw_free_boundaries should be a keyword argument
 # TODO: should take a pyvista.Plotter object as an optional argument
@@ -326,15 +325,15 @@ def draw_map(
             below_color=volt_below_color,
             above_color=volt_above_color,
         )
-        
-        freeboundaries =  FreeBoundary(mesh, **freebound)
+
+        freeboundaries = FreeBoundary(mesh, **freebound)
         draw_free_boundaries(
             freeboundaries,
             colour=freeboundary_color,
             width=freeboundary_width,
             plotter=p
         )
-        
+
         p.show()
 
     return {

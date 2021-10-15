@@ -59,11 +59,11 @@ class Case:
             recenter: if True, recenter the mesh on the origin
             back_faces: if True, calculate back face triangles
         """
-        
+
         indices = self.indices
         num_points_per_face = np.full(shape=(len(indices)), fill_value=3, dtype=int)  # all faces have three vertices
         faces = np.concatenate([num_points_per_face[:, np.newaxis], indices], axis=1)
-        
+
         if back_faces:
             indices_inverted = indices[:, [0, 2, 1]]
             faces_inverted = np.concatenate([num_points_per_face[:, np.newaxis], indices_inverted], axis=1)
@@ -72,7 +72,7 @@ class Case:
             )  # include each face twice for both surfaces
 
         mesh = pyvista.PolyData(self.nodes, faces.ravel())
-        
+
         # TODO: Refactor to remove this statement and the vertex_norms parameter.
         if vertex_norms:
             _ = mesh.point_normals  # compute vertex normals
