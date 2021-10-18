@@ -17,17 +17,16 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-from openep import io as openep_io
-from openep import draw_routines as draw
+import openep
 
 
 filename = "/Users/paul/github/openep-py/examples/data/new_dataset_2.mat"
 
-ep_case = openep_io.load_case(filename)
+ep_case = openep.load_case(filename)
 mesh = ep_case.create_mesh()
 
 # DrawVoltage Map
-hsurf = draw.draw_map(
+hsurf = openep.draw.draw_map(
     mesh,
     volt=ep_case.fields["bip"],
     freeboundary_color="black",
