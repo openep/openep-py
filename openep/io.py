@@ -22,7 +22,7 @@ Module containing functions to load OpenEP dataset
 
 import os
 import numpy as np
-import scipy.io as sio
+import scipy.io
 import re
 import h5py
 
@@ -31,21 +31,29 @@ from .case import Case
 __all__ = ["load_mat", "load_case"]
 
 
+
+def _mat_version_supported(filename):
+    
+    byte_stream, file_opened = scipy.io.matlab.mio._open_file(filename, appendmat=False)
+    major_version, minor_version = scipy.io.matlab.miobase.get_matfile_version(byte_stream)
+    
+    return major_version == 2
+
+
 def load_mat(filename, exclude_pattern=".*#.*"):
-    """
-    Attempt to load the given MATLAB file as either an old-style file or as an HDF5 file. The keys in the
-    HDF5 file which match `exclude_pattern` will be ignored. This currently does not resolve references
+    """Load a v7.3 MATLAB file.
+    
+    h5py is used to read the file.
+    
+    This currently does not resolve references
     in the HDF5 file.
     """
-    try:
-        return sio.loadmat(filename)  # try to load old-style
-    except NotImplementedError:
-        # ignore the exception which should only indicate the file is HDF5
-        pass
+    
+    if not _mat_version_supported(filename):
+        raise NotImplementedError("Only MATLAB v7.3 files are currently supported.")
 
-    # if we got here that means the NotImplementedError was raised, try h5py
+    dat = {}
     with h5py.File(filename, "r") as f:
-        dat = {}
 
         def _visitor(key, value):
             if (
