@@ -3,7 +3,7 @@ from numpy.testing import assert_allclose
 
 import pyvista
 
-from openep.case import Case
+from openep.case.case import Case
 from openep._simple_meshes.simple_meshes import CUBE
 
 
