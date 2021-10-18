@@ -31,9 +31,7 @@ from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg as FigureCanvas
 )
 
-from openep import io as openep_io
-from openep import case_routines as case_routines
-from openep import draw_routines as draw
+import openep
 
 
 class OpenEpGUI(qtw.QWidget):
@@ -162,10 +160,10 @@ class OpenEpGUI(qtw.QWidget):
 
         if dlg.exec_():
             self.filenames = dlg.selectedFiles()
-            self.ep_case = openep_io.load_case(self.filenames[0])
-            surf = draw.draw_map(
-                self.ep_case,
-                volt="bip",
+            self.ep_case = openep.load_case(self.filenames[0])
+            surf = openep.draw.draw_map(
+                self.ep_case.create_mesh(),
+                volt=self.ep_case.fields['bip'],
                 cmap="jet_r",
                 freeboundary_color="black",
                 freeboundary_width=5,
@@ -187,12 +185,10 @@ class OpenEpGUI(qtw.QWidget):
             self.cmap = surf["cmap"]
             self.below_color = surf["volt_below_color"]
             self.above_color = surf["volt_above_color"]
-            self.freeboundary_points = draw.get_anatomical_structures(
-                self.ep_case, plot=False
-            )
+            self.free_boundaries = openep.draw.get_freeboundaries(self.ep_case.create_mesh())
 
             # Interpolated voltage data
-            self.voltage_data = draw.get_voltage_electroanatomic(self.ep_case)
+            self.voltage_data = openep.draw.get_voltage_electroanatomic(self.ep_case)
             self.sargs = dict(
                 interactive=True,
                 n_labels=2,
@@ -219,13 +215,14 @@ class OpenEpGUI(qtw.QWidget):
             above_color=self.above_color,
         )
 
-        for indx in range(len(self.freeboundary_points["FreeboundaryPoints"])):
-            self.plotter.add_lines(
-                self.freeboundary_points["FreeboundaryPoints"][indx],
-                color="black",
-                width=5,
-            )
-            self.plotter.reset_camera()
+        self.plotter = openep.draw.draw_free_boundaries(
+            self.free_boundaries,
+            colour="black",
+            width=5,
+            plotter=self.plotter
+        )
+      
+        self.plotter.reset_camera()
 
     def plot_interpolated_voltage(self):
 
@@ -253,14 +250,15 @@ class OpenEpGUI(qtw.QWidget):
             below_color=self.below_color,
             above_color=self.above_color,
         )
+        
+        self.plotter1 = openep.draw.draw_free_boundaries(
+            self.free_boundaries,
+            colour="black",
+            width=5,
+            plotter=self.plotter1
+        )
 
-        for indx in range(len(self.freeboundary_points["FreeboundaryPoints"])):
-            self.plotter1.add_lines(
-                self.freeboundary_points["FreeboundaryPoints"][indx],
-                color="black",
-                width=5,
-            )
-            self.plotter1.reset_camera()
+        self.plotter1.reset_camera()
 
     def plot_egm(self):
         self.egm_point = int(self.egmselect.text())
@@ -269,7 +267,7 @@ class OpenEpGUI(qtw.QWidget):
         self.fig.set_facecolor("gray")
         self.canvas = FigureCanvas(self.fig)
 
-        self.egm = case_routines.get_egms_at_points(
+        self.egm = openep.case.get_egms_at_points(
             self.ep_case, self.filenames[0], "iegm", [self.egm_point]
         )
         self.egm_traces = self.egm["egm_traces"]
