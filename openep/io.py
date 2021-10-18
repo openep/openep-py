@@ -64,8 +64,7 @@ def load_mat(filename):
     
     h5py is used to read the file.
     
-    This currently does not resolve references
-    in the HDF5 file.
+    Currently, all references in the HDF5 file are resolved except for 'userdata/rfindex/grid'
     """
     
     if not _mat_version_supported(filename):
@@ -119,6 +118,9 @@ def load_mat(filename):
                 dat[key] = values
 
         f.visititems(_visitor)  # visit all items in the file and populate dat
+
+    # References in the grid are not currently resolved
+    dat.pop('userdata/rfindex/grid', None)
 
     return dat
 
