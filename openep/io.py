@@ -40,8 +40,9 @@ def _mat_version_supported(filename):
     return major_version == 2
 
 
-def load_mat(filename, exclude_pattern=".*#.*"):
-    """Load a v7.3 MATLAB file.
+def load_mat(filename):
+    """
+    Load a v7.3 MATLAB file.
     
     h5py is used to read the file.
     
@@ -58,24 +59,24 @@ def load_mat(filename, exclude_pattern=".*#.*"):
         def _visitor(key, value):
             if (
                 isinstance(value, h5py.Dataset)
-                and re.search(exclude_pattern, key) is None
+                and not key.startswith('#refs#')
             ):
-                arr_val = np.array(value)
 
                 # ignore references for now
-                # if arr_val.dtype != object:
-                dat[key] = arr_val
+                dat[key] = value[:]
 
         f.visititems(_visitor)  # visit all items in the file and populate dat
 
     return dat
 
 
-def load_case(filename, name=None, exclude_pattern=".*#.*"):
+def load_case(filename, name=None):
     """
-    Load a Case object from the given file. This assumes a number of names for objects found in the file.
+    Load a Case object from the given v7.3 MATLAB file.
+    
+    This assumes a number of names for objects found in the file.
     """
-    dat = load_mat(filename, exclude_pattern)
+    dat = load_mat(filename)
 
     if name is None:
         name = os.path.basename(filename)
