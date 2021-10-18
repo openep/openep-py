@@ -45,6 +45,19 @@ def _dereference_strings(file_pointer, references):
     return np.asarray([file_pointer.get(ref)[:].tobytes().decode('utf-16') for ref in references])
 
 
+def _dereference_nans(file_pointer, references):
+    """Resolve an array of references that point to nans/infs."""
+
+    return np.asarray([file_pointer.get(ref)[:] for ref in references]).ravel()
+
+
+def _decode_string(ints):
+    """Decode an array of unsigned integers to a single string.
+    """
+    
+    return ints.tobytes().decode('utf-16').strip('\x00')
+
+
 def load_mat(filename):
     """
     Load a v7.3 MATLAB file.
@@ -66,6 +79,11 @@ def load_mat(filename):
         'userdata/electric/tags',
     }
 
+    strings_to_decode = {
+        'userdata/cartoFolder',
+        'userdata/rfindex/tag/index/name',
+    }
+
     dat = {}
     with h5py.File(filename, "r") as f:
 
@@ -78,10 +96,13 @@ def load_mat(filename):
                 values = value[:]
                 
                 if key in strings_to_dereference:
-                    values=_dereference_strings(
+                    values = _dereference_strings(
                         file_pointer=f,
                         references=values.ravel(),
                 )
+                    
+                elif key in strings_to_decode:
+                    values = _decode_string(values.ravel())
 
                 # ignore references for now
                 dat[key] = values
