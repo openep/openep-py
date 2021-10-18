@@ -23,7 +23,14 @@ import numpy as np
 import trimesh as tm
 import pyvista as pv
 
-from openep import case_routines
+from openep.case import case_routines
+
+__all__ = [
+    'get_freeboundaries',
+    'draw_free_boundaries',
+    'draw_map',
+    'get_voltage_electroanatomic',
+]
 
 
 def _create_trimesh(pyvista_mesh):

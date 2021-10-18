@@ -18,7 +18,6 @@
 
 import sys
 import time
-import h5py
 import operator
 import functools
 import numpy as np
@@ -28,8 +27,24 @@ from scipy.interpolate import Rbf
 from scipy.interpolate import LinearNDInterpolator as linterp
 from scipy.interpolate import NearestNDInterpolator as nearest
 
-
-__all__ = ["OpenEPDataInterpolator"]
+__all__ = [
+    'get_reference_annotation',
+    'get_mapping_points_within_woi',
+    'get_window_of_interest',
+    'get_egms_at_points',
+    'plot_egm',
+    'dist_between_points',
+    'calculate_point_distance_max',
+    'get_electrogram_coordinates',
+    'LinearNDInterpolatorExt',
+    'LocalSmoothing',
+    'rbfAssemble',
+    'rbfcreate',
+    'rbfinterp',
+    'rbfcheck',
+    'rbf_scipy',
+    'OpenEPDataInterpolator',
+]
 
 
 def get_reference_annotation(mesh_case, *args):
