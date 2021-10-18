@@ -31,13 +31,18 @@ from .case import Case
 __all__ = ["load_mat", "load_case"]
 
 
-
 def _mat_version_supported(filename):
-    
+
     byte_stream, file_opened = scipy.io.matlab.mio._open_file(filename, appendmat=False)
     major_version, minor_version = scipy.io.matlab.miobase.get_matfile_version(byte_stream)
-    
+
     return major_version == 2
+
+
+def _dereference_strings(file_pointer, references):
+    """Resolve an array of references that point to strings."""
+
+    return np.asarray([file_pointer.get(ref)[:].tobytes().decode('utf-16') for ref in references])
 
 
 def load_mat(filename):
@@ -53,6 +58,14 @@ def load_mat(filename):
     if not _mat_version_supported(filename):
         raise NotImplementedError("Only MATLAB v7.3 files are currently supported.")
 
+    strings_to_dereference = {
+        'userdata/notes',
+        'userdata/electric/electrodeNames_bip',
+        'userdata/electric/electrodeNames_uni',
+        'userdata/electric/names',
+        'userdata/electric/tags',
+    }
+
     dat = {}
     with h5py.File(filename, "r") as f:
 
@@ -61,9 +74,17 @@ def load_mat(filename):
                 isinstance(value, h5py.Dataset)
                 and not key.startswith('#refs#')
             ):
+                
+                values = value[:]
+                
+                if key in strings_to_dereference:
+                    values=_dereference_strings(
+                        file_pointer=f,
+                        references=values.ravel(),
+                )
 
                 # ignore references for now
-                dat[key] = value[:]
+                dat[key] = values
 
         f.visititems(_visitor)  # visit all items in the file and populate dat
 
