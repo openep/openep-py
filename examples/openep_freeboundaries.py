@@ -1,19 +1,31 @@
 import openep
-import openep.io
-import openep.draw_routines
 
 filename = "/Users/paul/github/openep-py/examples/data/new_dataset_2.mat"
 
-case = openep.io.load_case(filename)
+case = openep.load_case(filename)
 mesh = case.create_mesh()
 
 # generate a FreeBoundary object
-free_boundaries = openep.draw_routines.get_freeboundaries(mesh)
-fb = openep.draw_routines.FreeBoundary(mesh, **free_boundaries)
+free_boundaries = openep.draw.get_freeboundaries(mesh)
 
-print(f"Perimeter lengths: {fb.calculate_lengths()}")
-print(f"Cross-sectional areas: {fb.calculate_areas()}")
+print(f"Perimeter lengths: {free_boundaries.calculate_lengths()}")
+print(f"Cross-sectional areas: {free_boundaries.calculate_areas()}")
 
-plotter = openep.draw_routines.draw_free_boundaries(fb)
+hsurf = openep.draw.draw_map(
+    mesh,
+    volt=case.fields["bip"],
+    freeboundary_color="black",
+    freeboundary_width=5,
+    cmap="jet_r",
+    minval=0,
+    maxval=2,
+    volt_below_color="brown",
+    volt_above_color="magenta",
+    nan_color="gray",
+    plot=True,
+)
+
+plotter = openep.draw.draw_map(mesh)['hsurf']
+plotter = openep.draw.draw_free_boundaries(free_boundaries, plotter=plotter)
 plotter.background_color = "White"
 plotter.show()
