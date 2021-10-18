@@ -26,11 +26,11 @@ from matplotlib.cm import jet_r
 __all__ = [
     "compute_field",
     "calculate_per_triangle_field",
-    "calculate_point_distance_max",
-    "calculate_vertex_path",
-    "calculate_vertex_distance",
     "calculate_mesh_volume",
     "calculate_field_area",
+    "calculate_vertex_distance",
+    "calculate_vertex_path",
+    "calculate_point_distance_max",
 ]
 
 
@@ -72,16 +72,6 @@ def compute_field(
     return new_field
 
 
-def repair_mesh(mesh: pyvista.PolyData) -> pyvista.PolyData:
-    """
-    Repair the given mesh using pymeshfix.
-    """
-    mf = pymeshfix.MeshFix(mesh)
-    mf.repair()
-
-    return mf.mesh
-
-
 def calculate_per_triangle_field(mesh: pyvista.PolyData, field: np.ndarray) -> np.ndarray:
     """
     Calculate a per-triangle field from the given per-vertex field. For each triangle the mean of the vertex values is
@@ -115,9 +105,19 @@ def calculate_mesh_volume(
     """
 
     if fill_holes:
-        mesh = repair_mesh(mesh)
+        mesh = _repair_mesh(mesh)
 
     return mesh.volume
+
+
+def _repair_mesh(mesh: pyvista.PolyData) -> pyvista.PolyData:
+    """
+    Repair the given mesh using pymeshfix.
+    """
+    mf = pymeshfix.MeshFix(mesh)
+    mf.repair()
+
+    return mf.mesh
 
 
 def calculate_field_area(
@@ -187,7 +187,7 @@ def calculate_vertex_path(
         ndarray: Array of vertex indices defining the path
     """
 
-    graph = create_edge_graph(mesh)
+    graph = _create_edge_graph(mesh)
     path = nx.shortest_path(graph, source=start_idx, target=end_idx, weight="length")
 
     return np.array(path, int)
@@ -195,7 +195,7 @@ def calculate_vertex_path(
 
 # TODO: This function can be replaced by pyvista.geodesic
 #       Just need to handle the exception raised by pyvista.geodesic if there is no path
-def create_edge_graph(mesh: pyvista.PolyData) -> nx.Graph:
+def _create_edge_graph(mesh: pyvista.PolyData) -> nx.Graph:
     """
     Create a Graph object of the mesh's edges with the length stored as property 'length'.
     """

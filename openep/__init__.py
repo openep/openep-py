@@ -15,3 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
+
+__all__ = ['case', 'mesh', 'draw']
+
+from .io.readers import load_case
+from . import case, mesh, draw

@@ -16,9 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-"""
-Module containing functions to load OpenEP dataset
-"""
+"""Module containing functions to load an OpenEP dataset."""
 
 import os
 import numpy as np
@@ -26,9 +24,9 @@ import scipy.io
 import re
 import h5py
 
-from .case import Case
+from openep.case.case import Case
 
-__all__ = ["load_mat", "load_case"]
+__all__ = ["load_case"]
 
 
 def _mat_version_supported(filename):
