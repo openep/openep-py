@@ -66,15 +66,15 @@ def _create_pymesh(trimesh_mesh):
 class FreeBoundary:
     """Class for storing information on the free boundaries of a mesh."""
 
-    mesh: pv.PolyData
-    freeboundary: np.ndarray
-    free_boundary_points: np.ndarray
+    points: np.ndarray
+    lines: np.ndarray
     n_boundaries: int
-    n_nodes_per_boundary: np.ndarray
+    n_points_per_boundary: np.ndarray
+    original_lines: np.ndarray
 
     def __post_init__(self):
 
-        start_indices = list(np.cumsum(self.n_nodes_per_boundary[:-1] - 1))
+        start_indices = list(np.cumsum(self.n_points_per_boundary[:-1] - 1))
         start_indices.insert(0, 0)
         self._start_indices = np.asarray(start_indices)
 
@@ -84,15 +84,22 @@ class FreeBoundary:
 
         self._boundary_meshes = None
 
-    def separate_boundaries(self):
+    def separate_boundaries(self, original_lines=False):
         """
         Returns a list of numpy arrays where each array contains the indices of
         node pairs in a single free boundary.
+        
+        Args:
+            original_lines (bool):
+                If True, FreeBoundary.original_indices will be used.
+                If False, FreeBoundary.original_indices will be used.
 
         """
+        
+        lines = self.original_lines if original_lines else self.lines
 
         separate_boundaries = [
-            self.freeboundary[start:stop] for start, stop in zip(self._start_indices, self._stop_indices)
+            lines[start:stop] for start, stop in zip(self._start_indices, self._stop_indices)
         ]
 
         return separate_boundaries
@@ -103,7 +110,7 @@ class FreeBoundary:
         """
 
         lengths = [
-            self._line_length(self.free_boundary_points[start:stop]) for
+            self._line_length(self.points[start:stop]) for
             start, stop in zip(self._start_indices, self._stop_indices)
         ]
 
@@ -143,11 +150,11 @@ class FreeBoundary:
         """
 
         boundary_meshes = []
-        boundaries = self.separate_boundaries()
+        boundaries = self.separate_boundaries(original_lines=False)
 
         for boundary in boundaries:
 
-            points = self.mesh.points[boundary[:, 0]]
+            points = self.points[boundary[:, 0]]
             center = np.mean(points, axis=0)
             points = np.vstack([center, points])
 
@@ -183,28 +190,31 @@ def get_freeboundaries(mesh):
     boundaries_lines = boundaries.entities
 
     # determine information about each boundary
-    all_boundaries_nodes = np.concatenate([line.points for line in boundaries_lines])
-    n_nodes_per_boundary = np.asarray([line.points.size for line in boundaries_lines])
+    original_indices = np.concatenate([line.points for line in boundaries_lines])
+    n_points_per_boundary = np.asarray([line.points.size for line in boundaries_lines])
     n_boundaries = tm_mesh.outline().entities.size
+    indices = np.arange(original_indices.size)
 
     # Create an array pairs of neighbouring nodes for each boundary
-    free_boundaries = np.vstack([all_boundaries_nodes[:-1], all_boundaries_nodes[1:]]).T
+    original_lines = np.vstack([original_indices[:-1], original_indices[1:]]).T
+    lines = np.vstack([indices[:-1], indices[1:]]).T
 
     # Ignore the neighbours that are part of different boundaries
-    keep_neighbours = np.full_like(free_boundaries[:, 0], fill_value=True, dtype=bool)
-    keep_neighbours[n_nodes_per_boundary[:-1].cumsum()-1] = False
-    free_boundaries = free_boundaries[keep_neighbours]
-
+    keep_lines = np.full_like(lines[:, 0], fill_value=True, dtype=bool)
+    keep_lines[n_points_per_boundary[:-1].cumsum()-1] = False
+    original_lines = original_lines[keep_lines]
+    lines = lines[keep_lines]
+    
     # Get the {x,y,z} coordinates of the first node in each pair
-    free_boundaries_points = tm_mesh.vertices[free_boundaries[:, 0]]
-
-    # TODO: return a FreeBoundary object rather than a dictionary
-    return {
-        "freeboundary": free_boundaries,
-        "free_boundary_points": free_boundaries_points,
-        "n_boundaries": n_boundaries,
-        "n_nodes_per_boundary": n_nodes_per_boundary,
-    }
+    points = tm_mesh.vertices[original_indices]
+    
+    return FreeBoundary(
+        points=points,
+        lines=lines,
+        n_boundaries=n_boundaries,
+        n_points_per_boundary=n_points_per_boundary,
+        original_lines=original_lines,
+    )
 
 
 # TODO: draw_free_boundaries should be an optional parameter to draw_map
@@ -224,33 +234,20 @@ def draw_free_boundaries(
         colour (str, list): colour or list of colours to render the free boundaries.
         width (int): width of the free boundary lines.
         plotter (pyvista.Plotter): The free boundaries will be added to this plotting object.
-            If None, a new plotting object will be created and the mesh associated with the
-            free boundaries will also be plotted.
+            If None, a new plotting object will be created.
 
     Returns:
         plotter (pyvista.Plotter): Plotting object with the free boundaries added.
 
     """
 
-    if plotter is None:
+    plotter = pv.Plotter() if plotter is None else plotter
+    colours = [colour] * free_boundaries.n_boundaries if isinstance(colour, str) else colour
 
-        plotter = pv.Plotter()
-        plotter.add_mesh(
-            free_boundaries.mesh,
-            color=colour,
-            smooth_shading=True,
-            show_edges=False,
-            use_transparency=False,
-            opacity=0.2,
-            lighting=False
-        )
-
-    colours = [colour] * 7 if isinstance(colour, str) else colour  # there are 7 anatomical regions
     for boundary_index, boundary in enumerate(free_boundaries.separate_boundaries()):
 
-        points = free_boundaries.mesh.points[boundary[:, 0]]
+        points = free_boundaries.points[boundary[:, 0]]
         points = np.vstack([points, points[:1]])  # we need to close the loop
-
         plotter.add_lines(points, color=colours[boundary_index], width=width)
 
     return plotter
@@ -270,13 +267,14 @@ def draw_map(
     volt_above_color,
     nan_color,
     plot,
+    plotter=None,
     **kwargs
 ):
     """
     plots an OpenEp Voltage Map
     Args:
         mesh (PolyData): mesh to be drawn
-        volt (str or nx1 array): 'bip' or interpolated voltagae values.
+        volt (nx1 array): interpolated voltagae values.
         freeboundary_color(str or rgb list): color of the freeboundaries.
         cmap (str): name of the colormap, for eg: jet_r.
         freeboundary_width (float): width of the freeboundary line.
@@ -300,51 +298,44 @@ def draw_map(
         str or 3 item list: volt_above_color,Color for all the voltage values above upper threshold
     """
 
-    if volt == "bip":
-        volt = mesh.fields["bip"]
-    else:
-        volt = volt
+    volt = mesh.fields[volt] if isinstance(volt, str) else volt
+    plotter = pv.Plotter() if plotter is None else plotter
+    
+    # Plot OpenEp mesh
+    sargs = dict(
+        interactive=True,
+        n_labels=2,
+        label_font_size=18,
+        below_label="  ",
+        above_label="  ",
+    )
 
-    # pyvista plotter
-    p = pv.Plotter()
+    freeboundaries = get_freeboundaries(mesh)
+    plotter.add_mesh(
+        mesh,
+        scalar_bar_args=sargs,
+        show_edges=False,
+        smooth_shading=True,
+        scalars=volt,
+        nan_color=nan_color,
+        clim=[minval, maxval],
+        cmap=cmap,
+        below_color=volt_below_color,
+        above_color=volt_above_color,
+    )
+
+    draw_free_boundaries(
+        freeboundaries,
+        colour=freeboundary_color,
+        width=freeboundary_width,
+        plotter=plotter
+    )
 
     if plot:
-
-        # Plot OpenEp mesh
-        sargs = dict(
-            interactive=True,
-            n_labels=2,
-            label_font_size=18,
-            below_label="  ",
-            above_label="  ",
-        )
-
-        freebound = get_freeboundaries(mesh)
-        p.add_mesh(
-            mesh,
-            scalar_bar_args=sargs,
-            show_edges=False,
-            smooth_shading=True,
-            scalars=volt,
-            nan_color=nan_color,
-            clim=[minval, maxval],
-            cmap=cmap,
-            below_color=volt_below_color,
-            above_color=volt_above_color,
-        )
-
-        freeboundaries = FreeBoundary(mesh, **freebound)
-        draw_free_boundaries(
-            freeboundaries,
-            colour=freeboundary_color,
-            width=freeboundary_width,
-            plotter=p
-        )
-
-        p.show()
+        plotter.show()
 
     return {
-        "hsurf": p,
+        "hsurf": plotter,
         "pyvista-mesh": mesh,
         "volt": volt,
         "nan_color": nan_color,
