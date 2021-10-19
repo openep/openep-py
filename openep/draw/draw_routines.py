@@ -30,8 +30,6 @@ __all__ = [
 ]
 
 
-# TODO: draw_free_boundaries should be an optional parameter to draw_map
-#       Make this function private, and call from draw_map
 def draw_free_boundaries(
     free_boundaries: FreeBoundary,
     colour: Union[str, List] = "black",
