@@ -16,11 +16,14 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
+from dataclasses import dataclass
+
 import numpy as np
-import pyvista
-import pymeshfix
 import networkx as nx
 
+import pyvista
+import pymeshfix
+import trimesh
 from matplotlib.cm import jet_r
 
 __all__ = [
@@ -31,7 +34,178 @@ __all__ = [
     "calculate_vertex_distance",
     "calculate_vertex_path",
     "calculate_point_distance_max",
+    "get_freeboundaries",
 ]
+
+
+def _create_trimesh(pyvista_mesh):
+    """Convert a pyvista mesh into a trimesh mesh.
+
+    Args:
+        pyvista_mesh (pyvista.PolyData): The pyvista mesh from which the trimesh mesh will be generated
+
+    Returns:
+        trimesh_mesh (trimesh.Trimesh): The generated trimesh mesh
+    """
+
+    vertices = pyvista_mesh.points
+    faces = pyvista_mesh.faces.reshape(pyvista_mesh.n_faces, 4)[:, 1:]  # ignore to number of vertices per face
+
+    return trimesh.Trimesh(vertices, faces, process=False)
+
+@dataclass
+class FreeBoundary:
+    """Class for storing information on the free boundaries of a mesh."""
+
+    points: np.ndarray
+    lines: np.ndarray
+    n_boundaries: int
+    n_points_per_boundary: np.ndarray
+    original_lines: np.ndarray
+
+    def __post_init__(self):
+
+        start_indices = list(np.cumsum(self.n_points_per_boundary[:-1] - 1))
+        start_indices.insert(0, 0)
+        self._start_indices = np.asarray(start_indices)
+
+        stop_indices = start_indices[1:]
+        stop_indices.append(None)
+        self._stop_indices = np.asarray(stop_indices)
+
+        self._boundary_meshes = None
+
+    def separate_boundaries(self, original_lines=False):
+        """
+        Returns a list of numpy arrays where each array contains the indices of
+        node pairs in a single free boundary.
+        
+        Args:
+            original_lines (bool):
+                If True, FreeBoundary.original_indices will be used.
+                If False, FreeBoundary.original_indices will be used.
+
+        """
+        
+        lines = self.original_lines if original_lines else self.lines
+
+        separate_boundaries = [
+            lines[start:stop] for start, stop in zip(self._start_indices, self._stop_indices)
+        ]
+
+        return separate_boundaries
+
+    def calculate_lengths(self):
+        """
+        Returns the length of the perimeter of each free boundary.
+        """
+
+        lengths = [
+            self._line_length(self.points[start:stop]) for
+            start, stop in zip(self._start_indices, self._stop_indices)
+        ]
+
+        return np.asarray(lengths)
+
+    def _line_length(self, points):
+        """
+        Calculates the length of a line defined by the positions of a sequence of points.
+
+        Args:
+            points (ndarray): Nx3 array of cartesian coordinates of points along the line.
+
+        Returns:
+            length (float): length of the line
+        """
+
+        distance_between_neighbours = np.sqrt(np.sum(np.square(np.diff(points, axis=0)), axis=1))
+        total_distance = np.sum(distance_between_neighbours)
+
+        return float(total_distance)
+
+    def calculate_areas(self):
+        """
+        Returns the total area of the faces in each boundary.
+        """
+
+        if self._boundary_meshes is None:
+            self._create_boundary_meshes()
+
+        areas = [mesh.area for mesh in self._boundary_meshes]
+
+        return np.asarray(areas)
+
+    def _create_boundary_meshes(self):
+        """
+        Create a pyvista.PolyData mesh for each boundary.
+        """
+
+        boundary_meshes = []
+        boundaries = self.separate_boundaries(original_lines=False)
+
+        for boundary in boundaries:
+
+            points = self.points[boundary[:, 0]]
+            center = np.mean(points, axis=0)
+            points = np.vstack([center, points])
+
+            num_points = points.shape[0]
+            n_vertices_per_node = np.full(num_points - 1, fill_value=3, dtype=int)
+            vertex_one = np.zeros(num_points - 1, dtype=int)  # all triangles include the central point
+            vertex_two = np.arange(1, num_points)
+            vertex_three = np.roll(vertex_two, shift=-1)
+            faces = np.vstack([n_vertices_per_node, vertex_one, vertex_two, vertex_three]).T.ravel()
+
+            boundary_meshes.append(pyvista.PolyData(points, faces))
+
+        self._boundary_meshes = boundary_meshes
+
+        return None
+
+
+def get_freeboundaries(mesh):
+    """Gets the freeboundary/outlines of the 3-D mesh and returns the indices.
+
+    Args:
+        mesh (pyvista.PolyData): Open mesh for which the free boundaries will be determined.
+
+    Returns:
+        freeboundaries_info (dict):
+            * freeboundary, Nx2 numpy array of indices of neighbouring points in the free boundaries
+    """
+
+    tm_mesh = _create_trimesh(mesh)
+
+    # extract the boundary information
+    boundaries = tm_mesh.outline()
+    boundaries_lines = boundaries.entities
+
+    # determine information about each boundary
+    original_indices = np.concatenate([line.points for line in boundaries_lines])
+    n_points_per_boundary = np.asarray([line.points.size for line in boundaries_lines])
+    n_boundaries = tm_mesh.outline().entities.size
+    indices = np.arange(original_indices.size)
+
+    # Create an array pairs of neighbouring nodes for each boundary
+    original_lines = np.vstack([original_indices[:-1], original_indices[1:]]).T
+    lines = np.vstack([indices[:-1], indices[1:]]).T
+
+    # Ignore the neighbours that are part of different boundaries
+    keep_lines = np.full_like(lines[:, 0], fill_value=True, dtype=bool)
+    keep_lines[n_points_per_boundary[:-1].cumsum()-1] = False
+    original_lines = original_lines[keep_lines]
+    lines = lines[keep_lines]
+    
+    # Get the {x,y,z} coordinates of the first node in each pair
+    points = tm_mesh.vertices[original_indices]
+    
+    return FreeBoundary(
+        points=points,
+        lines=lines,
+        n_boundaries=n_boundaries,
+        n_points_per_boundary=n_points_per_boundary,
+        original_lines=original_lines,
+    )
 
 
 # TODO: remove this function as the `scalars` keyword of pyvista.Plotter().add_mesh can be used instead
