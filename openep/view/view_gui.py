@@ -188,7 +188,7 @@ class OpenEpGUI(qtw.QWidget):
             self.free_boundaries = openep.draw.get_freeboundaries(self.ep_case.create_mesh())
 
             # Interpolated voltage data
-            self.voltage_data = openep.draw.get_voltage_electroanatomic(self.ep_case)
+            self.voltage_data = openep.case.get_voltage_electroanatomic(self.ep_case)
             self.sargs = dict(
                 interactive=True,
                 n_labels=2,
