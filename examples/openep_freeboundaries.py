@@ -6,7 +6,7 @@ case = openep.load_case(filename)
 mesh = case.create_mesh()
 
 # generate a FreeBoundary object
-free_boundaries = openep.mesh.get_freeboundaries(mesh)
+free_boundaries = openep.mesh.free_boundaries(mesh)
 
 print(f"Perimeter lengths: {free_boundaries.calculate_lengths()}")
 print(f"Cross-sectional areas: {free_boundaries.calculate_areas()}")
