@@ -27,14 +27,13 @@ import trimesh
 from matplotlib.cm import jet_r
 
 __all__ = [
-    "compute_field",
     "calculate_per_triangle_field",
     "calculate_mesh_volume",
     "calculate_field_area",
     "calculate_vertex_distance",
     "calculate_vertex_path",
     "calculate_point_distance_max",
-    "get_freeboundaries",
+    "free_boundaries",
 ]
 
 
@@ -163,7 +162,7 @@ class FreeBoundary:
         return None
 
 
-def get_freeboundaries(mesh):
+def free_boundaries(mesh):
     """Gets the freeboundary/outlines of the 3-D mesh and returns the indices.
 
     Args:
@@ -206,44 +205,6 @@ def get_freeboundaries(mesh):
         n_points_per_boundary=n_points_per_boundary,
         original_lines=original_lines,
     )
-
-
-# TODO: remove this function as the `scalars` keyword of pyvista.Plotter().add_mesh can be used instead
-def compute_field(
-    mesh,
-    fieldname,
-    minval=0,
-    maxval=1,
-    color_map=jet_r,
-    below_color=(180, 180, 180, 255),
-    above_color=(255, 0, 255, 255),
-    nan_color=(180, 180, 180, 255),
-) -> np.ndarray:
-    case = mesh._kwargs["parent_obj"]
-    field = case.fields[fieldname]
-    new_field = np.zeros((field.shape[0], 4), np.int32)
-
-    for idx in range(len(field)):
-        val = field[idx]
-
-        if np.isnan(val):
-            col = nan_color
-        elif val < minval:
-            col = below_color
-        elif val > maxval:
-            col = above_color
-        else:
-            valscaled = (val - minval) / (maxval - minval)
-            col = color_map(valscaled)
-
-            if isinstance(col[0], float):
-                col = [int(c * 255) for c in col]
-
-        new_field[idx] = col
-
-    mesh.visual.vertex_colors[:] = new_field
-
-    return new_field
 
 
 def calculate_per_triangle_field(mesh: pyvista.PolyData, field: np.ndarray) -> np.ndarray:

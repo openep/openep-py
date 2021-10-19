@@ -1,7 +1,6 @@
 __all__ = ['mesh_routines']
 
 from .mesh_routines import (
-    compute_field,
     calculate_per_triangle_field,
     calculate_mesh_volume,
     calculate_field_area,
