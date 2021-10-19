@@ -21,10 +21,9 @@
 import os
 import numpy as np
 import scipy.io
-import re
 import h5py
 
-from openep.case.case import Case
+from ..case.case import Case
 
 __all__ = ["load_case"]
 
@@ -46,7 +45,7 @@ def _dereference_strings(file_pointer, references):
 def _decode_string(ints):
     """Decode an array of unsigned integers to a single string.
     """
-    
+
     return ints.tobytes().decode('utf-16').strip('\x00')
 
 
@@ -59,12 +58,12 @@ def _dereference_nans(file_pointer, references):
 def load_mat(filename):
     """
     Load a v7.3 MATLAB file.
-    
+
     h5py is used to read the file.
-    
+
     Currently, all references in the HDF5 file are resolved except for 'userdata/rfindex/grid'
     """
-    
+
     if not _mat_version_supported(filename):
         raise NotImplementedError("Only MATLAB v7.3 files are currently supported.")
 
@@ -80,7 +79,7 @@ def load_mat(filename):
         'userdata/cartoFolder',
         'userdata/rfindex/tag/index/name',
     }
-    
+
     nans_to_dereference = {
         'userdata/electric/impedances/time',
         'userdata/electric/impedances/value',
@@ -94,23 +93,23 @@ def load_mat(filename):
                 isinstance(value, h5py.Dataset)
                 and not key.startswith('#refs#')
             ):
-                
+
                 values = value[:]
-                
+
                 if key in strings_to_dereference:
                     values = _dereference_strings(
                         file_pointer=f,
                         references=values.ravel(),
-                )
-                    
+                    )
+
                 elif key in strings_to_decode:
                     values = _decode_string(values.ravel())
-                
+
                 elif key in nans_to_dereference:
                     values = _dereference_nans(
                         file_pointer=f,
                         references=values.ravel(),
-                )
+                    )
 
                 # ignore references for now
                 dat[key] = values
@@ -126,7 +125,7 @@ def load_mat(filename):
 def load_case(filename, name=None):
     """
     Load a Case object from the given v7.3 MATLAB file.
-    
+
     This assumes a number of names for objects found in the file.
     """
     dat = load_mat(filename)
