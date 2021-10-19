@@ -21,7 +21,7 @@ from typing import List, Union
 import numpy as np
 import pyvista as pv
 
-from ..mesh.mesh_routines import (FreeBoundary, get_freeboundaries)
+from ..mesh.mesh_routines import (FreeBoundary, free_boundaries)
 
 __all__ = [
     'draw_free_boundaries',
@@ -122,7 +122,7 @@ def draw_map(
         above_label="  ",
     )
 
-    freeboundaries = get_freeboundaries(mesh)
+    freeboundaries = free_boundaries(mesh)
     plotter.add_mesh(
         mesh,
         scalar_bar_args=sargs,
