@@ -51,6 +51,7 @@ def _create_trimesh(pyvista_mesh):
 
     return trimesh.Trimesh(vertices, faces, process=False)
 
+
 @dataclass
 class FreeBoundary:
     """Class for storing information on the free boundaries of a mesh."""
@@ -77,14 +78,14 @@ class FreeBoundary:
         """
         Returns a list of numpy arrays where each array contains the indices of
         node pairs in a single free boundary.
-        
+
         Args:
             original_lines (bool):
                 If True, FreeBoundary.original_indices will be used.
                 If False, FreeBoundary.original_indices will be used.
 
         """
-        
+
         lines = self.original_lines if original_lines else self.lines
 
         separate_boundaries = [
@@ -193,10 +194,10 @@ def get_free_boundaries(mesh):
     keep_lines[n_points_per_boundary[:-1].cumsum()-1] = False
     original_lines = original_lines[keep_lines]
     lines = lines[keep_lines]
-    
+
     # Get the {x,y,z} coordinates of the first node in each pair
     points = tm_mesh.vertices[original_indices]
-    
+
     return FreeBoundary(
         points=points,
         lines=lines,

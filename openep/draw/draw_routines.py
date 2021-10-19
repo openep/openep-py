@@ -75,7 +75,7 @@ def draw_map(
 ):
     """
     Project scalar values onto a mesh and optionally draw the free boundaries.
-    
+
     Args:
         mesh (PolyData): mesh to be drawn
         field (nx1 array): scalar values used to colour the mesh
@@ -87,7 +87,7 @@ def draw_map(
     Returns:
         plotter (pyvista.Plotter): Plotting object with the mesh added.
     """
-    
+
     plotter = pyvista.Plotter() if plotter is None else plotter
 
     # Create default settings for the plot
@@ -113,7 +113,7 @@ def draw_map(
         "nan_color": "gray",
         "scalar_bar_args": scalar_bar_args,
     }
-    
+
     # combine the default and user-given kwargs
     add_mesh_kws = default_add_mesh_kws if add_mesh_kws is None else {**default_add_mesh_kws, **add_mesh_kws}
     print(add_mesh_kws["scalar_bar_args"])
@@ -122,7 +122,7 @@ def draw_map(
         scalars=field,
         **add_mesh_kws,
     )
-    
+
     if free_boundaries:
         draw_free_boundaries(
             get_free_boundaries(mesh),

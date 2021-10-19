@@ -177,11 +177,11 @@ class OpenEpGUI(qtw.QWidget):
             self.voltage_data = openep.case.get_voltage_electroanatomic(self.ep_case)
 
     def plot_3d_map(self):
-        
+
         self.minval = float(self.lowerlimit.text())
         self.maxval = float(self.upperlimit.text())
-        self.add_mesh_kws["clim"] = [self.minval, self.maxval]     
-        
+        self.add_mesh_kws["clim"] = [self.minval, self.maxval]
+
         self.plotter = openep.draw.draw_map(
             mesh=self.mesh1,
             field=self.volt,
@@ -196,7 +196,7 @@ class OpenEpGUI(qtw.QWidget):
             width=5,
             plotter=self.plotter
         )
-      
+
         self.plotter.reset_camera()
 
     def plot_interpolated_voltage(self):
@@ -213,7 +213,7 @@ class OpenEpGUI(qtw.QWidget):
         self.dock_plot.setWidget(self.plotter1)
 
         self.plotLayout.addWidget(self.dock_plot, 0, 1)
-        
+
         self.plotter1 = openep.draw.draw_map(
             mesh=self.mesh2,
             field=self.voltage_data,
@@ -221,7 +221,7 @@ class OpenEpGUI(qtw.QWidget):
             free_boundaries=False,
             add_mesh_kws=self.add_mesh_kws,
         )
-        
+
         self.plotter1 = openep.draw.draw_free_boundaries(
             self.free_boundaries,
             colour="black",
