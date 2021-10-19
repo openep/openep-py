@@ -24,7 +24,6 @@ import networkx as nx
 import pyvista
 import pymeshfix
 import trimesh
-from matplotlib.cm import jet_r
 
 __all__ = [
     "calculate_per_triangle_field",
@@ -33,7 +32,7 @@ __all__ = [
     "calculate_vertex_distance",
     "calculate_vertex_path",
     "calculate_point_distance_max",
-    "free_boundaries",
+    "get_free_boundaries",
 ]
 
 
@@ -162,7 +161,7 @@ class FreeBoundary:
         return None
 
 
-def free_boundaries(mesh):
+def get_free_boundaries(mesh):
     """Gets the freeboundary/outlines of the 3-D mesh and returns the indices.
 
     Args:
