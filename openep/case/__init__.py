@@ -17,4 +17,5 @@ from .case_routines import (
     rbfcheck,
     rbf_scipy,
     OpenEPDataInterpolator,
+    get_voltage_electroanatomic,
 )

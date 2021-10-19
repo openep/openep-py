@@ -23,13 +23,10 @@ import numpy as np
 import trimesh as tm
 import pyvista as pv
 
-from openep.case import case_routines
-
 __all__ = [
     'get_freeboundaries',
     'draw_free_boundaries',
     'draw_map',
-    'get_voltage_electroanatomic',
 ]
 
 
@@ -345,48 +342,3 @@ def draw_map(
         "volt_below_color": volt_below_color,
         "volt_above_color": volt_above_color,
     }
-
-
-def get_voltage_electroanatomic(mesh_case):
-    distance_thresh = 10
-    rbf_constant_value = 1
-
-    # Anatomic descriptions (Mesh) - nodes and indices
-    pts = mesh_case.nodes
-
-    # Electric data
-    # Locations – Cartesian co-ordinates, projected on to the surface
-    locations = case_routines.get_electrogram_coordinates(mesh_case, "type", "bip")
-
-    i_egm = mesh_case.electric["egm"].T
-    i_vp = case_routines.get_mapping_points_within_woi(mesh_case)
-    # macthing the shape of ivp with data
-    i_vp_egm = np.repeat(i_vp, repeats=i_egm.shape[1], axis=1)
-    # macthing the shape of ivp with coords
-    i_vp_locations = np.repeat(i_vp, repeats=locations.shape[1], axis=1)
-
-    # Replacing the values outside the window of interest with Nan values
-    i_egm[~i_vp_egm] = np.nan
-    locations[~i_vp_locations] = np.nan
-
-    # For each mapping point, n, find the voltage amplitude
-    max_volt = np.amax(a=i_egm, axis=1).reshape(len(i_egm), 1)
-    min_volt = np.amin(a=i_egm, axis=1).reshape(len(i_egm), 1)
-
-    amplitude_volt = np.subtract(max_volt, min_volt)
-
-    for indx in range(amplitude_volt.shape[1]):
-        temp_data = amplitude_volt[:, indx]
-        temp_coords = locations
-        i_nan = np.isnan(temp_data)
-        temp_data = temp_data[~i_nan]
-        temp_coords = temp_coords[~i_nan]
-
-        interp = case_routines.OpenEPDataInterpolator(
-            method="rbf",
-            distanceThreshold=distance_thresh,
-            rbfConstant=rbf_constant_value,
-        )
-        vertex_voltage_data = interp.interpolate(x0=temp_coords, d0=temp_data, x1=pts)
-
-    return vertex_voltage_data
