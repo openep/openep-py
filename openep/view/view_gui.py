@@ -161,58 +161,33 @@ class OpenEpGUI(qtw.QWidget):
         if dlg.exec_():
             self.filenames = dlg.selectedFiles()
             self.ep_case = openep.load_case(self.filenames[0])
-            surf = openep.draw.draw_map(
-                self.ep_case.create_mesh(),
-                volt=self.ep_case.fields['bip'],
-                cmap="jet_r",
-                freeboundary_color="black",
-                freeboundary_width=5,
-                minval=self.minval,
-                maxval=self.maxval,
-                volt_below_color="brown",
-                volt_above_color="magenta",
-                nan_color="gray",
-                plot=False,
-            )
-
-            self.mesh = surf["pyvista-mesh"]
+            self.mesh = self.ep_case.create_mesh()
             self.mesh1 = deepcopy(self.mesh)
             self.mesh2 = deepcopy(self.mesh)
-            self.volt = surf["volt"]
-            self.nan_color = surf["nan_color"]
-            self.minval = surf["minval"]
-            self.maxval = surf["maxval"]
-            self.cmap = surf["cmap"]
-            self.below_color = surf["volt_below_color"]
-            self.above_color = surf["volt_above_color"]
-            self.free_boundaries = openep.mesh.free_boundaries(self.ep_case.create_mesh())
+            self.volt = self.ep_case.fields['bip']
+            self.minval = 0
+            self.maxval = 2
+            self.free_boundaries = openep.mesh.get_free_boundaries(self.mesh)
+            self.add_mesh_kws = {
+                "clim": [self.minval, self.maxval],
+                "scalar_bar_args": {"label_font_size": 8}
+            }
 
             # Interpolated voltage data
             self.voltage_data = openep.case.get_voltage_electroanatomic(self.ep_case)
-            self.sargs = dict(
-                interactive=True,
-                n_labels=2,
-                label_font_size=18,
-                below_label="  ",
-                above_label="  ",
-            )
 
     def plot_3d_map(self):
+        
         self.minval = float(self.lowerlimit.text())
         self.maxval = float(self.upperlimit.text())
-
-        self.plotter.add_mesh(
-            self.mesh1,
-            scalar_bar_args=self.sargs,
-            annotations=False,
-            show_edges=False,
-            smooth_shading=True,
-            scalars=self.volt,
-            nan_color=self.nan_color,
-            clim=[self.minval, self.maxval],
-            cmap=self.cmap,
-            below_color=self.below_color,
-            above_color=self.above_color,
+        self.add_mesh_kws["clim"] = [self.minval, self.maxval]     
+        
+        self.plotter = openep.draw.draw_map(
+            mesh=self.mesh1,
+            field=self.volt,
+            plotter=self.plotter,
+            free_boundaries=False,
+            add_mesh_kws=self.add_mesh_kws,
         )
 
         self.plotter = openep.draw.draw_free_boundaries(
@@ -228,6 +203,7 @@ class OpenEpGUI(qtw.QWidget):
 
         self.minval = float(self.lowerlimit.text())
         self.maxval = float(self.upperlimit.text())
+        self.add_mesh_kws["clim"] = [self.minval, self.maxval]
 
         # # QDock Widget
         self.frame1 = qtw.QFrame()
@@ -237,18 +213,13 @@ class OpenEpGUI(qtw.QWidget):
         self.dock_plot.setWidget(self.plotter1)
 
         self.plotLayout.addWidget(self.dock_plot, 0, 1)
-
-        self.plotter1.add_mesh(
-            self.mesh2,
-            scalar_bar_args=self.sargs,
-            show_edges=False,
-            smooth_shading=True,
-            scalars=self.voltage_data,
-            nan_color=self.nan_color,
-            clim=[self.minval, self.maxval],
-            cmap=self.cmap,
-            below_color=self.below_color,
-            above_color=self.above_color,
+        
+        self.plotter1 = openep.draw.draw_map(
+            mesh=self.mesh2,
+            field=self.voltage_data,
+            plotter=self.plotter1,
+            free_boundaries=False,
+            add_mesh_kws=self.add_mesh_kws,
         )
         
         self.plotter1 = openep.draw.draw_free_boundaries(
