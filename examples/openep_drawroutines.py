@@ -21,21 +21,12 @@ import openep
 
 
 filename = "/Users/paul/github/openep-py/examples/data/new_dataset_2.mat"
-
-ep_case = openep.load_case(filename)
-mesh = ep_case.create_mesh()
+case = openep.load_case(filename)
+mesh = case.create_mesh()
 
 # DrawVoltage Map
-hsurf = openep.draw.draw_map(
-    mesh,
-    volt=ep_case.fields["bip"],
-    freeboundary_color="black",
-    freeboundary_width=5,
-    cmap="jet_r",
-    minval=0,
-    maxval=2,
-    volt_below_color="brown",
-    volt_above_color="magenta",
-    nan_color="gray",
-    plot=True,
+plotter = openep.draw.draw_map(
+    mesh=mesh,
+    field=case.fields['bip'],
 )
+plotter.show()
