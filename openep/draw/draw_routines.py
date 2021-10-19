@@ -19,9 +19,10 @@
 from typing import List, Union
 
 import numpy as np
-import pyvista as pv
+import pyvista
+import matplotlib.cm
 
-from ..mesh.mesh_routines import (FreeBoundary, free_boundaries)
+from ..mesh.mesh_routines import FreeBoundary, get_free_boundaries
 
 __all__ = [
     'draw_free_boundaries',
@@ -34,15 +35,15 @@ __all__ = [
 def draw_free_boundaries(
     free_boundaries: FreeBoundary,
     colour: Union[str, List] = "black",
-    width: int = 10,
-    plotter: pv.Plotter = None,
+    width: int = 5,
+    plotter: pyvista.Plotter = None,
 ):
     """
     Draw the freeboundaries of a mesh.
 
     Args:
         free_boundaries (FreeBoundary): FreeBoundary object. Can be generated using
-            openep.draw_routines.get_free_boundaries.
+            openep.mesh.free_boundaries.
         colour (str, list): colour or list of colours to render the free boundaries.
         width (int): width of the free boundary lines.
         plotter (pyvista.Plotter): The free boundaries will be added to this plotting object.
@@ -53,7 +54,7 @@ def draw_free_boundaries(
 
     """
 
-    plotter = pv.Plotter() if plotter is None else plotter
+    plotter = pyvista.Plotter() if plotter is None else plotter
     colours = [colour] * free_boundaries.n_boundaries if isinstance(colour, str) else colour
 
     for boundary_index, boundary in enumerate(free_boundaries.separate_boundaries()):
@@ -65,95 +66,67 @@ def draw_free_boundaries(
     return plotter
 
 
-# TODO: draw_free_boundaries should be a keyword argument
-# TODO: should take a pyvista.Plotter object as an optional argument
 def draw_map(
-    mesh,
-    volt,
-    freeboundary_color,
-    cmap,
-    freeboundary_width,
-    minval,
-    maxval,
-    volt_below_color,
-    volt_above_color,
-    nan_color,
-    plot,
-    plotter=None,
-    **kwargs
+    mesh: pyvista.PolyData,
+    field: np.ndarray,
+    plotter: pyvista.Plotter = None,
+    add_mesh_kws: dict = None,
+    free_boundaries: bool = True,
 ):
     """
-    plots an OpenEp Voltage Map
+    Project scalar values onto a mesh and optionally draw the free boundaries.
+    
     Args:
         mesh (PolyData): mesh to be drawn
-        volt (nx1 array): interpolated voltagae values.
-        freeboundary_color(str or rgb list): color of the freeboundaries.
-        cmap (str): name of the colormap, for eg: jet_r.
-        freeboundary_width (float): width of the freeboundary line.
-        minval(float): Voltage lower threshold value.
-        maxval(float): Voltage upper threshold value.
-        volt_below_color(str or 3 item list): Color for all the voltage values below lower threshold.
-        volt_above_color(str or 3 item list): Color for all the voltage values above upper threshold.
-        nan_color(str or 3 item list): Color for all the nan voltage values in the openep dataset.
-        plot (boolean): True to plot, False otherwise.
-        **kwargs: Arbitrary keyword arguments.
+        field (nx1 array): scalar values used to colour the mesh
+        plotter (pyvista.Plotter): The mesh will be added to this plotting object.
+            If None, a new plotting object will be created.
+        add_mesh_kws (dict): Keyword arguments for pyvista.Plotter.add_mesh()
+        free_boundaries (bool): If True, the free boundaries will be added to the plot.
 
     Returns:
-        obj: p, VTK actor of the mesh.
-        obj: pyvista-mesh, Pyvista PolyData object, triangulated surface object from Numpy arrays of the vertices and faces.
-        str or nx1 array: volt, 'bip' or interpolated voltagae values.
-        str or 3 item list: nan_color, Color for all the nan voltage values in the openep dataset.
-        float: minval,Voltage lower threshold value.
-        float: maxval,Voltage upper threshold value.
-        str: cmap,name of the colormap.
-        str or 3 item list: volt_below_color,Color for all the voltage values below lower threshold
-        str or 3 item list: volt_above_color,Color for all the voltage values above upper threshold
+        plotter (pyvista.Plotter): Plotting object with the mesh added.
     """
-
-    volt = mesh.fields[volt] if isinstance(volt, str) else volt
-    plotter = pv.Plotter() if plotter is None else plotter
     
-    # Plot OpenEp mesh
-    sargs = dict(
+    plotter = pyvista.Plotter() if plotter is None else plotter
+
+    # Create default settings for the plot
+    scalar_bar_args = dict(
         interactive=True,
         n_labels=2,
-        label_font_size=18,
-        below_label="  ",
-        above_label="  ",
+        label_font_size=30,
+        below_label=" ",
+        above_label=" ",
     )
+    if add_mesh_kws is not None and "scalar_bar_args" in add_mesh_kws:
+        add_mesh_kws["scalar_bar_args"] = {**scalar_bar_args, **add_mesh_kws["scalar_bar_args"]}
 
-    freeboundaries = free_boundaries(mesh)
-    plotter.add_mesh(
-        mesh,
-        scalar_bar_args=sargs,
-        show_edges=False,
-        smooth_shading=True,
-        scalars=volt,
-        nan_color=nan_color,
-        clim=[minval, maxval],
-        cmap=cmap,
-        below_color=volt_below_color,
-        above_color=volt_above_color,
-    )
-
-    draw_free_boundaries(
-        freeboundaries,
-        colour=freeboundary_color,
-        width=freeboundary_width,
-        plotter=plotter
-    )
-
-    if plot:
-        plotter.show()
-
-    return {
-        "hsurf": plotter,
-        "pyvista-mesh": mesh,
-        "volt": volt,
-        "nan_color": nan_color,
-        "minval": minval,
-        "maxval": maxval,
-        "cmap": cmap,
-        "volt_below_color": volt_below_color,
-        "volt_above_color": volt_above_color,
+    default_add_mesh_kws = {
+        "style": "surface",
+        "show_edges": False,
+        "smooth_shading": True,
+        "annotations": False,
+        "cmap": matplotlib.cm.jet_r,
+        "clim": (0, 2),
+        "above_color": "magenta",
+        "below_color": "brown",
+        "nan_color": "gray",
+        "scalar_bar_args": scalar_bar_args,
     }
+    
+    # combine the default and user-given kwargs
+    add_mesh_kws = default_add_mesh_kws if add_mesh_kws is None else {**default_add_mesh_kws, **add_mesh_kws}
+    print(add_mesh_kws["scalar_bar_args"])
+    plotter.add_mesh(
+        mesh=mesh,
+        scalars=field,
+        **add_mesh_kws,
+    )
+    
+    if free_boundaries:
+        draw_free_boundaries(
+            get_free_boundaries(mesh),
+            plotter=plotter
+        )
+
+    return plotter
