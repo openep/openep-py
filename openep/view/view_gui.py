@@ -185,7 +185,7 @@ class OpenEpGUI(qtw.QWidget):
             self.cmap = surf["cmap"]
             self.below_color = surf["volt_below_color"]
             self.above_color = surf["volt_above_color"]
-            self.free_boundaries = openep.mesh.get_freeboundaries(self.ep_case.create_mesh())
+            self.free_boundaries = openep.mesh.free_boundaries(self.ep_case.create_mesh())
 
             # Interpolated voltage data
             self.voltage_data = openep.case.get_voltage_electroanatomic(self.ep_case)
