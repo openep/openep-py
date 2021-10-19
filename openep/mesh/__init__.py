@@ -8,4 +8,5 @@ from .mesh_routines import (
     calculate_vertex_distance,
     calculate_vertex_path,
     calculate_point_distance_max,
+    get_freeboundaries,
 )
