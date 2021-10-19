@@ -259,15 +259,17 @@ def calculate_field_area(
     mesh: pyvista.PolyData, field: np.ndarray, threshold: float
 ) -> float:
     """
-    Calculate the area of triangles whose values are at or below the given threshold.
+    Calculate the total surface area of cells whose corresponding values in `field` are
+    less than or equal to the given threshold.
 
     Args:
         mesh (PolyData): pyvista mesh
-        field ndarray: field used to select triangles
-        threshold (float): value at or below which triangles are selected to include in calculation
+        field (ndarray): scalar values that will be filtered based on the given threshold
+        threshold (float): cells with values in `field` less than or equal to this value
+            will be included when calculating the surface area.
 
     Returns:
-        float: total area of selected triangles
+        float: total area of selected cells
     """
 
     areas = mesh.compute_cell_sizes(
