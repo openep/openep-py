@@ -287,33 +287,55 @@ def calculate_field_area(
 
 def calculate_vertex_distance(
     mesh: pyvista.PolyData,
-    start_idx: int,
-    end_idx: int
+    start_index: int,
+    end_index: int,
+    metric: str = "geodesic",
 ) -> float:
     """
-    Calculate the euclidean distance from vertex at `start_idx` to `end_idx`.
+    Calculate the distance from vertex at `start_idx` to `end_idx`.
+
+    Either the Euclidian or geodesic distance can be calculated.
 
     Args:
         mesh (PolyData): Polydata mesh
         start_index (int) : index of starting vertex
         end_index (int) : index of ending vertex
+        metric (str): The distance metric to use. The distance function can
+            be 'geodesic' or 'euclidian'.
 
     Returns:
         float: distance between vertices
     """
-    start_vertex = mesh.points[start_idx]
-    end_vertex = mesh.points[end_idx]
 
-    return np.linalg.norm(start_vertex - end_vertex)
+    if metric not in {"geodesic", "euclidian"}:
+        raise ValueError("metric must be on of: geodesic, euclidian")
+
+    if metric == "euclidian":
+
+        distance = np.linalg.norm(
+            mesh.points[start_index] - mesh.points[end_index]
+        )
+
+        return distance
+
+    try:
+        distance = mesh.geodesic_distance(start_index, end_index)
+    except(ValueError) as e:
+        distance = np.NaN
+
+    return distance
 
 
 def calculate_vertex_path(
     mesh: pyvista.PolyData,
-    start_idx: int,
-    end_idx: int
+    start_index: int,
+    end_index: int
 ) -> np.ndarray:
     """
     Calculate the path from vertex at `start_idx` to `end_idx` as a path of vertices through the mesh.
+
+    This is a wrapper around pyvista.PolyData.geodesic, but it returns an empty array if no path
+    exist between the two vertices.
 
     Args:
         mesh (PolyData): Polydata mesh
@@ -324,45 +346,14 @@ def calculate_vertex_path(
         ndarray: Array of vertex indices defining the path
     """
 
-    graph = _create_edge_graph(mesh)
-    path = nx.shortest_path(graph, source=start_idx, target=end_idx, weight="length")
+    try:
+        path_mesh = mesh.geodesic(start_vertex=start_index, end_vertex=end_index)
+        path = np.asarray(path_mesh.point_data['vtkOriginalPointIds'][path_mesh.lines[1:]])
 
-    return np.array(path, int)
+    except(ValueError) as e:
+        path = np.array([])
 
-
-# TODO: This function can be replaced by pyvista.geodesic
-#       Just need to handle the exception raised by pyvista.geodesic if there is no path
-def _create_edge_graph(mesh: pyvista.PolyData) -> nx.Graph:
-    """
-    Create a Graph object of the mesh's edges with the length stored as property 'length'.
-    """
-
-    # Avoid creating the graph unnecessarily
-    if hasattr(mesh, "_graph"):
-        return mesh._graph
-
-    faces = mesh.faces.reshape(-1, 4)[:, 1:]
-
-    edges = np.vstack(
-        [
-            faces[:, :2],
-            faces[:, 1:3],
-            faces[:, ::2],
-        ]
-    )
-    edges.sort()  # ensure the lower index is in the first column
-    unique_edges = np.unique(edges, axis=0)
-
-    edge_lengths = np.linalg.norm(mesh.points[unique_edges[:, 0]] - mesh.points[unique_edges[:, 1]], axis=1)
-
-    graph = nx.Graph()
-    graph.add_nodes_from(np.arange(mesh.n_points))  # ensure all nodes are present
-    for edge, length in zip(unique_edges, edge_lengths):
-        graph.add_edge(*edge, length=length)
-
-    mesh._graph = graph
-
-    return graph
+    return path
 
 
 def calculate_point_distance_max(points, test_points, max_distance):
