@@ -23,6 +23,7 @@ import functools
 import numpy as np
 import matplotlib.pyplot as plt
 
+import scipy.spatial
 from scipy.interpolate import Rbf
 from scipy.interpolate import LinearNDInterpolator as linterp
 from scipy.interpolate import NearestNDInterpolator as nearest
@@ -308,16 +309,28 @@ def dist_between_points(A, B):
 
 
 def calculate_point_distance_max(points, test_points, max_distance):
-    results = []
-    dists = []
+    """Find all test points within a given distance 
 
-    for p in test_points:
-        dist = np.linalg.norm(points - p, axis=1)
-        inds = np.argwhere(dist <= max_distance).flatten()
-        results.append(inds)
-        dists.append(dist)
+    Args:
+        points (ndarray, (N, 3)): array of 3D points
+        test_points (ndarray, (M, 3)): array of 3D test points
+        max_distance (float): distance threshold between the points and test_points
 
-    return results, dists
+    Returns:
+        within_max_dist (ndarray, M x N): Boolean array
+            that is equal to True if the points are within the maximum distance
+            of one another and equal to False otherwise. 
+        distances (ndarray, M x N): distance between each point
+            and each test_point.
+    """
+    distances = scipy.spatial.distance.cdist(
+        points,
+        test_points,
+    ).T
+
+    within_max_distance = distances <= max_distance
+
+    return within_max_distance, distances
 
 
 def get_electrogram_coordinates(mesh_case, *args):
