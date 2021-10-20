@@ -9,7 +9,7 @@ from openep.mesh.mesh_routines import (
     calculate_vertex_distance, calculate_vertex_path
 )
 from openep._simple_meshes.simple_meshes import (
-    CUBE, SPHERE, BROKEN_SPHERE
+    CUBE, SPHERE, BROKEN_SPHERE, TRIANGLES
 )
 
 
@@ -18,6 +18,7 @@ class TestMeshRoutines(TestCase):
         self.cube = pyvista.read(CUBE)
         self.sphere = pyvista.read(SPHERE)
         self.broken_sphere = pyvista.read(BROKEN_SPHERE)  # sphere with holes
+        self.triangles = pyvista.read(TRIANGLES)
 
         self._sphere_faces = self.sphere.faces.reshape(-1, 4)[:, 1:]
         self._sphere_triangles = self.sphere.points[self._sphere_faces]
@@ -51,21 +52,38 @@ class TestMeshRoutines(TestCase):
 
         self.assertAlmostEqual(calculated_area, area, 2)
 
-    def test_calculate_vertex_distance1(self):
-        test_dist = calculate_vertex_distance(self.cube, 0, 7)  # far corners are at indices 0 and 7
+    def test_calculate_vertex_distance_euclidian(self):
+        test_dist = calculate_vertex_distance(
+            mesh=self.cube,
+            start_index=0,
+            end_index=7,
+            metric='euclidian'
+        )  # far corners are at indices 0 and 7
         self.assertAlmostEqual(test_dist, np.sqrt(3), 5)
 
-    def test_calculate_vertex_distance2(self):
-        # arbitrary test values
-        start_idx = 10
-        end_idx = 33
+    def test_calculate_vertex_distance_euclidian_sphere(self):
+        sphere_diameter = 2.0
+        start_index = 18  # top of sphere
+        end_index = 23  # bottom of sphere
+        test_dist = calculate_vertex_distance(
+            mesh=self.sphere,
+            start_index=start_index,
+            end_index=end_index,
+            metric='euclidian'
+        )
+        self.assertAlmostEqual(test_dist, sphere_diameter, 5)
 
-        start, end = self.sphere.points[[start_idx, end_idx]]
-        dist = np.linalg.norm(start - end)
-
-        test_dist = calculate_vertex_distance(self.sphere, start_idx, end_idx)
-
-        self.assertAlmostEqual(test_dist, dist, 5)
+    def test_calculate_vertex_distance_geodesic_sphere(self):
+        sphere_half_circumference = 3.138363827815294  # should be equal to pi*diameter/2=pi, but it's not a perfect sphere
+        start_index = 18  # top of sphere
+        end_index = 23  # bottom of sphere
+        test_dist = calculate_vertex_distance(
+            mesh=self.sphere,
+            start_index=start_index,
+            end_index=end_index,
+            metric='geodesic'
+        )
+        self.assertAlmostEqual(test_dist, sphere_half_circumference, 5)
 
     def test_calculate_vertex_path(self):
         path = calculate_vertex_path(self.cube, 0, 7)

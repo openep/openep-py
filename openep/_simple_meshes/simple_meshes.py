@@ -27,4 +27,4 @@ BROKEN_SPHERE = resource_filename(__name__,
                                   "PLY/broken_sphere.ply")
 
 TRIANGLES = resource_filename(__name__,
-                             "PLY/triangles.")
+                             "PLY/triangles.ply")
