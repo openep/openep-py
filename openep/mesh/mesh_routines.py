@@ -19,7 +19,6 @@
 from dataclasses import dataclass
 
 import numpy as np
-import networkx as nx
 
 import pyvista
 import pymeshfix
@@ -31,7 +30,6 @@ __all__ = [
     "calculate_field_area",
     "calculate_vertex_distance",
     "calculate_vertex_path",
-    "calculate_point_distance_max",
     "get_free_boundaries",
 ]
 
@@ -354,17 +352,3 @@ def calculate_vertex_path(
         path = np.array([])
 
     return path
-
-
-def calculate_point_distance_max(points, test_points, max_distance):
-    results = []
-
-    dists = []
-
-    for p in test_points:
-        dist = np.linalg.norm(points - p, axis=1)
-        inds = np.argwhere(dist <= max_distance).flatten()
-        results.append(inds)
-        dists.append(dist)
-
-    return results, dists
