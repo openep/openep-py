@@ -6,6 +6,6 @@ from .mesh_routines import (
     calculate_field_area,
     calculate_vertex_distance,
     calculate_vertex_path,
-    calculate_point_distance_max,
     get_free_boundaries,
+    repair_mesh,
 )

@@ -31,6 +31,7 @@ __all__ = [
     "calculate_vertex_distance",
     "calculate_vertex_path",
     "get_free_boundaries",
+    "repair_mesh",
 ]
 
 
@@ -74,7 +75,7 @@ class FreeBoundary:
 
     def separate_boundaries(self, original_lines=False):
         """
-        Returns a list of numpy arrays where each array contains the indices of
+        Creates a list of numpy arrays where each array contains the indices of
         node pairs in a single free boundary.
 
         Args:
@@ -94,7 +95,7 @@ class FreeBoundary:
 
     def calculate_lengths(self):
         """
-        Returns the length of the perimeter of each free boundary.
+        Calculate the length of the perimeter of each free boundary.
         """
 
         lengths = [
@@ -122,7 +123,7 @@ class FreeBoundary:
 
     def calculate_areas(self):
         """
-        Returns the total area of the faces in each boundary.
+        Returns the cross-sectional area of each boundary.
         """
 
         if self._boundary_meshes is None:
@@ -135,6 +136,10 @@ class FreeBoundary:
     def _create_boundary_meshes(self):
         """
         Create a pyvista.PolyData mesh for each boundary.
+        
+        This determines the geometric centre of the boundary, adds a point at the centre, then
+        creates a new mesh in which every edge forms a triangle with the central point. This
+        thus creates a surface of the boundary, from which the cross-sectional area can be calculated.
         """
 
         boundary_meshes = []
@@ -148,11 +153,12 @@ class FreeBoundary:
 
             num_points = points.shape[0]
             n_vertices_per_node = np.full(num_points - 1, fill_value=3, dtype=int)
-            vertex_one = np.zeros(num_points - 1, dtype=int)  # all triangles include the central point
+            
+            vertex_one = np.zeros(num_points - 1, dtype=int)  # all triangles include the central point, index 0
             vertex_two = np.arange(1, num_points)
             vertex_three = np.roll(vertex_two, shift=-1)
             faces = np.vstack([n_vertices_per_node, vertex_one, vertex_two, vertex_three]).T.ravel()
-
+            
             boundary_meshes.append(pyvista.PolyData(points, faces))
 
         self._boundary_meshes = boundary_meshes
@@ -161,64 +167,48 @@ class FreeBoundary:
 
 
 def get_free_boundaries(mesh):
-    """Gets the freeboundary/outlines of the 3-D mesh and returns the indices.
+    """
+    Determines the freeboundary/outlines of the 3-D mesh.
 
     Args:
-        mesh (pyvista.PolyData): Open mesh for which the free boundaries will be determined.
+        mesh (pyvista.PolyData): An open mesh for which the free boundaries will be determined.
 
     Returns:
-        freeboundaries_info (dict):
-            * freeboundary, Nx2 numpy array of indices of neighbouring points in the free boundaries
+        free_boundaries (openep.mesh.FreeBoundary):
+            The free boundaries of the open mesh.
     """
 
     tm_mesh = _create_trimesh(mesh)
-
-    # extract the boundary information
-    boundaries = tm_mesh.outline()
-    boundaries_lines = boundaries.entities
+    boundaries = tm_mesh.outline().entities
 
     # determine information about each boundary
-    original_indices = np.concatenate([line.points for line in boundaries_lines])
-    n_points_per_boundary = np.asarray([line.points.size for line in boundaries_lines])
-    n_boundaries = tm_mesh.outline().entities.size
-    indices = np.arange(original_indices.size)
+    original_indices = np.concatenate([line.points for line in boundaries])
+    new_indices = np.arange(original_indices.size)
+
+    n_points_per_boundary = np.asarray([line.points.size for line in boundaries])
+    n_boundaries = boundaries.size
 
     # Create an array pairs of neighbouring nodes for each boundary
     original_lines = np.vstack([original_indices[:-1], original_indices[1:]]).T
-    lines = np.vstack([indices[:-1], indices[1:]]).T
+    new_lines = np.vstack([new_indices[:-1], new_indices[1:]]).T
 
     # Ignore the neighbours that are part of different boundaries
-    keep_lines = np.full_like(lines[:, 0], fill_value=True, dtype=bool)
+    keep_lines = np.full_like(new_lines[:, 0], fill_value=True, dtype=bool)
     keep_lines[n_points_per_boundary[:-1].cumsum()-1] = False
+
     original_lines = original_lines[keep_lines]
-    lines = lines[keep_lines]
+    new_lines = new_lines[keep_lines]
 
     # Get the {x,y,z} coordinates of the first node in each pair
     points = tm_mesh.vertices[original_indices]
 
     return FreeBoundary(
         points=points,
-        lines=lines,
+        lines=new_lines,
         n_boundaries=n_boundaries,
         n_points_per_boundary=n_points_per_boundary,
         original_lines=original_lines,
     )
-
-
-def calculate_per_triangle_field(mesh: pyvista.PolyData, field: np.ndarray) -> np.ndarray:
-    """
-    Calculate a per-triangle field from the given per-vertex field. For each triangle the mean of the vertex values is
-    calculated as the triangle value.
-
-    Args:
-        mesh (PolyData): PolyData mesh
-        field: per-vertex field to convert
-
-    Returns:
-        np.ndarray per-triangle field
-    """
-    faces = mesh.faces.reshape(-1, 4)[:, 1:]
-    return field[faces].mean(axis=1)
 
 
 def calculate_mesh_volume(
@@ -238,14 +228,20 @@ def calculate_mesh_volume(
     """
 
     if fill_holes:
-        mesh = _repair_mesh(mesh)
+        mesh = repair_mesh(mesh)
 
     return mesh.volume
 
 
-def _repair_mesh(mesh: pyvista.PolyData) -> pyvista.PolyData:
+def repair_mesh(mesh: pyvista.PolyData) -> pyvista.PolyData:
     """
-    Repair the given mesh using pymeshfix.
+    Fill the holes of a mesh to make it watertight.
+    
+    Args:
+        mesh (PolyData): mesh to be repaired.
+    
+    Returns:
+        mesh (PolyData): the repaired mesh.
     """
     mf = pymeshfix.MeshFix(mesh)
     mf.repair()
@@ -281,6 +277,22 @@ def calculate_field_area(
     selected_areas = areas[selection]
 
     return selected_areas.sum()
+
+
+def calculate_per_triangle_field(mesh: pyvista.PolyData, field: np.ndarray) -> np.ndarray:
+    """
+    Calculate a per-triangle field from the given per-vertex field. For each triangle the mean of the vertex values is
+    calculated as the triangle value.
+
+    Args:
+        mesh (PolyData): PolyData mesh
+        field: per-vertex field to convert
+
+    Returns:
+        np.ndarray per-triangle field
+    """
+    faces = mesh.faces.reshape(-1, 4)[:, 1:]
+    return field[faces].mean(axis=1)
 
 
 def calculate_vertex_distance(
