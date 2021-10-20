@@ -53,7 +53,19 @@ def _create_trimesh(pyvista_mesh):
 
 @dataclass
 class FreeBoundary:
-    """Class for storing information on the free boundaries of a mesh."""
+    """
+    Class for storing information on the free boundaries of a mesh.
+    
+    Args:
+        points (np.ndarray): (N,3) array of coordinates
+        lines (np.ndarray): (M, 2) array containing the indices of points connected
+            by an edge. Values should be in the interval [0, N-1].
+        n_boundaries (int): the number of free boundaries
+        n_points_per_boundary (np.ndarray): the number of points in each boundary
+        original_lines (np.ndarray): (M, 2) array. Same as `lines`, but the indices
+            should correspond to those in the original mesh from which free boundaries
+            were identified.
+    """
 
     points: np.ndarray
     lines: np.ndarray
@@ -63,6 +75,8 @@ class FreeBoundary:
 
     def __post_init__(self):
 
+        # We'll use the start and stop indices for separating the (N,2) ndarray
+        # of indices into separate arrays for each boundary
         start_indices = list(np.cumsum(self.n_points_per_boundary[:-1] - 1))
         start_indices.insert(0, 0)
         self._start_indices = np.asarray(start_indices)
