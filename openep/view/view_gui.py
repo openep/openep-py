@@ -232,35 +232,26 @@ class OpenEpGUI(qtw.QWidget):
         self.plotter1.reset_camera()
 
     def plot_egm(self):
-        self.egm_point = int(self.egmselect.text())
+        self.egm_point = np.asarray(self.egmselect.text())
 
         self.fig, self.ax = plt.subplots(ncols=1, nrows=1)
-        self.fig.set_facecolor("gray")
+        self.fig.set_facecolor("white")
         self.canvas = FigureCanvas(self.fig)
 
-        self.egm = openep.case.get_egms_at_points(
-            self.ep_case, self.filenames[0], "iegm", [self.egm_point]
+        self.egm_traces, self.egm_names, self.egm_lat = openep.case.get_electrograms_at_points(
+            self.ep_case, indices=self.egm_point
         )
-        self.egm_traces = self.egm["egm_traces"]
-        self.sample_range = self.egm["sample_range"]
-        self.egm_name = self.egm["egm_names"][0]
-        seperation = 5
-
-        y_label = [self.egm_name] * len(self.egm_traces)
-
-        for i in range(len(self.egm_traces)):
-            y = self.egm_traces[i][0][self.sample_range[0] : self.sample_range[1]]  # noqa E203
-            t = np.arange(self.sample_range[0], self.sample_range[1], 1)
-            self.ax.plot(t, y + (seperation * i))
-        self.ax.get_yaxis().set_visible(True)
-        self.ax.set_xlabel("Samples")
-        self.ax.set_yticks(np.arange(0, len(self.egm_traces)) * seperation)
-        self.ax.set_yticklabels(y_label)
+        times = openep.case.get_woi_times(self.ep_case)
+        relative_times = openep.case.get_woi_times(self.ep_case, relative=True)
+        self.fig, self.ax = openep.case.plot_electrograms(
+            relative_times,
+            self.egm_traces[:, times],
+            names=self.emg_names,
+        )
 
         self.dock_plot1 = qtw.QDockWidget("EGM Plot", self)
         self.dock_plot1.setFloating(False)
         self.dock_plot1.setWidget(self.canvas)
-
         self.plotLayout.addWidget(self.dock_plot1, 1, 1)
 
     def plot_histogram(self):
