@@ -29,14 +29,11 @@ from scipy.interpolate import LinearNDInterpolator as linterp
 from scipy.interpolate import NearestNDInterpolator as nearest
 
 __all__ = [
-    'get_reference_annotation',
     'get_mapping_points_within_woi',
-    'get_window_of_interest',
-    'get_egms_at_points',
-    'plot_egm',
-    'dist_between_points',
-    'calculate_point_distance_max',
-    'get_electrogram_coordinates',
+    'get_electrograms_at_points',
+    'plot_electrograms',
+    'calculate_distance',
+    'calculate_points_within_distance',
     'LinearNDInterpolatorExt',
     'LocalSmoothing',
     'rbfAssemble',
@@ -49,272 +46,258 @@ __all__ = [
 ]
 
 
-def get_reference_annotation(mesh_case, *args):
+def _get_reference_annotation(case, indices=None):
     """
-    Returns the value of the reference annotation
+    Get the reference annotations for mapping points.
 
     Args:
-        mesh_case (obj): openep case object
-        'iegm'(str): iegm in string format
-        ':' (str) or (list)  or range(start int, stop int): The electrogram point(s) for
-            which the reference of annotation is required
-        *args: Variable length argument list.
-
+        case (Case): openep case object
+        indices (ndarray), optional: indices of reference annotations to select. The default
+            is None, in which case all reference annotation will be returned.
     Returns:
-        int: ref, lists of the reference annotation for the corresponding iegm values
+        annotations (ndarray): reference annotations
     """
 
-    n_standard_args = 1
-    i_egm = np.array(":")
-
-    n_arg_in = len(args) + 1
-    if n_arg_in > n_standard_args:
-        for i in range(0, (n_arg_in - n_standard_args), 2):
-            if np.char.lower(args[i]) == "iegm":
-                i_egm = args[i + 1]
-    ref = []
-    if (type(i_egm) == str) and (np.char.compare_chararrays(i_egm, ":", "==", True)):
-        ref = mesh_case.electric["annotations/referenceAnnot"].T
-
-    else:
-        ref_raw = mesh_case.electric["annotations/referenceAnnot"].T
-        ref_raw = ref_raw.astype(int)
-
-        for i in i_egm:
-            ref.append(ref_raw[i])
-
-    ref = np.array(ref).astype(int)
-    return ref
+    annotations = case.electric['annotations/referenceAnnot'].ravel()
+    annotations = annotations[indices] if indices is not None else annotations
+    
+    return annotations
 
 
-def get_mapping_points_within_woi(mesh_case):
+def _get_window_of_interest(case, indices=None):
+
     """
-    Returns the indices of the mapping points with
-    annotated local activation time within the window of interest
-
+    Gets the window of interest for mapping points.
+    
     Args:
-        mesh_case (obj): openep case object
+        case (Case): openep case object
+        indices (ndarray), optional: indices of mapping points for which the woi will
+            be extracted. The default is None, in which case the woi will be returned for
+            every mapping point.
 
     Returns:
-        bool: m x 1 logical array of valid points; True if point is within woi, False otherwise.
-        indexes into mesh_case.electric
+        woi (ndarray): Nx2 array with the windows of interest for selected mapping points.
+            For each point, the two columns specify that start and end time respectively
+            of the window of interest.
     """
-
-    # reference annotation
-    reference_annot = mesh_case.electric["annotations/referenceAnnot"].T
-
-    # woi
-    woi = mesh_case.electric["annotations/woi"].T
-
-    # Extract the region of the electrogram of interest for each mapping point, n
-    woi = woi + reference_annot
-
-    # MapAnnot
-    map_annot = mesh_case.electric["annotations/mapAnnot"].T
-
-    i_point = np.ones(shape=map_annot.shape, dtype=np.bool)
-
-    # Remove the data points that are outside the region of interest
-    for indx in range(map_annot.size):
-        if (map_annot[indx] < woi[indx, 0]) or (map_annot[indx] > woi[indx, 1]):
-            i_point[indx] = False
-        else:
-            i_point[indx] = True
-
-    return i_point
-
-
-def get_window_of_interest(mesh_case, *args):
-
-    """
-    Returns the window of interest
-    Args:
-        mesh_case (obj): openep case object
-        'iegm'(str): iegm in string format
-        ':' (str) or (list)  or range(start int, stop int): The electrogram point(s) for
-            which the window of interst is required
-        *args: Variable length argument list.
-
-    Returns:
-        int: mx2 arrays of window of interest
-    """
-
-    n_standard_args = 1
-    i_egm = np.array(":")
-
-    n_arg_in = len(args) + 1
-    if n_arg_in > n_standard_args:
-        for i in range(0, (n_arg_in - n_standard_args), 2):
-            if np.char.lower(args[i]) == "iegm":
-                i_egm = args[i + 1]
-    woi = []
-    if (type(i_egm) == str) and (np.char.compare_chararrays(i_egm, ":", "==", True)):
-        woi = mesh_case.electric["annotations/woi"].T
-        woi = woi.astype(int)
-
-    else:
-        woi_raw = mesh_case.electric["annotations/woi"].T
-        woi_raw = woi_raw.astype(int)
-        for i in i_egm:
-            woi.append(woi_raw[i])
-
-    woi = np.array(woi)
+    
+    woi = case.electric["annotations/woi"].T
+    woi = woi[indices] if indices is not None else woi.copy()
 
     return woi
 
 
-def get_egms_at_points(mesh_case, filename, *args):
+def get_mapping_points_within_woi(case, indices=None, buffer=50):
     """
-    Access electrogram from stored in the openep data format
+    Extracts the indices of the mapping points that have
+    annotated local activation times within the window of interest (woi).
 
     Args:
-        mesh_case (obj): openep case object
-        filename(str): file path to the openep dataset .mat file
-        'iegm'(str): iegm in string format
-        ':' (str) or (list)  or range(start int, stop int): The electrogram point(s) for
-            which the window of interst is required
-        *args: Variable length argument list.
+        case (Case): openep case object
+        indices (ndarray), optional: indices of mapping points to consider. The default
+            is None, in which case all points within the window of interest will be returned.
+        buffer (float): points within the woi plus/minus this buffer time will
+            be considered to be within the woi.
 
     Returns:
-        float: egm_traces,corresponding list of arrays, containing the 'bip' and 'uni'
-            voltages for the requested points
-        string: egm_names, corresponding list of the egm names.
-        int: sample_range,list of all the sample range within the window-of-interest for
-            the requested points
+        within_woi (ndarray): boolean array of valid points; True if
+            the annotated local activation time is within the woi, False otherwise.
     """
 
-    egm_names = []
-    egm_traces = []
-    sample_range = []
-    electric_egm_bip = []
-    electric_egm_uni = []
+    reference_annot = _get_reference_annotation(case, indices=indices)
+    woi = _get_window_of_interest(case, indices=indices)
+    woi += reference_annot[:, np.newaxis]
 
-    n_standard_args = 2
-    i_egm = np.array(":")
-    n_arg_in = len(args) + 1
+    map_annot = case.electric["annotations/mapAnnot"].ravel()
+    map_annot = map_annot[indices] if indices is not None else map_annot
+    
+    within_woi = np.logical_and(
+        map_annot >= woi[:, 0] - buffer,
+        map_annot <= woi[:, 1] + buffer,
+    )
 
+    return within_woi
+
+
+def get_electrograms_at_points(
+    case,
+    woi=True,
+    buffer=50,
+    indices=None,
+    bipolar=True,
+    return_names=True,
+    return_lat=True,
+):
+    """
+    Extract the electrogram timeseries for a selection of points.
+
+    Args:
+        case (Case): openep case object
+        woi (bool): If True, only electrograms within the window of interest will be extracted.
+            If False, all electrograms will be extracted.
+        buffer (float): If woi is True, points within the woi plus/minus this buffer time will
+            be considered to be within the woi. If woi is False, buffer is ignored.
+        indices (ndarray), optional: indices of mapping points for which electrograms will
+            be extracted. If provided along with `woi=True`, only the electrograms that
+            are both within the window of interest and selected by `indices` will be extracted.
+            If provided along with `woi=False`, all electrograms of mapping points selected by
+            `indices` will be returned.
+        bipolar (bool): If True, the bipolar traces will be returned. If False, the unipolar
+            traces will be returned.
+        return_names (bool): If True, the internal names of the points used by the
+            clinical electroanatomic mapping system will also be returned.
+        return_lat (bool): If True, the local activation time of each mapping point will also be
+            returned.
+
+    Returns:
+        traces (ndarray): A timeseries of voltages for each selected mapping point.
+        names (ndarray): If `return_names` is True, the internal names of the points used by the
+            clinical electroanatomic mapping system will be returned.
+            local_activation_time (ndarray): If `return_lat` is True, the local activation time of each
+            mapping point will be returned.
+    """
+    
+    electrograms = case.electric['egm'].T if bipolar else case.electric['egmUni'].T
+    names = case.electric["names"]
+    local_activation_time = case.electric['annotations/mapAnnot'].ravel()
+
+    # Filter by selected indices
+    if indices is not None:
+        
+        # if we have a single index we need to ensure it is an array
+        indices = np.asarray([indices]) if isinstance(indices, int) else indices
+        
+        electrograms = electrograms[indices]
+        names = names[indices]
+        local_activation_time = local_activation_time[indices]
+
+    # Filter by window of interest and buffer
+    if woi:
+        within_woi = get_mapping_points_within_woi(case, indices=indices, buffer=buffer)
+        electrograms = electrograms[within_woi]
+        names = names[within_woi]
+        local_activation_time = local_activation_time[within_woi]
+
+    if return_names and return_lat:
+        return electrograms, names, local_activation_time
+    elif return_names:
+        return electrograms, names
+    elif return_lat:
+        return electrograms, local_activation_time
+    
+    return electrograms
+
+
+def get_woi_times(case, buffer=50, relative=False):
+    """
+    Extracts the times within the window of interest.
+
+    Args:
+        case (Case): openep case object
+        buffer (float): times within the window of interest plus/minus this buffer
+            time will be considered to be within the woi.
+        relative (bool): if True, the time of the reference annotation will be
+            subtracted from the returned times.
+
+    Returns:
+        times (ndarray): times within the window of interest
+    """
+    
+    times = np.arange(case.electric['egm'].T.shape[1])
+    
+    woi = case.electric['annotations/woi'].T[0]
+    ref_annotation = int(case.electric['annotations/referenceAnnot'].T[0, 0])
     buffer = 50
-    buffer = [-buffer, buffer]
 
-    names = mesh_case.electric["names"]
-    woi = mesh_case.electric["annotations/woi"].T.astype(np.int64)
-    ref_annot = mesh_case.electric["annotations/referenceAnnot"].T.astype(np.int64)
+    start_time, stop_time = woi + ref_annotation + [-buffer, buffer]
 
-    if n_arg_in > n_standard_args:
-        for i in range(0, (n_arg_in - n_standard_args), 2):
-            if np.char.lower(args[i]) == "iegm":
-                i_egm = args[i + 1]
+    keep_times = np.logical_and(
+        times >= start_time,
+        times <= stop_time,
+    )
 
-    if (type(i_egm) == str) and (np.char.compare_chararrays(i_egm, ":", "==", True)):
-        electric_egm_bip = mesh_case.electric["egm"].T
-        electric_egm_uni = mesh_case.electric["egmUni"].T
-        sample_range = (woi[:] + ref_annot[:]) + buffer
+    if relative:
+        times -= ref_annotation
 
-        electric_egm_bip = np.array(electric_egm_bip).astype(float)
-        electric_egm_uni = np.array(electric_egm_uni).astype(float)
-
-        egm_traces.append(electric_egm_bip)
-        egm_traces.append(electric_egm_uni[:, :, 0])
-        egm_traces.append(electric_egm_uni[:, :, 1])
-        egm_names.append(names)
-
-    else:
-        electric_egm_bip_raw = mesh_case.electric["egm"].T
-        electric_egm_bip_raw = electric_egm_bip_raw.astype(float)
-        electric_egm_uni_raw = mesh_case.electric["egmUni"].T
-        electric_egm_uni_raw = electric_egm_uni_raw.astype(float)
-
-        if len(i_egm) == 2:
-            start_indx = i_egm[0]
-            end_indx = i_egm[1] + 1
-
-            if end_indx > len(electric_egm_bip_raw):
-                raise IndexError("egm index out of range")
-
-            else:
-                for i in range(start_indx, end_indx):
-                    egm_traces.append(electric_egm_bip_raw[i])
-                    egm_traces.append(electric_egm_uni_raw[i, :, 0])
-                    egm_traces.append(electric_egm_uni_raw[i, :, 1])
-                    sample_range.append((woi[i] + ref_annot[i]) + buffer)
-                    egm_names.append(names[i])
-                egm_traces = egm_traces[::-1]
-
-        else:
-            if i_egm[0] > (len(electric_egm_bip_raw) - 1):
-                raise IndexError("egm index out of range")
-
-            else:
-                egm_traces.append(electric_egm_bip_raw[i_egm])
-                egm_traces.append(electric_egm_uni_raw[i_egm, :, 0])
-                egm_traces.append(electric_egm_uni_raw[i_egm, :, 1])
-                electric_egm_bip.append(electric_egm_bip_raw[i_egm].astype(float))
-                electric_egm_uni.append(electric_egm_uni_raw[i_egm].astype(float))
-                egm_names.append(names[i_egm])
-                sample_range = woi[i_egm] + ref_annot[i_egm]
-                sample_range = sample_range + buffer
-
-                egm_traces = egm_traces[::-1]
-
-    return {
-        "egm_traces": egm_traces,
-        "egm_names": egm_names[0],
-        "sample_range": sample_range[0],
-    }
+    return times[keep_times]
 
 
-def plot_egm(egmtraces, sample_range):
+def plot_electrograms(times, electrograms, separation=0.5, names=None, axis=None):
     """
-    Plots the electrogram for a single index point
+    Plot electrogram traces.
 
     Args:
-        egmtraces(float): list of array of voltages (bip and uni)
-        sample_range(int):list of the sample range within the window-of-interest for the requested single point
+        times (ndarray): times at which voltages were measured
+        electrograms (ndarray): Electrogram traces. Two-dimensional of size N_points x N_times for bipolar voltage,
+            or two-dimensional of shape N_points x N_times x 2 for unipolar dimensional.
+        woi (bool): If True, the traces will be plotted only within the window of interest.
+        buffer (float): If woi is True, points within the woi plus/minus this buffer time will
+            be considered to be within the woi. If woi is False, buffer is ignored.
+        axis (matplotlib.axes.Axes): Matplotlib Axes on which to plot the traces. If None, a new figure and axes
+            will be created.
 
     Returns:
-        matplotlib.pyplot: plt, plot of the electrogram voltages
+        axis (matplotlib.axes.Axes): Axes on which the traces have been plotted.
     """
-    # Plotting the egms
-    fig, axs = plt.subplots(nrows=1, ncols=1)
-    seperation = 7
+    
+    # TODO: coloring of the lines - make it sensible, both for bipolar and unipolar
+    # TODO: add title and labels? Don't make the y-axis invisible?
+    # TODO: what default size settings should be used for the figure?
+    # TODO: add a horizontal line showing the zero-value voltage for each trace
+    # TODO: add a vertical line showing time zero
+    
+    separations = np.arange(electrograms.shape[0]) * separation
+    
+    if axis is None:
+        _, axis = plt.subplots()
+    
+    plt.sca(axis)
+    if electrograms.ndim == 2:  # bipolar voltage
+        plt.plot(times, electrograms.T + separations, label=names)
+    else:  # unipolar voltages
+        plt.plot(times, electrograms[:, :, 0].T + separations, label=names)
+        plt.plot(times, electrograms[:, :, 1].T + separations, label=names)
 
-    for i in range(len(egmtraces)):
-        y = egmtraces[i][0][sample_range[0] : sample_range[1]]  # noqa E203
-        t = np.arange(sample_range[0], sample_range[1], 1)
-        axs.plot(t, y + (seperation * i))
-        axs.get_yaxis().set_visible(False)
-    plt.show()
+    axis.get_yaxis().set_visible(False)
+    
+    return axis.get_figure(), axis
 
 
-def dist_between_points(A, B):
+def calculate_distance(origin, destination):
     """
-    Returns the distance from A to B. A and B are specified
-    as row vectors [x, y, z] or matrices, with rows representing different
-    points. If npoints in A and B are different A must specify one and only
-    one point.
+    Returns the distance from a set of origin points to a set of destination
+    points.
 
     Args:
-        A(float): row vectors of size mx3
-        B(float): row vectors of size mx3
+        origin (ndarray): Nx3 matrix of coordinates
+        destination (ndarray): Mx3 matrix of coordinates
 
     Returns:
-        float: d,returns an array of distance between the points in the row vectors
+        distances (ndarray): MxN matrix of distances
 
     """
+    
+    origin = origin[np.newaxis, :] if origin.ndim == 1 else origin
+    destination = destination[np.newaxis, :] if destination.ndim == 1 else destination
+    
+    distances = scipy.spatial.distance.cdist(
+        origin,
+        destination,
+    ).T
+    
+    return distances
 
-    diff_sq = np.square(np.subtract(A, B))
-    d = np.sqrt(np.sum(diff_sq, axis=1)).reshape(B.shape[0], 1)
 
-    return d
-
-
-def calculate_point_distance_max(points, test_points, max_distance):
-    """Find all test points within a given distance 
+def calculate_points_within_distance(origin, destination, max_distance, return_distances=True):
+    """
+    Calculates whether the distances from a set of origin points to a set of
+    destination points are each within a specified distance cutoff.
 
     Args:
         points (ndarray, (N, 3)): array of 3D points
         test_points (ndarray, (M, 3)): array of 3D test points
-        max_distance (float): distance threshold between the points and test_points
+        max_distance (float): distance threshold between the origin points and
+            destination points
 
     Returns:
         within_max_dist (ndarray, M x N): Boolean array
@@ -323,56 +306,14 @@ def calculate_point_distance_max(points, test_points, max_distance):
         distances (ndarray, M x N): distance between each point
             and each test_point.
     """
-    distances = scipy.spatial.distance.cdist(
-        points,
-        test_points,
-    ).T
 
+    distances = calculate_distance(origin, destination)
     within_max_distance = distances <= max_distance
-
-    return within_max_distance, distances
-
-
-def get_electrogram_coordinates(mesh_case, *args):
-    """
-    Function which returns the 3-D Cartesian Coordinates of the electrodes used to record the electrograms
-    It returns the "bip" coordinates by defualt if "type" not specified when calling the function
-
-    Args:
-        mesh_case (obj): Case object from a given openep file
-        "type" (str): "type" in string format
-        "bip" or "uni" (str): specify the voltage type in string format
-        *args: Variable length argument list.
-
-    Returns:
-        float: x, mx3 array,if "type","bip" else mx3x2 array: if "type","uni"
-
-    Raises:
-        ValueError: If "uni" voltage field is not in the openep file (mesh_case.electric.egmUniX)
-
-    """
-    n_standard_args = 1
-    v_type = "bip"
-
-    n_arg_in = len(args) + 1
-    if n_arg_in > n_standard_args:
-        for i in range(0, (n_arg_in - n_standard_args), 2):
-            if np.char.lower(args[i]) == "type":
-                v_type = args[i + 1]
-
-    if np.char.lower(v_type) == "bip":
-        x = mesh_case.electric["egmX"].T
-
-    elif np.char.lower(v_type) == "uni":
-        if not ("egmUniX" in mesh_case.electric):
-            raise ValueError(
-                "There is no unipolar data associated with this openep case"
-            )
-
-        else:
-            x = mesh_case.electric["egmUniX"].T
-
-    return x
+    
+    if return_distances:
+        return within_max_distance, distances
+    
+    return within_max_distance
 
 
 class LinearNDInterpolatorExt(object):
@@ -396,7 +337,7 @@ class LinearNDInterpolatorExt(object):
 def LocalSmoothing(x0, x1, smoothingLength):
     f_dash = np.zeros(shape=(len(x1), 1), dtype=np.float64)
     df_dash = np.zeros(shape=(len(x1), 3), dtype=np.float64)
-    [idx, dists] = calculate_point_distance_max(x0, x1, smoothingLength)
+    [idx, dists] = calculate_points_within_distance(x0, x1, smoothingLength)
 
     return [f_dash, df_dash]
 
@@ -733,7 +674,7 @@ class OpenEPDataInterpolator:
         cPts = self.x0[id]
         cPts = np.array(cPts[:, 0])
 
-        d = dist_between_points(cPts, self.x1)
+        d = calculate_distance(cPts, self.x1)
 
         thresholdDistance = np.zeros(shape=d.shape, dtype=np.bool)
         thresholdDistance[d > self.distanceThreshold] = 1
@@ -743,6 +684,7 @@ class OpenEPDataInterpolator:
         return d1
 
 
+# TODO: this is currnently broken. Revert to an old version and check exactly what it did.
 def get_voltage_electroanatomic(mesh_case):
     distance_thresh = 10
     rbf_constant_value = 1
@@ -752,10 +694,10 @@ def get_voltage_electroanatomic(mesh_case):
 
     # Electric data
     # Locations – Cartesian co-ordinates, projected on to the surface
-    locations = get_electrogram_coordinates(mesh_case, "type", "bip")
+    locations = mesh_case.electric['egmX'].T
 
     i_egm = mesh_case.electric["egm"].T
-    i_vp = get_mapping_points_within_woi(mesh_case)
+    i_vp = get_mapping_points_within_woi(mesh_case)[:, np.newaxis]
     # macthing the shape of ivp with data
     i_vp_egm = np.repeat(i_vp, repeats=i_egm.shape[1], axis=1)
     # macthing the shape of ivp with coords
