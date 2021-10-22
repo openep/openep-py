@@ -20,7 +20,7 @@ import numpy as np
 import openep
 
 
-filename = "/Users/paul/github/openep-py/examples/data/new_dataset_2.mat"
+filename = "/data/KCL/Paul/github/openep-py/examples/data/new_dataset_2.mat"
 case = openep.load_case(filename)
 mesh = case.create_mesh()
 
@@ -29,3 +29,6 @@ mapping_points = openep.case.get_mapping_points_within_woi(case, indices=np.aran
 
 # Get electrograms
 electrograms, names, local_activation_times = openep.case.get_electrograms_at_points(case, indices=1)
+
+# Get interpolated voltages
+interpolated_voltages = openep.case.get_voltage_electroanatomic(case)
