@@ -17,6 +17,7 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 import numpy as np
+import matplotlib.pyplot as plt
 import openep
 
 
@@ -28,7 +29,16 @@ mesh = case.create_mesh()
 mapping_points = openep.case.get_mapping_points_within_woi(case, indices=np.arange(10))
 
 # Get electrograms
-electrograms, names, local_activation_times = openep.case.get_electrograms_at_points(case, indices=1)
+electrograms, names, local_activation_times = openep.case.get_electrograms_at_points(case, indices=[1,10,100])
+
+# Plot the electrogram traces
+# Array of times that are within the window of interest:
+times = openep.case.get_woi_times(case)
+# Array of times that are within the window of interest. Pacing at time = 0 seconds.
+relative_times = openep.case.get_woi_times(case, relative=True)
+# Now plot the traces
+fig, axis = openep.case.plot_electrograms(relative_times, electrograms[:, times], names=names)
+plt.show()
 
 # Get interpolated voltages
 interpolated_voltages = openep.case.get_voltage_electroanatomic(case)
