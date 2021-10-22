@@ -242,7 +242,7 @@ class OpenEpGUI(qtw.QWidget):
         )
         times = openep.case.get_woi_times(self.ep_case)
         relative_times = openep.case.get_woi_times(self.ep_case, relative=True)
-        self.fig, self.ax = openep.case.plot_electrograms(
+        self.fig, self.ax = openep.draw.plot_electrograms(
             relative_times,
             self.egm_traces[:, times],
             names=self.egm_names,
