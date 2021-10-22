@@ -29,9 +29,9 @@ mesh = case.create_mesh()
 mapping_points = openep.case.get_mapping_points_within_woi(case, indices=np.arange(10))
 
 # Get electrograms
-electrograms, names, local_activation_times = openep.case.get_electrograms_at_points(case, indices=[1,10,100])
+electrograms, names, local_activation_times = openep.case.get_electrograms_at_points(case, indices=[1, 10, 100])
 
-# Plot the electrogram traces
+# Plot the electrogram traces
 # Array of times that are within the window of interest:
 times = openep.case.get_woi_times(case)
 # Array of times that are within the window of interest. Pacing at time = 0 seconds.

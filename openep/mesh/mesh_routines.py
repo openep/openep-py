@@ -55,7 +55,7 @@ def _create_trimesh(pyvista_mesh):
 class FreeBoundary:
     """
     Class for storing information on the free boundaries of a mesh.
-    
+
     Args:
         points (np.ndarray): (N,3) array of coordinates
         lines (np.ndarray): (M, 2) array containing the indices of points connected
@@ -150,7 +150,7 @@ class FreeBoundary:
     def _create_boundary_meshes(self):
         """
         Create a pyvista.PolyData mesh for each boundary.
-        
+
         This determines the geometric centre of the boundary, adds a point at the centre, then
         creates a new mesh in which every edge forms a triangle with the central point. This
         thus creates a surface of the boundary, from which the cross-sectional area can be calculated.
@@ -167,12 +167,12 @@ class FreeBoundary:
 
             num_points = points.shape[0]
             n_vertices_per_node = np.full(num_points - 1, fill_value=3, dtype=int)
-            
+
             vertex_one = np.zeros(num_points - 1, dtype=int)  # all triangles include the central point, index 0
             vertex_two = np.arange(1, num_points)
             vertex_three = np.roll(vertex_two, shift=-1)
             faces = np.vstack([n_vertices_per_node, vertex_one, vertex_two, vertex_three]).T.ravel()
-            
+
             boundary_meshes.append(pyvista.PolyData(points, faces))
 
         self._boundary_meshes = boundary_meshes
@@ -250,10 +250,10 @@ def calculate_mesh_volume(
 def repair_mesh(mesh: pyvista.PolyData) -> pyvista.PolyData:
     """
     Fill the holes of a mesh to make it watertight.
-    
+
     Args:
         mesh (PolyData): mesh to be repaired.
-    
+
     Returns:
         mesh (PolyData): the repaired mesh.
     """
@@ -344,7 +344,7 @@ def calculate_vertex_distance(
 
     try:
         distance = mesh.geodesic_distance(start_index, end_index)
-    except(ValueError) as e:
+    except(ValueError):
         distance = np.NaN
 
     return distance
@@ -374,7 +374,7 @@ def calculate_vertex_path(
         path_mesh = mesh.geodesic(start_vertex=start_index, end_vertex=end_index)
         path = np.asarray(path_mesh.point_data['vtkOriginalPointIds'][path_mesh.lines[1:]])
 
-    except(ValueError) as e:
+    except(ValueError):
         path = np.array([])
 
     return path

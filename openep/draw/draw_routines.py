@@ -175,7 +175,7 @@ def plot_electrograms(times, electrograms, separation=1, names=None, axis=None, 
         plt.axhline(y, color='grey', linestyle='--', linewidth=0.8, alpha=0.6)
 
     # Vertical line at time zero (if we know what it is)
-    if 0 in times:  
+    if 0 in times:
         plt.axvline(0, color="grey", linestyle='--', linewidth=0.8, alpha=0.6)
 
     # Remove the border and ticks
