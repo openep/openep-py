@@ -20,7 +20,7 @@ import numpy as np
 import openep
 
 
-filename = "/data/KCL/Paul/github/openep-py/examples/data/new_dataset_2.mat"
+filename = "/Users/paul/github/openep-py/examples/data/new_dataset_2.mat"
 case = openep.load_case(filename)
 mesh = case.create_mesh()
 

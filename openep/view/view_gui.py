@@ -46,7 +46,7 @@ class OpenEpGUI(qtw.QWidget):
         self.thresholds = False
         self.minval = 0
         self.maxval = 2
-        self.egm_point = 0
+        self.egm_point = np.array([0], dtype=int)
 
     def initUI(self):
         self.setWindowTitle(self.title)
@@ -232,11 +232,10 @@ class OpenEpGUI(qtw.QWidget):
         self.plotter1.reset_camera()
 
     def plot_egm(self):
-        self.egm_point = np.asarray(self.egmselect.text())
+        self.egm_point = np.asarray(self.egmselect.text().split(','), dtype=int)
 
         self.fig, self.ax = plt.subplots(ncols=1, nrows=1)
         self.fig.set_facecolor("white")
-        self.canvas = FigureCanvas(self.fig)
 
         self.egm_traces, self.egm_names, self.egm_lat = openep.case.get_electrograms_at_points(
             self.ep_case, indices=self.egm_point
@@ -246,8 +245,9 @@ class OpenEpGUI(qtw.QWidget):
         self.fig, self.ax = openep.case.plot_electrograms(
             relative_times,
             self.egm_traces[:, times],
-            names=self.emg_names,
+            names=self.egm_names,
         )
+        self.canvas = FigureCanvas(self.fig)
 
         self.dock_plot1 = qtw.QDockWidget("EGM Plot", self)
         self.dock_plot1.setFloating(False)
