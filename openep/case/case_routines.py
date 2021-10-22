@@ -163,8 +163,8 @@ def get_electrograms_at_points(
 
     # Filter by selected indices
     if indices is not None:
-        
-        # if we have a single index we need to ensure it is an array
+
+        # if we have a single index we need to ensure it is an array
         indices = np.asarray([indices]) if isinstance(indices, int) else indices
         
         electrograms = electrograms[indices]
@@ -674,7 +674,8 @@ class OpenEPDataInterpolator:
         cPts = self.x0[id]
         cPts = np.array(cPts[:, 0])
 
-        d = calculate_distance(cPts, self.x1)
+        # Is this correct? It's only calculating row-wise distance, not all combinaions
+        d = calculate_distance(cPts, self.x1).diagonal()[:, np.newaxis]
 
         thresholdDistance = np.zeros(shape=d.shape, dtype=np.bool)
         thresholdDistance[d > self.distanceThreshold] = 1
@@ -684,7 +685,6 @@ class OpenEPDataInterpolator:
         return d1
 
 
-# TODO: this is currnently broken. Revert to an old version and check exactly what it did.
 def get_voltage_electroanatomic(mesh_case):
     distance_thresh = 10
     rbf_constant_value = 1
