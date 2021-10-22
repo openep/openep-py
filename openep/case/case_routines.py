@@ -208,7 +208,6 @@ def get_woi_times(case, buffer=50, relative=False):
     
     woi = case.electric['annotations/woi'].T[0]
     ref_annotation = int(case.electric['annotations/referenceAnnot'].T[0, 0])
-    buffer = 50
 
     start_time, stop_time = woi + ref_annotation + [-buffer, buffer]
 
@@ -223,7 +222,7 @@ def get_woi_times(case, buffer=50, relative=False):
     return times[keep_times]
 
 
-def plot_electrograms(times, electrograms, separation=0.5, names=None, axis=None):
+def plot_electrograms(times, electrograms, separation=1, names=None, axis=None, colours=None):
     """
     Plot electrogram traces.
 
@@ -231,6 +230,7 @@ def plot_electrograms(times, electrograms, separation=0.5, names=None, axis=None
         times (ndarray): times at which voltages were measured
         electrograms (ndarray): Electrogram traces. Two-dimensional of size N_points x N_times for bipolar voltage,
             or two-dimensional of shape N_points x N_times x 2 for unipolar dimensional.
+        separation=1
         woi (bool): If True, the traces will be plotted only within the window of interest.
         buffer (float): If woi is True, points within the woi plus/minus this buffer time will
             be considered to be within the woi. If woi is False, buffer is ignored.
@@ -240,28 +240,40 @@ def plot_electrograms(times, electrograms, separation=0.5, names=None, axis=None
     Returns:
         axis (matplotlib.axes.Axes): Axes on which the traces have been plotted.
     """
-    
-    # TODO: coloring of the lines - make it sensible, both for bipolar and unipolar
-    # TODO: add title and labels? Don't make the y-axis invisible?
-    # TODO: what default size settings should be used for the figure?
-    # TODO: add a horizontal line showing the zero-value voltage for each trace
-    # TODO: add a vertical line showing time zero
-    
+
     separations = np.arange(electrograms.shape[0]) * separation
-    
+    colours = "xkcd:cerulean" if colours is None else colours
+
     if axis is None:
-        _, axis = plt.subplots()
-    
+        figure, axis = plt.subplots(constrained_layout=True, figsize=(6, 0.4*len(electrograms)))
+
+    # Plot electrograms
     plt.sca(axis)
     if electrograms.ndim == 2:  # bipolar voltage
-        plt.plot(times, electrograms.T + separations, label=names)
+        plt.plot(times, electrograms.T + separations, label=names, color=colours)
     else:  # unipolar voltages
-        plt.plot(times, electrograms[:, :, 0].T + separations, label=names)
-        plt.plot(times, electrograms[:, :, 1].T + separations, label=names)
+        plt.plot(times, electrograms[:, :, 0].T + separations, label=names, color=colours)
+        plt.plot(times, electrograms[:, :, 1].T + separations, label=names, color=colours)
 
-    axis.get_yaxis().set_visible(False)
-    
-    return axis.get_figure(), axis
+    # Add names
+    if names is not None:
+        y_tick_positions = np.arange(electrograms.shape[0]) * separation
+        plt.yticks(y_tick_positions, labels=names)
+
+    # Add a horizontal line for each electrogram at its zero voltage position
+    for y in separations:
+        plt.axhline(y, color='grey', linestyle='--', linewidth=0.8, alpha=0.6)
+
+    # Vertical line at time zero (if we know what it is)
+    if 0 in times:  
+        plt.axvline(0, color="grey", linestyle='--', linewidth=0.8, alpha=0.6)
+
+    # Remove the border and ticks
+    plt.tick_params(axis='both', which='both', length=0)
+    for spine in ['left', 'right', 'top']:
+        axis.spines[spine].set_visible(False)
+
+    return figure, axis
 
 
 def calculate_distance(origin, destination):
