@@ -37,7 +37,7 @@ times = openep.case.get_woi_times(case)
 # Array of times that are within the window of interest. Pacing at time = 0 seconds.
 relative_times = openep.case.get_woi_times(case, relative=True)
 # Now plot the traces
-fig, axis = openep.case.plot_electrograms(relative_times, electrograms[:, times], names=names)
+fig, axis = openep.draw.plot_electrograms(relative_times, electrograms[:, times], names=names)
 plt.show()
 
 # Get interpolated voltages
