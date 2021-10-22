@@ -59,15 +59,14 @@ def _get_reference_annotation(case, indices=None):
 
     annotations = case.electric['annotations/referenceAnnot'].ravel()
     annotations = annotations[indices] if indices is not None else annotations
-    
+
     return annotations
 
 
 def _get_window_of_interest(case, indices=None):
-
     """
     Gets the window of interest for mapping points.
-    
+
     Args:
         case (Case): openep case object
         indices (ndarray), optional: indices of mapping points for which the woi will
@@ -79,7 +78,7 @@ def _get_window_of_interest(case, indices=None):
             For each point, the two columns specify that start and end time respectively
             of the window of interest.
     """
-    
+
     woi = case.electric["annotations/woi"].T
     woi = woi[indices] if indices is not None else woi.copy()
 
@@ -109,7 +108,7 @@ def get_mapping_points_within_woi(case, indices=None, buffer=50):
 
     map_annot = case.electric["annotations/mapAnnot"].ravel()
     map_annot = map_annot[indices] if indices is not None else map_annot
-    
+
     within_woi = np.logical_and(
         map_annot >= woi[:, 0] - buffer,
         map_annot <= woi[:, 1] + buffer,
@@ -155,7 +154,7 @@ def get_electrograms_at_points(
             local_activation_time (ndarray): If `return_lat` is True, the local activation time of each
             mapping point will be returned.
     """
-    
+
     electrograms = case.electric['egm'].T if bipolar else case.electric['egmUni'].T
     names = case.electric["names"]
     local_activation_time = case.electric['annotations/mapAnnot'].ravel()
@@ -165,7 +164,7 @@ def get_electrograms_at_points(
 
         # if we have a single index we need to ensure it is an array
         indices = np.asarray([indices], dtype=int) if isinstance(indices, int) else indices
-        print(indices)
+
         electrograms = electrograms[indices]
         names = names[indices]
         local_activation_time = local_activation_time[indices]
@@ -183,7 +182,7 @@ def get_electrograms_at_points(
         return electrograms, names
     elif return_lat:
         return electrograms, local_activation_time
-    
+
     return electrograms
 
 
@@ -201,9 +200,9 @@ def get_woi_times(case, buffer=50, relative=False):
     Returns:
         times (ndarray): times within the window of interest
     """
-    
+
     times = np.arange(case.electric['egm'].T.shape[1])
-    
+
     woi = case.electric['annotations/woi'].T[0]
     ref_annotation = int(case.electric['annotations/referenceAnnot'].T[0, 0])
 
@@ -233,15 +232,15 @@ def calculate_distance(origin, destination):
         distances (ndarray): MxN matrix of distances
 
     """
-    
+
     origin = origin[np.newaxis, :] if origin.ndim == 1 else origin
     destination = destination[np.newaxis, :] if destination.ndim == 1 else destination
-    
+
     distances = scipy.spatial.distance.cdist(
         origin,
         destination,
     ).T
-    
+
     return distances
 
 
@@ -259,17 +258,17 @@ def calculate_points_within_distance(origin, destination, max_distance, return_d
     Returns:
         within_max_dist (ndarray, M x N): Boolean array
             that is equal to True if the points are within the maximum distance
-            of one another and equal to False otherwise. 
+            of one another and equal to False otherwise.
         distances (ndarray, M x N): distance between each point
             and each test_point.
     """
 
     distances = calculate_distance(origin, destination)
     within_max_distance = distances <= max_distance
-    
+
     if return_distances:
         return within_max_distance, distances
-    
+
     return within_max_distance
 
 
