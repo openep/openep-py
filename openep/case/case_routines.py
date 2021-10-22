@@ -30,6 +30,7 @@ from scipy.interpolate import NearestNDInterpolator as nearest
 
 __all__ = [
     'get_mapping_points_within_woi',
+    'get_woi_times',
     'get_electrograms_at_points',
     'plot_electrograms',
     'calculate_distance',
@@ -165,8 +166,8 @@ def get_electrograms_at_points(
     if indices is not None:
 
         # if we have a single index we need to ensure it is an array
-        indices = np.asarray([indices]) if isinstance(indices, int) else indices
-        
+        indices = np.asarray([indices], dtype=int) if isinstance(indices, int) else indices
+        print(indices)
         electrograms = electrograms[indices]
         names = names[indices]
         local_activation_time = local_activation_time[indices]
