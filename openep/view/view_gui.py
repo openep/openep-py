@@ -174,7 +174,10 @@ class OpenEpGUI(qtw.QWidget):
             }
 
             # Interpolated voltage data
-            self.voltage_data = openep.case.get_voltage_electroanatomic(self.ep_case)
+            self.voltage_data = openep.case.interpolate_voltage_onto_surface(
+                self.ep_case,
+                max_distance=None,
+            )
 
     def plot_3d_map(self):
 
