@@ -19,14 +19,12 @@
 """Module containing functions to load an OpenEP dataset."""
 
 import os
-import numpy as np
 import scipy.io
-import h5py
 
+from .matlab import _load_mat_v73
 from ..case.case import Case
 
 __all__ = ["load_case"]
-
 
 def _mat_version_supported(filename):
 
@@ -36,88 +34,13 @@ def _mat_version_supported(filename):
     return major_version == 2
 
 
-def _dereference_strings(file_pointer, references):
-    """Resolve an array of references that point to strings."""
-
-    return np.asarray([file_pointer.get(ref)[:].tobytes().decode('utf-16') for ref in references])
-
-
-def _decode_string(ints):
-    """Decode an array of unsigned integers to a single string.
-    """
-
-    return ints.tobytes().decode('utf-16').strip('\x00')
-
-
-def _dereference_nans(file_pointer, references):
-    """Resolve an array of references that point to nans/infs."""
-
-    return np.asarray([file_pointer.get(ref)[:] for ref in references]).ravel()
-
-
 def load_mat(filename):
-    """
-    Load a v7.3 MATLAB file.
-
-    h5py is used to read the file.
-
-    Currently, all references in the HDF5 file are resolved except for 'userdata/rfindex/grid'
-    """
+    """Load a MATLAB file."""
 
     if not _mat_version_supported(filename):
         raise NotImplementedError("Only MATLAB v7.3 files are currently supported.")
 
-    strings_to_dereference = {
-        'userdata/notes',
-        'userdata/electric/electrodeNames_bip',
-        'userdata/electric/electrodeNames_uni',
-        'userdata/electric/names',
-        'userdata/electric/tags',
-    }
-
-    strings_to_decode = {
-        'userdata/cartoFolder',
-        'userdata/rfindex/tag/index/name',
-    }
-
-    nans_to_dereference = {
-        'userdata/electric/impedances/time',
-        'userdata/electric/impedances/value',
-    }
-
-    dat = {}
-    with h5py.File(filename, "r") as f:
-
-        def _visitor(key, value):
-            if (
-                isinstance(value, h5py.Dataset)
-                and not key.startswith('#refs#')
-            ):
-
-                values = value[:]
-
-                if key in strings_to_dereference:
-                    values = _dereference_strings(
-                        file_pointer=f,
-                        references=values.ravel(),
-                    )
-
-                elif key in strings_to_decode:
-                    values = _decode_string(values.ravel())
-
-                elif key in nans_to_dereference:
-                    values = _dereference_nans(
-                        file_pointer=f,
-                        references=values.ravel(),
-                    )
-
-                # ignore references for now
-                dat[key] = values
-
-        f.visititems(_visitor)  # visit all items in the file and populate dat
-
-    # References in the grid are not currently resolved
-    dat.pop('userdata/rfindex/grid', None)
+    dat = _load_mat_v73(filename)
 
     return dat
 
