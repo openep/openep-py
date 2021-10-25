@@ -45,7 +45,7 @@ def _get_reference_annotation(case, indices=None):
         annotations (ndarray): reference annotations
     """
 
-    annotations = case.electric['annotations/referenceAnnot'].ravel()
+    annotations = case.electric['annotations']['referenceAnnot']
     annotations = annotations[indices] if indices is not None else annotations
 
     return annotations
@@ -67,7 +67,7 @@ def _get_window_of_interest(case, indices=None):
             of the window of interest.
     """
 
-    woi = case.electric["annotations/woi"].T
+    woi = case.electric['annotations']['woi']
     woi = woi[indices] if indices is not None else woi.copy()
 
     return woi
@@ -94,7 +94,7 @@ def get_mapping_points_within_woi(case, indices=None, buffer=50):
     woi = _get_window_of_interest(case, indices=indices)
     woi += reference_annot[:, np.newaxis]
 
-    map_annot = case.electric["annotations/mapAnnot"].ravel()
+    map_annot = case.electric['annotations']['mapAnnot']
     map_annot = map_annot[indices] if indices is not None else map_annot
 
     within_woi = np.logical_and(
@@ -143,9 +143,9 @@ def get_electrograms_at_points(
             mapping point will be returned.
     """
 
-    electrograms = case.electric['egm'].T if bipolar else case.electric['egmUni'].T
-    names = case.electric["names"]
-    local_activation_time = case.electric['annotations/mapAnnot'].ravel()
+    electrograms = case.electric['egm'] if bipolar else case.electric['egmUni']
+    names = case.electric['names']
+    local_activation_time = case.electric['annotations']['mapAnnot']
 
     # Filter by selected indices
     if indices is not None:
@@ -189,11 +189,11 @@ def get_woi_times(case, buffer=50, relative=False):
         times (ndarray): times within the window of interest
     """
 
-    times = np.arange(case.electric['egm'].T.shape[1])
+    times = np.arange(case.electric['egm'].shape[1])
 
-    woi = case.electric['annotations/woi'].T[0]
-    ref_annotation = int(case.electric['annotations/referenceAnnot'].T[0, 0])
-
+    woi = case.electric['annotations']['woi'][0]
+    ref_annotation = case.electric['annotations']['referenceAnnot'][0]
+    
     start_time, stop_time = woi + ref_annotation + [-buffer, buffer]
 
     keep_times = np.logical_and(
@@ -223,7 +223,7 @@ def calculate_voltage_from_electrograms(case, buffer=50):
         voltages (ndarray): Bipolar voltages
     """
 
-    electrograms = case.electric['egm'].T.copy()
+    electrograms = case.electric['egm'].copy()
 
     woi_times = get_woi_times(case, buffer=buffer, relative=False)
     electrograms = electrograms[:, woi_times]
@@ -253,7 +253,7 @@ def calculate_distance(origin, destination):
     distances = scipy.spatial.distance.cdist(
         origin,
         destination,
-    ).T
+    )
 
     return distances
 
@@ -352,7 +352,7 @@ class Interpolator:
                 max_distance=max_distance,
                 return_distances=False
             )
-            within_distance = np.any(within_distance, axis=1)
+            within_distance = np.any(within_distance, axis=0)
             interpolated_field[~within_distance] = np.NaN
 
         return interpolated_field
@@ -385,7 +385,7 @@ def interpolate_voltage_onto_surface(
     """
 
     surface_points = case.nodes.copy()
-    points = case.electric['egmX'].T.copy()
+    points = case.electric['egmX'].copy()
 
     if center:
         points -= np.nanmean(surface_points, axis=0)
