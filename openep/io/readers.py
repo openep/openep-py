@@ -24,7 +24,7 @@ import scipy.io
 from .matlab import _load_mat_v73
 from ..case.case import Case
 
-__all__ = ["load_case"]
+__all__ = ["load_case", "load_mat"]
 
 def _mat_version_supported(filename):
 
@@ -40,9 +40,12 @@ def load_mat(filename):
     if not _mat_version_supported(filename):
         raise NotImplementedError("Only MATLAB v7.3 files are currently supported.")
 
-    dat = _load_mat_v73(filename)
+    data = _load_mat_v73(filename)
+    
+    # These are indices
+    data['surface']['triRep']['Triangulation'] -= 1
 
-    return dat
+    return data
 
 
 def load_case(filename, name=None):
@@ -51,28 +54,34 @@ def load_case(filename, name=None):
 
     This assumes a number of names for objects found in the file.
     """
-    dat = load_mat(filename)
+    data = load_mat(filename)
 
     if name is None:
         name = os.path.basename(filename)
 
-    nodes = dat["userdata/surface/triRep/X"].T
-    inds = dat["userdata/surface/triRep/Triangulation"].T - 1
-    act, bip = dat["userdata/surface/act_bip"]
-    uni, imp, frc = dat["userdata/surface/uni_imp_frc"]
+    nodes = data['surface']['triRep']['X']
+    inds = data['surface']['triRep']['Triangulation']
+    act, bip = data['surface']['act_bip'].T
+    uni, imp, frc = data['surface']['uni_imp_frc'].T
 
+    # TODO: make classes for fields, electric, surface, rf, and rf_index
     fields = dict(act=act, bip=bip, uni=uni, imp=imp, frc=frc)
-    electric = {}
-    rf = {}
-    other_data = {}
+    electric = data['electric']
+    surface = data['surface']
 
-    for k, v in dat.items():
-        _, section, *objname = k.split("/", 2)
+    try:
+        rf = data['rf']
+    except KeyError:
+        rf = {}
 
-        if objname and section in ("electric", "rf"):
-            dobj = rf if section == "rf" else electric
-            dobj[objname[0]] = v
-        else:
-            other_data[k] = v
+    try:
+        rf_index = data['rf_index']
+    except KeyError:
+        rf_index = {}
 
-    return Case(name, nodes, inds, fields, electric, rf, other_data)
+    try:
+        notes = data['notes']
+    except:
+        notes = []
+
+    return Case(name, nodes, inds, fields, electric, surface, rf, rf_index, notes)
