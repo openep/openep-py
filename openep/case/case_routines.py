@@ -29,7 +29,7 @@ __all__ = [
     'calculate_distance',
     'calculate_points_within_distance',
     'Interpolator',
-    'get_voltage_electroanatomic',
+    'interpolate_voltage_onto_surface',
 ]
 
 
@@ -225,7 +225,7 @@ def calculate_voltage_from_electrograms(case, buffer=50):
 
     electrograms = case.electric['egm'].T.copy()
 
-    woi_times = get_woi_times(case, relative=False)
+    woi_times = get_woi_times(case, buffer=buffer, relative=False)
     electrograms = electrograms[:, woi_times]
 
     amplitudes = np.ptp(electrograms, axis=1)
@@ -310,7 +310,8 @@ class Interpolator:
 
         default_rbf_kws = {
             "smoothing": 4,
-            "epsilon": 0.5,
+            "kernel": 'multiquadric',
+            "epsilon": 1,
             "degree": 1,
         }
 
@@ -358,46 +359,52 @@ class Interpolator:
         return interpolated_field
 
 
-def get_voltage_electroanatomic(mesh_case):
-    distance_thresh = 10
-    rbf_constant_value = 1
+def interpolate_voltage_onto_surface(
+        case,
+        max_distance=None, 
+        center=True,   
+    ):
+    """Interpolate bipolar voltage onto the points of a mesh.
 
-    # Anatomic descriptions (Mesh) - nodes and indices
-    pts = mesh_case.nodes
+    For each mapping point within the window of interest, the bipolar voltage is
+    calculated as the amplitude of an electrogram during the window of interest,
+    plus/minus 50 ms.
 
-    # Electric data
-    # Locations – Cartesian co-ordinates, projected on to the surface
-    locations = mesh_case.electric['egmX'].T
+    Args:
+        case (openep.case.Case): case from which the voltage will be calculated
+        max_distance (float): If provided, any points on the surface of the mesh
+            further than this distance to all mapping coordinates will have their
+            interpoalted voltages set NaN. The default it None, in which case
+            the distance from surface points to mapping points is not considered.
+        center (bool): If True, both the mapping points and the surface points will
+            be centered before performing the interpolation. They are centered by
+            removing the center of geometry of the surface.
 
-    i_egm = mesh_case.electric["egm"].T
-    i_vp = get_mapping_points_within_woi(mesh_case)[:, np.newaxis]
-    # macthing the shape of ivp with data
-    i_vp_egm = np.repeat(i_vp, repeats=i_egm.shape[1], axis=1)
-    # macthing the shape of ivp with coords
-    i_vp_locations = np.repeat(i_vp, repeats=locations.shape[1], axis=1)
+    Returns:
+        interpolated_voltages (ndarray): bipolar voltages, calculated from the
+            electrograms, interpolated onto the surface of the mesh.
+    """
 
-    # Replacing the values outside the window of interest with Nan values
-    i_egm[~i_vp_egm] = np.nan
-    locations[~i_vp_locations] = np.nan
+    surface_points = case.nodes.copy()
+    points = case.electric['egmX'].T.copy()
+    
+    if center:
+        points -= np.nanmean(surface_points, axis=0)
+        surface_points -= np.nanmean(surface_points, axis=0)
 
-    # For each mapping point, n, find the voltage amplitude
-    max_volt = np.amax(a=i_egm, axis=1).reshape(len(i_egm), 1)
-    min_volt = np.amin(a=i_egm, axis=1).reshape(len(i_egm), 1)
+    bipolar_voltages = calculate_voltage_from_electrograms(case, buffer=50)
 
-    amplitude_volt = np.subtract(max_volt, min_volt)
+    within_woi = get_mapping_points_within_woi(case, buffer=50)
+    interpolator = Interpolator(
+        points[within_woi],
+        bipolar_voltages[within_woi],
+    )
 
-    for indx in range(amplitude_volt.shape[1]):
-        temp_data = amplitude_volt[:, indx]
-        temp_coords = locations
-        i_nan = np.isnan(temp_data)
-        temp_data = temp_data[~i_nan]
-        temp_coords = temp_coords[~i_nan]
+    interpolated_voltages = interpolator(surface_points, max_distance=max_distance)
 
-        interp = OpenEPDataInterpolator(
-            method="rbf",
-            distanceThreshold=distance_thresh,
-            rbfConstant=rbf_constant_value,
-        )
-        vertex_voltage_data = interp.interpolate(x0=temp_coords, d0=temp_data, x1=pts)
+    # Any points that are not part of the mesh faces should have bipolar voltage set to NaN
+    n_surface_points = surface_points.shape[0]
+    not_on_surface = ~np.in1d(np.arange(n_surface_points), case.indices)
+    interpolated_voltages[not_on_surface] = np.NaN
 
-    return vertex_voltage_data
+    return interpolated_voltages
