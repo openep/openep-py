@@ -8,5 +8,5 @@ from .case_routines import (
     calculate_distance,
     calculate_points_within_distance,
     Interpolator,
-    get_voltage_electroanatomic,
+    interpolate_voltage_onto_surface,
 )
