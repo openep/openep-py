@@ -224,22 +224,19 @@ def calculate_voltage_from_electrograms(case, buffer=50):
     """
     Calculates the peak-to-peak bipolar voltage from electrograms.
     
-    For each mapping point within the window of interest, the bipolar voltage will be calculated as the
-    amplitude of its corresponding electrogram.
+    For each mapping point, the bipolar voltage will be calculated as the
+    amplitude of its corresponding electrogram during the window of interest.
 
     Args:
         case (Case): openep case object
-        buffer (float): Points within the woi plus/minus this buffer time will
-            be considered to be within the woi.
+        buffer (float): Amplitudes will be calculated using the window of interest
+            plus/minus this buffer time.
 
     Returns:
-        voltages (ndarray): Bipolar voltages of points within the  window of interest
+        voltages (ndarray): Bipolar voltages
     """
 
     electrograms = case.electric['egm'].T.copy()
-
-    within_woi = get_mapping_points_within_woi(case, buffer=buffer)
-    electrograms = electrograms[within_woi]
 
     woi_times = get_woi_times(case, relative=False)
     electrograms = electrograms[:, woi_times]
