@@ -210,7 +210,7 @@ def get_woi_times(case, buffer=50, relative=False):
 def calculate_voltage_from_electrograms(case, buffer=50):
     """
     Calculates the peak-to-peak bipolar voltage from electrograms.
-    
+
     For each mapping point, the bipolar voltage will be calculated as the
     amplitude of its corresponding electrogram during the window of interest.
 
@@ -319,7 +319,7 @@ class Interpolator:
             if self.method is scipy.interpolate.RBFInterpolator:
                 self.method_kws = {**default_rbf_kws, **self.method_kws}
         elif self.method is scipy.interpolate.RBFInterpolator:
-            self.method_kws =  default_rbf_kws
+            self.method_kws = default_rbf_kws
         else:
             raise ValueError("method_kws must be specified if scipy.interpolate.RBFInterpolator is not used")
 
@@ -329,7 +329,6 @@ class Interpolator:
             **self.method_kws,
         )
 
-
     def __call__(self, surface_points, max_distance=None):
         """Interpolate the scalar field onto a new set of coordinates
 
@@ -338,7 +337,7 @@ class Interpolator:
                 interpolated
             max_distance (float, optional): Surface points further than this distance from any of the
                 original points will not be used in the interpolation. Instead, their scalar field will
-                be set to NaN. Defaults to None, in which case all surface points will 
+                be set to NaN. Defaults to None, in which case all surface points will used.
 
         Returns:
             interpolated_field (ndarray): Scalar field interpolated onto the new points.
@@ -361,9 +360,9 @@ class Interpolator:
 
 def interpolate_voltage_onto_surface(
         case,
-        max_distance=None, 
-        center=True,   
-    ):
+        max_distance=None,
+        center=True,
+):
     """Interpolate bipolar voltage onto the points of a mesh.
 
     For each mapping point within the window of interest, the bipolar voltage is
@@ -387,7 +386,7 @@ def interpolate_voltage_onto_surface(
 
     surface_points = case.nodes.copy()
     points = case.electric['egmX'].T.copy()
-    
+
     if center:
         points -= np.nanmean(surface_points, axis=0)
         surface_points -= np.nanmean(surface_points, axis=0)
