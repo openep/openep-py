@@ -119,7 +119,7 @@ def get_mapping_points_within_woi(case, indices=None, buffer=50):
 
 def get_electrograms_at_points(
     case,
-    woi=True,
+    within_woi=True,
     buffer=50,
     indices=None,
     bipolar=True,
@@ -131,10 +131,10 @@ def get_electrograms_at_points(
 
     Args:
         case (Case): openep case object
-        woi (bool): If True, only electrograms within the window of interest will be extracted.
+        within_woi (bool): If True, only electrograms within the window of interest will be extracted.
             If False, all electrograms will be extracted.
-        buffer (float): If woi is True, points within the woi plus/minus this buffer time will
-            be considered to be within the woi. If woi is False, buffer is ignored.
+        buffer (float): If within_woi is True, points within the woi plus/minus this buffer time will
+            be considered to be within the woi. If wihtin)woi is False, buffer is ignored.
         indices (ndarray), optional: indices of mapping points for which electrograms will
             be extracted. If provided along with `woi=True`, only the electrograms that
             are both within the window of interest and selected by `indices` will be extracted.
@@ -170,11 +170,11 @@ def get_electrograms_at_points(
         local_activation_time = local_activation_time[indices]
 
     # Filter by window of interest and buffer
-    if woi:
-        within_woi = get_mapping_points_within_woi(case, indices=indices, buffer=buffer)
-        electrograms = electrograms[within_woi]
-        names = names[within_woi]
-        local_activation_time = local_activation_time[within_woi]
+    if within_woi:
+        points_within_woi = get_mapping_points_within_woi(case, indices=indices, buffer=buffer)
+        electrograms = electrograms[points_within_woi]
+        names = names[points_within_woi]
+        local_activation_time = local_activation_time[points_within_woi]
 
     if return_names and return_lat:
         return electrograms, names, local_activation_time
