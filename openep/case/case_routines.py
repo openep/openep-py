@@ -31,6 +31,7 @@ __all__ = [
     'get_mapping_points_within_woi',
     'get_woi_times',
     'get_electrograms_at_points',
+    'calculate_voltage_from_electrograms',
     'calculate_distance',
     'calculate_points_within_distance',
     'LinearNDInterpolatorExt',
@@ -217,6 +218,35 @@ def get_woi_times(case, buffer=50, relative=False):
         times -= ref_annotation
 
     return times[keep_times]
+
+
+def calculate_voltage_from_electrograms(case, buffer=50):
+    """
+    Calculates the peak-to-peak bipolar voltage from electrograms.
+    
+    For each mapping point within the window of interest, the bipolar voltage will be calculated as the
+    amplitude of its corresponding electrogram.
+
+    Args:
+        case (Case): openep case object
+        buffer (float): Points within the woi plus/minus this buffer time will
+            be considered to be within the woi.
+
+    Returns:
+        voltages (ndarray): Bipolar voltages of points within the  window of interest
+    """
+
+    electrograms = case.electric['egm'].T.copy()
+
+    within_woi = get_mapping_points_within_woi(case, buffer=buffer)
+    electrograms = electrograms[within_woi]
+
+    woi_times = get_woi_times(case, relative=False)
+    electrograms = electrograms[:, woi_times]
+
+    amplitudes = np.ptp(electrograms, axis=1)
+
+    return amplitudes
 
 
 def calculate_distance(origin, destination):
