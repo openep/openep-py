@@ -17,31 +17,27 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
+from dataclasses import dataclass
+
 import numpy as np
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, List
 import pyvista
 
 __all__ = ["Case"]
 
 
+@dataclass
 class Case:
-    def __init__(
-        self,
-        name: str,
-        nodes: np.ndarray,
-        indices: np.ndarray,
-        fields: Dict[str, np.ndarray],
-        electric: Dict[str, np.ndarray],
-        rf: Dict[str, np.ndarray],
-        other_data: Optional[Dict[str, Any]] = None,
-    ):
-        self.name: str = name
-        self.nodes: np.ndarray = nodes
-        self.indices: np.ndarray = indices.astype(int)
-        self.fields: Dict[str, np.ndarray] = dict(fields)
-        self.electric: Dict[str, np.ndarray] = dict(electric)
-        self.rf: Dict[str, np.ndarray] = dict(rf)
-        self.other_data: Dict[str, Any] = dict(other_data or {})
+    """OpenEP Case object."""
+    name: str
+    nodes: np.ndarray
+    indices: np.ndarray
+    fields: Dict[str, np.ndarray]
+    electric: Dict[str, Any]
+    surface: Dict[str, Any]
+    rf: Optional[Dict[str, Any]] = None
+    rf_index: Optional[Dict[str, Any]] = None
+    notes: Optional[List] = None
 
     def __repr__(self):
         return f"{self.name}( nodes: {self.nodes.shape} indices: {self.indices.shape} fields: {tuple(self.fields)} )"
