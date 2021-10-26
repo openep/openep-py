@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 import openep
 
 
-filename = "/Users/paul/github/openep-py/examples/data/new_dataset_2.mat"
+filename = "/Users/paul/github/openep-py/examples/data/new_dataset_1.mat"
 case = openep.load_case(filename)
 mesh = case.create_mesh()
 
@@ -45,8 +45,16 @@ relative_times = openep.case.get_woi_times(case, relative=True)
 fig, axis = openep.draw.plot_electrograms(relative_times, electrograms[:, times], names=names)
 plt.show()
 
+# Plot Carto bipolar voltages
+plotter = openep.draw.draw_map(
+    mesh=mesh,
+    field=case.fields['bip'],
+)
+plotter.background_color = "white"
+plotter.show()
+
 # Interpolate bipolar voltage onto surface from raw electrograms
-interpolated_voltages = openep.case.interpolate_voltage_onto_surface(case, max_distance=12)
+interpolated_voltages = openep.case.interpolate_voltage_onto_surface(case, max_distance=15)
 plotter = openep.draw.draw_map(
     mesh=mesh,
     field=interpolated_voltages,
