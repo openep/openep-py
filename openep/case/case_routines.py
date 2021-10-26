@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from dataclasses import dataclass
+from attr import attrs
 
 import numpy as np
 import scipy.interpolate
@@ -286,7 +286,7 @@ def calculate_points_within_distance(origin, destination, max_distance, return_d
     return within_max_distance
 
 
-@dataclass
+@attrs(auto_attribs=True, auto_detect=True)
 class Interpolator:
     """Interpolate scalar values onto the points of a mesh.
 
@@ -305,7 +305,7 @@ class Interpolator:
     method: callable = scipy.interpolate.RBFInterpolator
     method_kws: dict = None
 
-    def __post_init__(self):
+    def __attrs_post_init__(self):
         """Create the interpolator"""
 
         default_rbf_kws = {
