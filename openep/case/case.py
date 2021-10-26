@@ -17,16 +17,16 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-from dataclasses import dataclass
+from attr import attrs
+from typing import Any, Dict, Optional, Tuple, List
 
 import numpy as np
-from typing import Any, Dict, Optional, Tuple, List
 import pyvista
 
 __all__ = ["Case"]
 
 
-@dataclass
+@attrs(auto_attribs=True, auto_detect=True)
 class Case:
     """OpenEP Case object."""
     name: str
