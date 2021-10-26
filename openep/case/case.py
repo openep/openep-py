@@ -23,6 +23,8 @@ from typing import Any, Dict, Optional, Tuple, List
 import numpy as np
 import pyvista
 
+from ..data_structures.surface import Fields
+
 __all__ = ["Case"]
 
 
@@ -32,14 +34,13 @@ class Case:
     name: str
     points: np.ndarray
     indices: np.ndarray
-    fields: Dict[str, np.ndarray]
+    fields: Fields
     electric: Dict[str, Any]
-    surface: Dict[str, Any]
     rf: Optional[Dict[str, Any]] = None
     notes: Optional[List] = None
 
     def __repr__(self):
-        return f"{self.name}( nodes: {self.points.shape} indices: {self.indices.shape} fields: {tuple(self.fields)} )"
+        return f"{self.name}( nodes: {self.points.shape} indices: {self.indices.shape} {self.fields} )"
 
     def create_mesh(
         self, vertex_norms: bool = False,
@@ -96,8 +97,6 @@ class Case:
         """
         Returns the named field array, copying if `copy` is True.
         """
-        if fieldname not in self.fields:
-            raise ValueError(f"Field '{fieldname}' not found")
 
         field = self.fields[fieldname]
 
