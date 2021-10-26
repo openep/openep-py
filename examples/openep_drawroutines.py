@@ -27,6 +27,6 @@ mesh = case.create_mesh()
 # DrawVoltage Map
 plotter = openep.draw.draw_map(
     mesh=mesh,
-    field=case.fields['bip'],
+    field=case.fields.bipolar_voltage,
 )
 plotter.show()
