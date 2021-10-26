@@ -22,6 +22,7 @@ import os
 import scipy.io
 
 from .matlab import _load_mat_v73, _load_mat_below_v73
+from ..data_structures.surface import extract_surface_data
 from ..case.case import Case
 
 __all__ = ["load_case", "load_mat"]
@@ -61,15 +62,9 @@ def load_case(filename, name=None):
     if name is None:
         name = os.path.basename(filename)
 
-    points = data['surface']['triRep']['X']
-    indices = data['surface']['triRep']['Triangulation']
-    act, bip = data['surface']['act_bip'].T
-    uni, imp, frc = data['surface']['uni_imp_frc'].T
+    points, indices, fields = extract_surface_data(data['surface'])
 
-    # TODO: make classes for fields, electric, surface, rf, and rf_index
-    fields = dict(act=act, bip=bip, uni=uni, imp=imp, frc=frc)
     electric = data['electric']
-    surface = data['surface']
 
     try:
         rf = data['rf']
@@ -81,4 +76,4 @@ def load_case(filename, name=None):
     except KeyError:
         notes = []
 
-    return Case(name, points, indices, fields, electric, surface, rf, notes)
+    return Case(name, points, indices, fields, electric, rf, notes)
