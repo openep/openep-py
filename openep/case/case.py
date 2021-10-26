@@ -36,7 +36,6 @@ class Case:
     electric: Dict[str, Any]
     surface: Dict[str, Any]
     rf: Optional[Dict[str, Any]] = None
-    rf_index: Optional[Dict[str, Any]] = None
     notes: Optional[List] = None
 
     def __repr__(self):
