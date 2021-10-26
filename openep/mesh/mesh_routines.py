@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from dataclasses import dataclass
+from attr import attrs
 
 import numpy as np
 
@@ -51,7 +51,7 @@ def _create_trimesh(pyvista_mesh):
     return trimesh.Trimesh(vertices, faces, process=False)
 
 
-@dataclass
+@attrs(auto_attribs=True, auto_detect=True)
 class FreeBoundary:
     """
     Class for storing information on the free boundaries of a mesh.
@@ -73,7 +73,7 @@ class FreeBoundary:
     n_points_per_boundary: np.ndarray
     original_lines: np.ndarray
 
-    def __post_init__(self):
+    def __attrs_post_init__(self):
 
         # We'll use the start and stop indices for separating the (N,2) ndarray
         # of indices into separate arrays for each boundary
