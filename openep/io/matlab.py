@@ -19,6 +19,7 @@ import numpy as np
 
 __all__ = []
 
+
 def _dereference_strings(file_pointer, references):
     """Resolve an array of references that point to strings."""
 
@@ -60,7 +61,9 @@ def _visit_mat_v73_(file_pointer):
     }
 
     data = {}
+
     def _visitor(key, value):
+
         if (
             isinstance(value, h5py.Dataset)
             and not key.startswith('#refs#')
@@ -86,7 +89,7 @@ def _visit_mat_v73_(file_pointer):
             data[key] = values
 
     file_pointer.visititems(_visitor)  # visit all items in the file and populate dat
-    
+
     return data
 
 
@@ -102,10 +105,10 @@ def _math_v73_transform_arrays(data):
     }
 
     for key in data:
-        
+
         if not isinstance(data[key], np.ndarray):
             continue
-        
+
         if data[key].shape[0] == 1:
             data[key] = data[key].ravel()
         else:
@@ -122,7 +125,7 @@ def _math_v73_transform_arrays(data):
 
 def _mat_v73_flat_to_nested(data):
     """Make a flat dictionary into a nested one.
-    
+
     The forward slashes in the keys of the flat dictionary will be used to define the
     nesting points for keys in the nested dictionary. e.g. ['userdata/electric'] would become
     ['userdata']['electric].
@@ -131,13 +134,13 @@ def _mat_v73_flat_to_nested(data):
         data ([type]): [description]
     """
 
-    nested_dict = lambda: defaultdict(nested_dict)
+    nested_dict = lambda: defaultdict(nested_dict)  # noqa: E731
 
     nested_data = nested_dict()
     for key in data:
-        
+
         nested_keys = key.split('/')[1:]
-        
+
         # can this block be replaced by a recursive function?
         if len(nested_keys) == 1:
             key1 = nested_keys[0]
@@ -173,7 +176,7 @@ def _load_mat_v73(filename):
     with h5py.File(filename, "r") as f:
         data = _visit_mat_v73_(f)
 
-    # Rfindex is a matlab class - not readable with Python
+    # rfindex is a matlab class - not readable with Python
     data.pop('userdata/rfindex/tag', None)
     data.pop('userdata/rfindex/grid', None)
 
@@ -193,7 +196,7 @@ def _decode_empty_strings_array(arr):
 
 def _cast_to_float(arr):
     """Cast a numpy array to float"""
-    
+
     return arr.astype(float)
 
 
@@ -213,13 +216,13 @@ def _load_mat_below_v73(filename):
         squeeze_me=True,
         simplify_cells=True,
     )['userdata']
-    
+
     data['electric']['tags'] = _decode_empty_strings_array(data['electric']['tags'])
-    
+
     data['electric']['impedances']['time'] = _cast_to_float(data['electric']['impedances']['time'])
     data['electric']['impedances']['value'] = _cast_to_float(data['electric']['impedances']['value'])
 
-    # Rfindex is a matlab class - not readable with Python
-    data.pop('rfindex', None)    
+    # rfindex is a matlab class - not readable with Python
+    data.pop('rfindex', None)
 
     return data

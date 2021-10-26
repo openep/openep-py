@@ -26,6 +26,7 @@ from ..case.case import Case
 
 __all__ = ["load_case", "load_mat"]
 
+
 def _check_mat_version_73(filename):
     """Check if a MATLAB file is of version 7.3"""
 
@@ -42,7 +43,7 @@ def load_mat(filename):
         data = _load_mat_v73(filename)
     else:
         data = _load_mat_below_v73(filename)
-    
+
     # These are indices
     data['surface']['triRep']['Triangulation'] -= 1
 
@@ -77,7 +78,7 @@ def load_case(filename, name=None):
 
     try:
         notes = data['notes']
-    except:
+    except KeyError:
         notes = []
 
     return Case(name, points, indices, fields, electric, surface, rf, notes)
