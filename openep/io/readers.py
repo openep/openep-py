@@ -21,12 +21,13 @@
 import os
 import scipy.io
 
-from .matlab import _load_mat_v73
+from .matlab import _load_mat_v73, _load_mat_below_v73
 from ..case.case import Case
 
 __all__ = ["load_case", "load_mat"]
 
-def _mat_version_supported(filename):
+def _check_mat_version_73(filename):
+    """Check if a MATLAB file is of version 7.3"""
 
     byte_stream, file_opened = scipy.io.matlab.mio._open_file(filename, appendmat=False)
     major_version, minor_version = scipy.io.matlab.miobase.get_matfile_version(byte_stream)
@@ -37,10 +38,10 @@ def _mat_version_supported(filename):
 def load_mat(filename):
     """Load a MATLAB file."""
 
-    if not _mat_version_supported(filename):
-        raise NotImplementedError("Only MATLAB v7.3 files are currently supported.")
-
-    data = _load_mat_v73(filename)
+    if _check_mat_version_73(filename):
+        data = _load_mat_v73(filename)
+    else:
+        data = _load_mat_below_v73(filename)
     
     # These are indices
     data['surface']['triRep']['Triangulation'] -= 1

@@ -173,7 +173,8 @@ def _load_mat_v73(filename):
     with h5py.File(filename, "r") as f:
         data = _visit_mat_v73_(f)
 
-    # References in the grid are not currently resolved
+    # Rfindex is a matlab class - not readable with Python
+    data.pop('userdata/rfindex/tag', None)
     data.pop('userdata/rfindex/grid', None)
 
     # Some arrays need to be flattened or transposed
@@ -181,5 +182,44 @@ def _load_mat_v73(filename):
 
     # make the flat dictionary nested
     data = _mat_v73_flat_to_nested(data)
+
+    return data
+
+
+def _decode_empty_strings_array(arr):
+    """"""
+    return np.asarray([item.tobytes().decode('utf-16') for item in arr])
+
+
+def _cast_to_float(arr):
+    """Cast a numpy array to float"""
+    
+    return arr.astype(float)
+
+
+def _load_mat_below_v73(filename):
+    """
+    Load a MATLAB file of version less than v7.3
+
+    scipy.io.loadmat is used to read the file.
+    """
+
+    data = scipy.io.loadmat(
+        filename,
+        appendmat=False,
+        mat_dtype=False,
+        chars_as_strings=True,
+        struct_as_record=False,
+        squeeze_me=True,
+        simplify_cells=True,
+    )['userdata']
+    
+    data['electric']['tags'] = _decode_empty_strings_array(data['electric']['tags'])
+    
+    data['electric']['impedances']['time'] = _cast_to_float(data['electric']['impedances']['time'])
+    data['electric']['impedances']['value'] = _cast_to_float(data['electric']['impedances']['value'])
+
+    # Rfindex is a matlab class - not readable with Python
+    data.pop('rfindex', None)    
 
     return data

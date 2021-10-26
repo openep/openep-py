@@ -18,5 +18,5 @@
 
 __all__ = ['case', 'mesh', 'draw']
 
-from .io.readers import load_case, load_mat
+from .io.readers import load_case
 from . import case, mesh, draw
