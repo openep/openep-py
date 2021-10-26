@@ -23,6 +23,7 @@ import scipy.io
 
 from .matlab import _load_mat_v73, _load_mat_below_v73
 from ..data_structures.surface import extract_surface_data
+from ..data_structures.electric import extract_electric_data
 from ..case.case import Case
 
 __all__ = ["load_case", "load_mat"]
@@ -64,7 +65,7 @@ def load_case(filename, name=None):
 
     points, indices, fields = extract_surface_data(data['surface'])
 
-    electric = data['electric']
+    electric = extract_electric_data(data['electric'])
 
     try:
         rf = data['rf']
