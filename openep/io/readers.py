@@ -76,13 +76,8 @@ def load_case(filename, name=None):
         rf = {}
 
     try:
-        rf_index = data['rf_index']
-    except KeyError:
-        rf_index = {}
-
-    try:
         notes = data['notes']
     except:
         notes = []
 
-    return Case(name, nodes, inds, fields, electric, surface, rf, rf_index, notes)
+    return Case(name, nodes, inds, fields, electric, surface, rf, notes)
