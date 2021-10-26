@@ -35,7 +35,7 @@ __all__ = [
 
 def _get_reference_annotation(case, indices=None):
     """
-    Get the reference annotations for mapping points.
+    Get the reference activation time for each mapping point.
 
     Args:
         case (Case): openep case object
@@ -45,7 +45,7 @@ def _get_reference_annotation(case, indices=None):
         annotations (ndarray): reference annotations
     """
 
-    annotations = case.electric['annotations']['referenceAnnot']
+    annotations = case.electric.reference_activation_time
     annotations = annotations[indices] if indices is not None else annotations
 
     return annotations
@@ -53,7 +53,7 @@ def _get_reference_annotation(case, indices=None):
 
 def _get_window_of_interest(case, indices=None):
     """
-    Gets the window of interest for mapping points.
+    Gets the window of interest for each mapping point.
 
     Args:
         case (Case): openep case object
@@ -67,7 +67,7 @@ def _get_window_of_interest(case, indices=None):
             of the window of interest.
     """
 
-    woi = case.electric['annotations']['woi']
+    woi = case.electric.annotations.window_of_interest
     woi = woi[indices] if indices is not None else woi.copy()
 
     return woi
@@ -90,16 +90,16 @@ def get_mapping_points_within_woi(case, indices=None, buffer=50):
             the annotated local activation time is within the woi, False otherwise.
     """
 
-    reference_annot = _get_reference_annotation(case, indices=indices)
+    reference_activation_times = _get_reference_annotation(case, indices=indices)
     woi = _get_window_of_interest(case, indices=indices)
-    woi += reference_annot[:, np.newaxis]
+    woi += reference_activation_times[:, np.newaxis]
 
-    map_annot = case.electric['annotations']['mapAnnot']
-    map_annot = map_annot[indices] if indices is not None else map_annot
+    local_activation_times = case.electric.annotations.local_activation_time
+    local_activation_times = local_activation_times[indices] if indices is not None else local_activation_times
 
     within_woi = np.logical_and(
-        map_annot >= woi[:, 0] - buffer,
-        map_annot <= woi[:, 1] + buffer,
+        local_activation_times >= woi[:, 0] - buffer,
+        local_activation_times <= woi[:, 1] + buffer,
     )
 
     return within_woi
@@ -143,9 +143,9 @@ def get_electrograms_at_points(
             mapping point will be returned.
     """
 
-    electrograms = case.electric['egm'] if bipolar else case.electric['egmUni']
-    names = case.electric['names']
-    local_activation_time = case.electric['annotations']['mapAnnot']
+    electrograms = case.electric.bipolar_egm.egm if bipolar else case.electric.unipolar_egm.egm
+    names = case.electric.internal_names
+    local_activation_time = case.electric.annotations.local_activation_time
 
     # Filter by selected indices
     if indices is not None:
@@ -189,10 +189,11 @@ def get_woi_times(case, buffer=50, relative=False):
         times (ndarray): times within the window of interest
     """
 
-    times = np.arange(case.electric['egm'].shape[1])
+    times = np.arange(case.electric.internal_names.size)
 
-    woi = case.electric['annotations']['woi'][0]
-    ref_annotation = case.electric['annotations']['referenceAnnot'][0]
+    # TODO: woi and reference times might be different for each mapping point
+    woi = case.electric.annotations.window_of_interest[0]
+    ref_annotation = case.electric.annotations.reference_activation_time[0]
 
     start_time, stop_time = woi + ref_annotation + [-buffer, buffer]
 
@@ -223,7 +224,7 @@ def calculate_voltage_from_electrograms(case, buffer=50):
         voltages (ndarray): Bipolar voltages
     """
 
-    electrograms = case.electric['egm'].copy()
+    electrograms = case.electric.bipolar_egm.egm.copy()
 
     woi_times = get_woi_times(case, buffer=buffer, relative=False)
     electrograms = electrograms[:, woi_times]
@@ -385,7 +386,7 @@ def interpolate_voltage_onto_surface(
     """
 
     surface_points = case.points.copy()
-    points = case.electric['egmX'].copy()
+    points = case.electric.bipolar_egm.points.copy()
 
     if center:
         points -= np.nanmean(surface_points, axis=0)
