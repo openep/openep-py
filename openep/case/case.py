@@ -24,6 +24,7 @@ import numpy as np
 import pyvista
 
 from ..data_structures.surface import Fields
+from ..data_structures.electric import Electric
 
 __all__ = ["Case"]
 
@@ -35,7 +36,7 @@ class Case:
     points: np.ndarray
     indices: np.ndarray
     fields: Fields
-    electric: Dict[str, Any]
+    electric: Electric
     rf: Optional[Dict[str, Any]] = None
     notes: Optional[List] = None
 
