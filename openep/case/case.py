@@ -30,7 +30,7 @@ __all__ = ["Case"]
 class Case:
     """OpenEP Case object."""
     name: str
-    nodes: np.ndarray
+    points: np.ndarray
     indices: np.ndarray
     fields: Dict[str, np.ndarray]
     electric: Dict[str, Any]
@@ -39,7 +39,7 @@ class Case:
     notes: Optional[List] = None
 
     def __repr__(self):
-        return f"{self.name}( nodes: {self.nodes.shape} indices: {self.indices.shape} fields: {tuple(self.fields)} )"
+        return f"{self.name}( nodes: {self.points.shape} indices: {self.indices.shape} fields: {tuple(self.fields)} )"
 
     def create_mesh(
         self, vertex_norms: bool = False,
@@ -66,7 +66,7 @@ class Case:
                 [faces, faces_inverted]
             )  # include each face twice for both surfaces
 
-        mesh = pyvista.PolyData(self.nodes, faces.ravel())
+        mesh = pyvista.PolyData(self.points, faces.ravel())
 
         # TODO: Refactor to remove this statement and the vertex_norms parameter.
         if vertex_norms:
@@ -83,7 +83,7 @@ class Case:
         """
         Returns the node and triangle index matrices, copying them if `copy` is True.
         """
-        nodes = self.nodes
+        nodes = self.points
         indices = self.indices
 
         if copy:
