@@ -193,7 +193,7 @@ def get_woi_times(case, buffer=50, relative=False):
 
     woi = case.electric['annotations']['woi'][0]
     ref_annotation = case.electric['annotations']['referenceAnnot'][0]
-    
+
     start_time, stop_time = woi + ref_annotation + [-buffer, buffer]
 
     keep_times = np.logical_and(
