@@ -12,4 +12,5 @@ pyqtgraph
 cython
 pyvistaqt
 scikit-learn
+attrs
 
