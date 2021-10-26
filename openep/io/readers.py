@@ -60,8 +60,8 @@ def load_case(filename, name=None):
     if name is None:
         name = os.path.basename(filename)
 
-    nodes = data['surface']['triRep']['X']
-    inds = data['surface']['triRep']['Triangulation']
+    points = data['surface']['triRep']['X']
+    indices = data['surface']['triRep']['Triangulation']
     act, bip = data['surface']['act_bip'].T
     uni, imp, frc = data['surface']['uni_imp_frc'].T
 
@@ -80,4 +80,4 @@ def load_case(filename, name=None):
     except:
         notes = []
 
-    return Case(name, nodes, inds, fields, electric, surface, rf, notes)
+    return Case(name, points, indices, fields, electric, surface, rf, notes)
