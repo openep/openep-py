@@ -384,7 +384,7 @@ def interpolate_voltage_onto_surface(
             electrograms, interpolated onto the surface of the mesh.
     """
 
-    surface_points = case.nodes.copy()
+    surface_points = case.points.copy()
     points = case.electric['egmX'].copy()
 
     if center:
