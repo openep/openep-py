@@ -14,6 +14,7 @@
 from collections import defaultdict
 
 import h5py
+import scipy.io
 import numpy as np
 
 __all__ = []
@@ -112,6 +113,9 @@ def _math_v73_transform_arrays(data):
 
         if key in cast_to_int:
             data[key] = data[key].astype(int)
+
+        if key == 'userdata/electric/electrodeNames_uni':
+            data[key] = data[key].reshape(2, -1).T
 
     return data
 
