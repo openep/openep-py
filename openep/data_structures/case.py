@@ -18,13 +18,14 @@
 
 
 from attr import attrs
-from typing import Any, Dict, Optional, Tuple, List
+from typing import Optional, Tuple, List
 
 import numpy as np
 import pyvista
 
 from .surface import Fields
 from .electric import Electric
+from .albation import Ablation
 
 __all__ = []
 
@@ -37,7 +38,7 @@ class Case:
     indices: np.ndarray
     fields: Fields
     electric: Electric
-    rf: Optional[Dict[str, Any]] = None
+    ablation: Optional[Ablation] = None
     notes: Optional[List] = None
 
     def __repr__(self):
