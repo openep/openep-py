@@ -102,21 +102,24 @@ class Annotations:
 @attrs(auto_attribs=True, auto_detect=True)
 class Electric:
     """
-    Class for storing information about the surface of a mesh
+    Class for storing electrical data obtained during a clinical mapping procedure.
 
     Args:
-        names (np.ndarray): The physician-visible names of the points applied during the clinical case.
-        internal_names (np.ndarray): The internal names of the points used by the clinical electroanatomic mapping system.
-        bipolar_egm (Electrogram): The bipolar electrograms, coordinates of mapping points, names of the electrodes, and voltages.
-        unipolar_egm (Electrogram): The unipolar electrograms, coordinates of the two unipole electrodes, names of the two
-            unipole electrodes, and voltages.
+        names (np.ndarray): The physician-visible names of the points applied during the
+            clinical case.
+        internal_names (np.ndarray): The internal names of the points used by the clinical
+            electroanatomic mapping system.
+        bipolar_egm (Electrogram): The bipolar electrograms, coordinates of mapping points,
+            names of the electrodes, and voltages.
+        unipolar_egm (Electrogram): The unipolar electrograms, coordinates of the two unipole
+            electrodes, names of the two unipole electrodes, and voltages.
         reference_egm (Electrogram): The reference electrograms for each mapping point.
         ecg (np.ndarray): The surface electrocardiogram for each mapping point.
         impedance (Impedance): The time and values of impedance traces for each mapping point
-        surface (ElectricSurface): The position of each mapping point projected to the nearest point on the 3D surface, as
-            well as the normal to the surface at that point.
-        annotations (Annotations): The window of interest, local activation time, and reference activation time for each
-            mapping point.
+        surface (ElectricSurface): The position of each mapping point projected to the nearest
+            point on the 3D surface, as well as the normal to the surface at that point.
+        annotations (Annotations): The window of interest, local activation time, and reference
+            activation time for each mapping point.
     """
 
     names: np.ndarray
