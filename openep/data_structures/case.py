@@ -23,10 +23,10 @@ from typing import Any, Dict, Optional, Tuple, List
 import numpy as np
 import pyvista
 
-from ..data_structures.surface import Fields
-from ..data_structures.electric import Electric
+from .surface import Fields
+from .electric import Electric
 
-__all__ = ["Case"]
+__all__ = []
 
 
 @attrs(auto_attribs=True, auto_detect=True)
