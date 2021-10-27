@@ -5,6 +5,7 @@ source =
 [run]
 branch = true
 source = openep
+include = openep
 parallel = true
 omit =
     *tests*
