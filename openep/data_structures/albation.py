@@ -95,7 +95,7 @@ def extract_ablation_data(ablation_data):
         lateral_angle=ablation_data['originaldata']['force']['lateralangle'],
         points=ablation_data['originaldata']['force']['position'],
     )
-    
+
     ablation = Ablation(
         times=times,
         power=power,

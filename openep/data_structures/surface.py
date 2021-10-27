@@ -61,7 +61,7 @@ def extract_surface_data(surface_data):
 
     Args:
         surface_data (dict): Dictionary containing numpy arrays that describe the
-            surface of a mesh as well as scalar values (fields) 
+            surface of a mesh as well as scalar values (fields)
 
     Returns:
         points (ndarray): 3D coordinates of points on the mesh
@@ -69,13 +69,13 @@ def extract_surface_data(surface_data):
         fields (Field): Field object that contains numpy arrays of the various
             scalar fields
     """
-    
+
     points = surface_data['triRep']['X']
     indices = surface_data['triRep']['Triangulation']
 
     local_activation_time, bipolar_voltage = surface_data['act_bip'].T
     unipolar_voltage, impedance, force = surface_data['uni_imp_frc'].T
-    
+
     fields = Fields(
         bipolar_voltage,
         unipolar_voltage,
