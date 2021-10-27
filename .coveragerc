@@ -9,10 +9,10 @@ include = openep
 parallel = true
 omit =
     *tests*
-    openep/view*   # don't test the gui for now
     *__init__.py
     openep/_version.py
     openep/_simple_meshes/simple_meshes.py
+    openep/view/view_gui.py
 
 [report]
 show_missing = true
