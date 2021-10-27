@@ -1,9 +1,9 @@
-from unittest import TestCase
+import pytest
+from numpy.testing import assert_allclose
 
 import numpy as np
 import pyvista
 
-from openep.data_structures.case import Case
 from openep.mesh.mesh_routines import (
     calculate_field_area, calculate_mesh_volume,
     calculate_vertex_distance, calculate_vertex_path
@@ -13,79 +13,109 @@ from openep._datasets.simple_meshes import (
 )
 
 
-class TestMeshRoutines(TestCase):
-    def setUp(self) -> None:
-        self.cube = pyvista.read(CUBE)
-        self.sphere = pyvista.read(SPHERE)
-        self.broken_sphere = pyvista.read(BROKEN_SPHERE)  # sphere with holes
-        self.triangles = pyvista.read(TRIANGLES)
+@pytest.fixture(scope='module')
+def cube():
+    return pyvista.read(CUBE)
 
-        self._sphere_faces = self.sphere.faces.reshape(-1, 4)[:, 1:]
-        self._sphere_triangles = self.sphere.points[self._sphere_faces]
-        self._sphere_areas = self.sphere.compute_cell_sizes(
+
+@pytest.fixture(scope='module')
+def sphere():
+    return pyvista.read(SPHERE)
+
+
+@pytest.fixture(scope='module')
+def sphere_data(sphere):
+
+    faces = sphere.faces.reshape(-1, 4)[:, 1:]
+    triangles = sphere.points[faces]
+    areas = sphere.compute_cell_sizes(
             length=False,
             area=True,
             volume=False,
         )['Area']
 
-        test_field = self.sphere.points[:, 1]
+    return {
+        "faces": faces,
+        "triangles": triangles,
+        "areas": areas,
+    }
 
-        self.sphere_case = Case("Sphere", self.sphere.points, self.sphere.faces, {"test_field": test_field}, {}, {})
-        self.broken_case = Case("BrokenSphere", self.broken_sphere.points, self.broken_sphere.faces, {}, {}, {})
 
-    def test_calculate_mesh_volume(self):
-        vol = calculate_mesh_volume(self.sphere, False)
+@pytest.fixture(scope='module')
+def broken_sphere():
+    return pyvista.read(BROKEN_SPHERE)
 
-        self.assertAlmostEqual(self.sphere.volume, vol, 2)
 
-    def test_calculate_mesh_volume_repair(self):
-        vol = calculate_mesh_volume(self.broken_sphere, True)
+@pytest.fixture(scope='module')
+def triangles():
+    return pyvista.read(TRIANGLES)
 
-        self.assertAlmostEqual(self.sphere.volume, vol, 2)
 
-    def test_calculate_field_area(self):
+def test_calculate_mesh_volume(sphere):
 
-        xbelow0 = self._sphere_triangles[..., 0].mean(axis=1) <= 0  # select every triangle with mean x below YZ plane
-        calculated_area = self._sphere_areas[xbelow0].sum()
+    volume = calculate_mesh_volume(sphere, fill_holes=False)
+    assert_allclose(sphere.volume, volume)
 
-        area = calculate_field_area(self.sphere, self.sphere_case.fields["test_field"], 0)
 
-        self.assertAlmostEqual(calculated_area, area, 2)
+def test_calculate_mesh_volume_repair(broken_sphere, sphere):
 
-    def test_calculate_vertex_distance_euclidian(self):
-        test_dist = calculate_vertex_distance(
-            mesh=self.cube,
-            start_index=0,
-            end_index=7,
-            metric='euclidian'
-        )  # far corners are at indices 0 and 7
-        self.assertAlmostEqual(test_dist, np.sqrt(3), 5)
+    volume = calculate_mesh_volume(broken_sphere, fill_holes=True)
+    assert_allclose(sphere.volume, volume, atol=0.002)
 
-    def test_calculate_vertex_distance_euclidian_sphere(self):
-        sphere_diameter = 2.0
-        start_index = 18  # top of sphere
-        end_index = 23  # bottom of sphere
-        test_dist = calculate_vertex_distance(
-            mesh=self.sphere,
-            start_index=start_index,
-            end_index=end_index,
-            metric='euclidian'
-        )
-        self.assertAlmostEqual(test_dist, sphere_diameter, 5)
 
-    def test_calculate_vertex_distance_geodesic_sphere(self):
-        sphere_half_circumference = 3.138363827815294  # should be equal to pi*diameter/2=pi, but it's not a perfect sphere
-        start_index = 18  # top of sphere
-        end_index = 23  # bottom of sphere
-        test_dist = calculate_vertex_distance(
-            mesh=self.sphere,
-            start_index=start_index,
-            end_index=end_index,
-            metric='geodesic'
-        )
-        self.assertAlmostEqual(test_dist, sphere_half_circumference, 5)
+def test_calculate_field_area(sphere, sphere_data):
 
-    def test_calculate_vertex_path(self):
-        path = calculate_vertex_path(self.cube, 0, 7)
+    xbelow0 = sphere_data['triangles'][..., 0].mean(axis=1) <= 0  # select every triangle with mean x below YZ plane
+    calculated_area = sphere_data['areas'][xbelow0].sum()
 
-        self.assertListEqual(path.tolist(), [0, 1, 7])
+    area = calculate_field_area(sphere, sphere.points[:, 1], threshold=0)
+
+    assert_allclose(calculated_area, area)
+
+
+def test_calculate_vertex_distance_euclidian(cube):
+
+    test_dist = calculate_vertex_distance(
+        mesh=cube,
+        start_index=0,
+        end_index=7,
+        metric='euclidian'
+    )  # far corners are at indices 0 and 7
+
+    assert_allclose(test_dist, np.sqrt(3), atol=5)
+
+
+def test_calculate_vertex_distance_euclidian_sphere(sphere):
+
+    sphere_diameter = 2.0
+    start_index = 18  # top of sphere
+    end_index = 23  # bottom of sphere
+    test_dist = calculate_vertex_distance(
+        mesh=sphere,
+        start_index=start_index,
+        end_index=end_index,
+        metric='euclidian'
+    )
+
+    assert_allclose(test_dist, sphere_diameter, atol=5)
+
+
+def test_calculate_vertex_distance_geodesic_sphere(sphere):
+
+    sphere_half_circumference = 3.138363827815294  # should be equal to pi*diameter/2=pi, but it's not a perfect sphere
+    start_index = 18  # top of sphere
+    end_index = 23  # bottom of sphere
+    test_dist = calculate_vertex_distance(
+        mesh=sphere,
+        start_index=start_index,
+        end_index=end_index,
+        metric='geodesic'
+    )
+
+    assert_allclose(test_dist, sphere_half_circumference, atol=5)
+
+
+def test_calculate_vertex_path(cube):
+
+    path = calculate_vertex_path(cube, 0, 7)
+    assert_allclose(path, [0, 1, 7])
