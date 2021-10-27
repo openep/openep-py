@@ -4,7 +4,7 @@ from numpy.testing import assert_allclose
 import pyvista
 
 from openep.data_structures.case import Case
-from openep._simple_meshes.simple_meshes import CUBE
+from openep._datasets.simple_meshes import CUBE
 
 
 class CaseTests(TestCase):
