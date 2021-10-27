@@ -45,7 +45,7 @@ def _get_reference_annotation(case, indices=None):
         annotations (ndarray): reference annotations
     """
 
-    annotations = case.electric.reference_activation_time
+    annotations = case.electric.annotations.reference_activation_time
     annotations = annotations[indices] if indices is not None else annotations
 
     return annotations
@@ -189,7 +189,7 @@ def get_woi_times(case, buffer=50, relative=False):
         times (ndarray): times within the window of interest
     """
 
-    times = np.arange(case.electric.internal_names.size)
+    times = np.arange(case.electric.bipolar_egm.egm.shape[1])
 
     # TODO: woi and reference times might be different for each mapping point
     woi = case.electric.annotations.window_of_interest[0]
@@ -348,12 +348,12 @@ class Interpolator:
 
         if max_distance is not None:
             within_distance = calculate_points_within_distance(
-                self.points,
                 surface_points,
+                self.points,
                 max_distance=max_distance,
                 return_distances=False
             )
-            within_distance = np.any(within_distance, axis=0)
+            within_distance = np.any(within_distance, axis=1)
             interpolated_field[~within_distance] = np.NaN
 
         return interpolated_field
