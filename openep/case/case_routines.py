@@ -90,6 +90,9 @@ def get_mapping_points_within_woi(case, indices=None, buffer=50):
             the annotated local activation time is within the woi, False otherwise.
     """
 
+    # if we have a single index we need to ensure it is an array
+    indices = np.asarray([indices], dtype=int) if isinstance(indices, int) else indices
+
     reference_activation_times = _get_reference_annotation(case, indices=indices)
     woi = _get_window_of_interest(case, indices=indices)
     woi += reference_activation_times[:, np.newaxis]
