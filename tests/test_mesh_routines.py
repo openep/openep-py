@@ -3,7 +3,7 @@ from unittest import TestCase
 import numpy as np
 import pyvista
 
-from openep.case.case import Case
+from openep.data_structures.case import Case
 from openep.mesh.mesh_routines import (
     calculate_field_area, calculate_mesh_volume,
     calculate_vertex_distance, calculate_vertex_path
