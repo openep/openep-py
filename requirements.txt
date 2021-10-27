@@ -2,13 +2,10 @@ numpy
 matplotlib
 scipy
 trimesh
-vtk
 pymeshfix
 networkx
-shapely
 h5py
 PyQt5
-pyqtgraph
 cython
 pyvistaqt
 scikit-learn
