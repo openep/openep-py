@@ -24,7 +24,7 @@ import scipy.io
 from .matlab import _load_mat_v73, _load_mat_below_v73
 from ..data_structures.surface import extract_surface_data
 from ..data_structures.electric import extract_electric_data
-from ..case.case import Case
+from ..data_structures.case import Case
 
 __all__ = ["load_case", "load_mat"]
 
