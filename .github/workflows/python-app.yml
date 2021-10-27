@@ -32,7 +32,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 coverage
+        pip install flake8 coverage pytest pytest-cov
         pip install -r requirements.txt
     # Run flake8 to do basic code quality checks, the output will appear in the action log
     - name: Lint with flake8
