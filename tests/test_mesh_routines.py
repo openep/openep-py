@@ -8,7 +8,7 @@ from openep.mesh.mesh_routines import (
     calculate_field_area, calculate_mesh_volume,
     calculate_vertex_distance, calculate_vertex_path
 )
-from openep._simple_meshes.simple_meshes import (
+from openep._datasets.simple_meshes import (
     CUBE, SPHERE, BROKEN_SPHERE, TRIANGLES
 )
 
