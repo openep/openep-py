@@ -164,7 +164,7 @@ class OpenEpGUI(qtw.QWidget):
             self.mesh = self.ep_case.create_mesh()
             self.mesh1 = deepcopy(self.mesh)
             self.mesh2 = deepcopy(self.mesh)
-            self.volt = self.ep_case.fields['bip']
+            self.volt = self.ep_case.fields.bipolar_voltage
             self.minval = 0
             self.maxval = 2
             self.free_boundaries = openep.mesh.get_free_boundaries(self.mesh)
