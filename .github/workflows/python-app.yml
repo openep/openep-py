@@ -43,10 +43,9 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics \
           --per-file-ignores="__init__.py:F401"
     # Run the unit tests using the coverage program and create the XML output file
-    - name: Test with unittest
+    - name: Test with pytest
       run: |
-        coverage run -m unittest tests/test_*.py
-        coverage xml
+        pytest --cov --cov-config=.coveragerc --cov-report=xml -vv
     # Using Codecov's action, upload the coverage report for the triggering commit/PR
     - name: Upload coverage
       uses: codecov/codecov-action@v1
