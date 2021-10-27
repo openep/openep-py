@@ -1,24 +1,68 @@
-from unittest import TestCase
+import pytest
 from numpy.testing import assert_allclose
 
+import numpy as np
 import pyvista
 
 from openep.data_structures.case import Case
+from openep.data_structures.surface import Fields
 from openep._datasets.simple_meshes import CUBE
 
+@pytest.fixture(scope='module')
+def mesh():
+    return pyvista.read(CUBE)
 
-class CaseTests(TestCase):
-    def setUp(self) -> None:
-        cube = pyvista.read(CUBE)
+@pytest.fixture(scope='module')
+def fields():
+    
+    data = np.arange(5)
+    return Fields(
+        data,
+        data * 2,
+        data * 3,
+        data * 4,
+        data * 5,
+    )
 
-        indices = cube.faces.reshape(-1, 4)[:, 1:]  # ignore the number of vertices per face
-        self.fakefield = cube.points[:, 0]
+@pytest.fixture(scope='module')
+def case(mesh, fields):
 
-        self.case = Case("Test", cube.points, indices, {"fakefield": self.fakefield}, {}, {})
+    name = "Pretend-Case"
 
-    def test_fields(self):
-        assert_allclose(self.fakefield, self.case.fields['fakefield'])
+    points = mesh.points
+    indices = mesh.faces.reshape(-1, 4)[:, 1:]  # ignore the number of vertices per face
 
-    def test_mesh_creation(self):
-        mesh = self.case.create_mesh()
-        self.assertIsInstance(mesh, pyvista.PolyData)
+    electric = None
+    ablation = None
+    notes = ['Note one', 'Note two']
+
+    return Case(
+        name=name,
+        points=points,
+        indices=indices,
+        fields=fields,
+        electric=electric,
+        ablation=ablation,
+        notes=notes,
+    )
+
+def test_case_creation(case):
+
+    attributes = ['points', 'indices', 'fields', 'electric', 'ablation', 'notes']
+
+    assert isinstance(case, Case)
+    for attribute in attributes:
+        assert hasattr(case, attribute)
+
+def test_fields_access_with_key(case):
+    
+    data = np.arange(5)
+
+    assert_allclose(data, case.fields.bipolar_voltage)
+
+def test_mesh_creation(mesh, case):
+
+    mesh_from_case = case.create_mesh()
+
+    assert isinstance(mesh, pyvista.PolyData)
+    assert mesh == mesh_from_case
