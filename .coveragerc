@@ -1,0 +1,35 @@
+[paths]
+source =
+   openep
+
+[run]
+branch = true
+source = openep
+parallel = true
+omit =
+    *tests*
+    *gui*   # don't test the gui for now
+    *__init__.py
+    openep/_version.py
+    openep/_simple_meshes/simple_meshes.py
+
+[report]
+show_missing = true
+precision = 2
+# Regexes for lines to exclude from consideration
+exclude_lines =
+
+    # Have to re-enable the standard pragma
+    pragma: no cover
+
+    # Don't complain about missing debug-only code:
+    def __repr__
+    if self\.debug
+
+    # Don't complain if tests don't hit defensive assertion code:
+    raise AssertionError
+    raise NotImplementedError
+
+    # Don't complain if non-runnable code isn't run:
+    if 0:
+    if __name__ == .__main__.:
