@@ -10,4 +10,5 @@ cython
 pyvistaqt
 scikit-learn
 attrs
+pyvista=0.32
 
