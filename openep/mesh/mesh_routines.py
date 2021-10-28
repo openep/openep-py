@@ -113,7 +113,7 @@ class FreeBoundary:
         """
 
         lengths = [
-            self._line_length(self.points[start:stop]) for
+            self._line_length(self.points[self.lines[start:stop]]) for
             start, stop in zip(self._start_indices, self._stop_indices)
         ]
 
@@ -130,7 +130,7 @@ class FreeBoundary:
             length (float): length of the line
         """
 
-        distance_between_neighbours = np.sqrt(np.sum(np.square(np.diff(points, axis=0)), axis=1))
+        distance_between_neighbours = np.sqrt(np.sum(np.square(points[:, 0, :] - points[:, 1, :]), axis=1))
         total_distance = np.sum(distance_between_neighbours)
 
         return float(total_distance)
