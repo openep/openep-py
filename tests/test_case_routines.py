@@ -287,6 +287,7 @@ def interpolator(real_case):
         field=amplitudes,
     )
 
+
 def test_interpolator(real_case, interpolator):
 
     n_surface_points = real_case.points.shape[0]
@@ -294,38 +295,41 @@ def test_interpolator(real_case, interpolator):
 
     assert n_surface_points == interpolated_field.size
 
+
 def test_interpolator_cutoff(real_case, interpolator):
 
     interpolated_field = interpolator(real_case.points, max_distance=0)
 
     assert interpolated_field.size == np.sum(np.isnan(interpolated_field))
 
+
 def test_interpolator_kws(real_case):
 
     n_mapping_points = real_case.electric.bipolar_egm.points.shape[0]
     amplitudes = np.arange(n_mapping_points)
 
-    interpolator = Interpolator(
+    kws_interpolator = Interpolator(
         points=real_case.electric.bipolar_egm.points,
         field=amplitudes,
         method_kws={'smoothing': 100},
     )
 
-    assert 100 == interpolator.method_kws['smoothing']
+    assert 100 == kws_interpolator.method_kws['smoothing']
+
 
 def test_interpolator_nearest(real_case):
 
     n_mapping_points = real_case.electric.bipolar_egm.points.shape[0]
     amplitudes = np.arange(n_mapping_points)
 
-    interpolator = Interpolator(
+    nearest_interpolator = Interpolator(
         points=real_case.electric.bipolar_egm.points,
         field=amplitudes,
         method=scipy.interpolate.NearestNDInterpolator,
     )
 
-    assert scipy.interpolate.NearestNDInterpolator is interpolator.method
-    assert {} == interpolator.method_kws
+    assert scipy.interpolate.NearestNDInterpolator is nearest_interpolator.method
+    assert {} == nearest_interpolator.method_kws
 
 
 def test_interpolate_voltage_onto_surface(real_case):
