@@ -361,11 +361,13 @@ class Interpolator:
 
         return interpolated_field
 
+    def __repr__(self):
+        return f"Interpolator: method={self.method}, kws={self.method_kws}"
+ 
 
 def interpolate_voltage_onto_surface(
         case,
         max_distance=None,
-        center=True,
 ):
     """Interpolate bipolar voltage onto the points of a mesh.
 
@@ -390,11 +392,6 @@ def interpolate_voltage_onto_surface(
 
     surface_points = case.points.copy()
     points = case.electric.bipolar_egm.points.copy()
-
-    if center:
-        points -= np.nanmean(surface_points, axis=0)
-        surface_points -= np.nanmean(surface_points, axis=0)
-
     bipolar_voltages = calculate_voltage_from_electrograms(case, buffer=50)
 
     within_woi = get_mapping_points_within_woi(case, buffer=50)
