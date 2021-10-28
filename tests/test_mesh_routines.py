@@ -9,8 +9,8 @@ from openep.mesh.mesh_routines import (
     _create_trimesh,
     FreeBoundary,
     get_free_boundaries,
-    calculate_field_area,
     calculate_mesh_volume,
+    calculate_field_area,
     calculate_vertex_distance,
     calculate_vertex_path,
 )
@@ -168,7 +168,32 @@ def test_calculate_vertex_distance_geodesic_sphere(sphere):
     assert_allclose(test_dist, sphere_half_circumference, atol=5)
 
 
+def test_calculate_vertex_distance_disconnected_regions(triangles):
+
+    # These indices belong to two distinct components
+    start_index = 0
+    end_index = 5
+
+    test_dist = calculate_vertex_distance(
+        mesh=triangles,
+        start_index=start_index,
+        end_index=end_index,
+    )
+
+    assert np.isnan(test_dist)
+
+
 def test_calculate_vertex_path(cube):
 
     path = calculate_vertex_path(cube, 0, 7)
     assert_allclose(path, [0, 1, 7])
+
+
+def test_calculate_vertex_path(triangles):
+
+    # These indices belong to two distinct components
+    start_index = 0
+    end_index = 5
+
+    path = calculate_vertex_path(triangles, start_index, end_index)
+    assert 0 == path.size

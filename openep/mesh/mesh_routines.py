@@ -25,13 +25,13 @@ import pymeshfix
 import trimesh
 
 __all__ = [
-    "calculate_per_triangle_field",
+    "get_free_boundaries",
     "calculate_mesh_volume",
+    "repair_mesh",
+    "calculate_per_triangle_field",
     "calculate_field_area",
     "calculate_vertex_distance",
     "calculate_vertex_path",
-    "get_free_boundaries",
-    "repair_mesh",
 ]
 
 
@@ -263,6 +263,22 @@ def repair_mesh(mesh: pyvista.PolyData) -> pyvista.PolyData:
     return mf.mesh
 
 
+def calculate_per_triangle_field(mesh: pyvista.PolyData, field: np.ndarray) -> np.ndarray:
+    """
+    Calculate a per-triangle field from the given per-vertex field. For each triangle the mean of the vertex values is
+    calculated as the triangle value.
+
+    Args:
+        mesh (PolyData): PolyData mesh
+        field: per-vertex field to convert
+
+    Returns:
+        np.ndarray per-triangle field
+    """
+    faces = mesh.faces.reshape(-1, 4)[:, 1:]
+    return field[faces].mean(axis=1)
+
+
 def calculate_field_area(
     mesh: pyvista.PolyData, field: np.ndarray, threshold: float
 ) -> float:
@@ -291,22 +307,6 @@ def calculate_field_area(
     selected_areas = areas[selection]
 
     return selected_areas.sum()
-
-
-def calculate_per_triangle_field(mesh: pyvista.PolyData, field: np.ndarray) -> np.ndarray:
-    """
-    Calculate a per-triangle field from the given per-vertex field. For each triangle the mean of the vertex values is
-    calculated as the triangle value.
-
-    Args:
-        mesh (PolyData): PolyData mesh
-        field: per-vertex field to convert
-
-    Returns:
-        np.ndarray per-triangle field
-    """
-    faces = mesh.faces.reshape(-1, 4)[:, 1:]
-    return field[faces].mean(axis=1)
 
 
 def calculate_vertex_distance(
