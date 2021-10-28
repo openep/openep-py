@@ -33,6 +33,7 @@ from openep.case.case_routines import (
     calculate_distance,
     calculate_points_within_distance,
     Interpolator,
+    interpolate_voltage_onto_surface,
 )
 from openep._datasets.openep_datasets import DATASET_2_V73
 
@@ -323,6 +324,24 @@ def test_interpolator_nearest(real_case):
         method=scipy.interpolate.NearestNDInterpolator,
     )
 
-    assert interpolator.method is scipy.interpolate.NearestNDInterpolator
-    assert interpolator.method_kws == {}
+    assert scipy.interpolate.NearestNDInterpolator is interpolator.method
+    assert {} == interpolator.method_kws
 
+
+def test_interpolate_voltage_onto_surface(real_case):
+
+    # TODO: these regression tests could be refactored to use a mock data set
+
+    n_surface_points = real_case.points.shape[0]
+    interpolated_voltages = interpolate_voltage_onto_surface(real_case)
+
+    assert n_surface_points == interpolated_voltages.size
+    assert 5535 == np.sum(np.isnan(interpolated_voltages))
+
+
+def test_interpolate_voltage_onto_surface_max_distance(real_case):
+
+    n_surface_points = real_case.points.shape[0]
+    interpolated_voltages = interpolate_voltage_onto_surface(real_case, max_distance=0)
+
+    assert n_surface_points == np.sum(np.isnan(interpolated_voltages))
