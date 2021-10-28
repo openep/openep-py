@@ -20,7 +20,9 @@ import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 
 import numpy as np
+import scipy.interpolate
 
+import openep
 from openep.case.case_routines import (
     _get_reference_annotation,
     _get_window_of_interest,
@@ -30,8 +32,14 @@ from openep.case.case_routines import (
     calculate_voltage_from_electrograms,
     calculate_distance,
     calculate_points_within_distance,
+    Interpolator,
 )
+from openep._datasets.openep_datasets import DATASET_2_V73
 
+
+@pytest.fixture(scope='module')
+def real_case():
+    return openep.load_case(DATASET_2_V73)
 
 @pytest.fixture()
 def mock_case(mocker):
@@ -46,10 +54,9 @@ def mock_case(mocker):
     case.electric.bipolar_egm.egm = np.repeat(np.arange(20)[np.newaxis, :], 10, axis=0)
     case.electric.internal_names = np.arange(10).astype(str)
 
-    case.points = np.repeat(np.arange(10)[:, np.newaxis], repeats=3, axis=1)
-    case.electric.bipolar_egm.points = np.repeat(np.arange(5)[:, np.newaxis], repeats=3, axis=1)
+    case.points = np.repeat(np.arange(20)[:, np.newaxis], repeats=3, axis=1)
+    case.electric.bipolar_egm.points = np.repeat(np.arange(10)[:, np.newaxis], repeats=3, axis=1)
 
-    
     return case
 
 
@@ -219,8 +226,8 @@ def test_calculate_distance(mock_case):
     diagonal_distacnces = 0  # row-wise, origin and destination are the same
 
     assert_allclose(diagonal_distacnces, distances.diagonal())
-    assert_allclose(distances[0, :5], distances[:, 0])  # there are only 5 emg points but 10 surface points
-    assert (5, 10) == distances.shape
+    assert_allclose(distances[0, :10], distances[:, 0])  # there are only 10 emg points but 20 surface points
+    assert (10, 20) == distances.shape
 
 
 def test_calculate_distance_single_point(mock_case):
@@ -248,7 +255,7 @@ def test_calculate_points_within_distance(mock_case):
     )
 
     assert not (points_within_distance).all()
-    assert 5 == np.sum(points_within_distance)
+    assert 10 == np.sum(points_within_distance)
 
     assert_allclose(distances == 0, points_within_distance)
 
@@ -266,4 +273,56 @@ def test_calculate_points_within_distance_all(mock_case):
     )
 
     assert (points_within_distance).all()
+
+
+@pytest.fixture(scope='module')
+def interpolator(real_case):
+
+    n_mapping_points = real_case.electric.bipolar_egm.points.shape[0]
+    amplitudes = np.arange(n_mapping_points)
+
+    return Interpolator(
+        points=real_case.electric.bipolar_egm.points,
+        field=amplitudes,
+    )
+
+def test_interpolator(real_case, interpolator):
+
+    n_surface_points = real_case.points.shape[0]
+    interpolated_field = interpolator(real_case.points)
+
+    assert n_surface_points == interpolated_field.size
+
+def test_interpolator_cutoff(real_case, interpolator):
+
+    interpolated_field = interpolator(real_case.points, max_distance=0)
+
+    assert interpolated_field.size == np.sum(np.isnan(interpolated_field))
+
+def test_interpolator_kws(real_case):
+
+    n_mapping_points = real_case.electric.bipolar_egm.points.shape[0]
+    amplitudes = np.arange(n_mapping_points)
+
+    interpolator = Interpolator(
+        points=real_case.electric.bipolar_egm.points,
+        field=amplitudes,
+        method_kws={'smoothing': 100},
+    )
+
+    assert 100 == interpolator.method_kws['smoothing']
+
+def test_interpolator_nearest(real_case):
+
+    n_mapping_points = real_case.electric.bipolar_egm.points.shape[0]
+    amplitudes = np.arange(n_mapping_points)
+
+    interpolator = Interpolator(
+        points=real_case.electric.bipolar_egm.points,
+        field=amplitudes,
+        method=scipy.interpolate.NearestNDInterpolator,
+    )
+
+    assert interpolator.method is scipy.interpolate.NearestNDInterpolator
+    assert interpolator.method_kws == {}
 

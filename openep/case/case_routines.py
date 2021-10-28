@@ -325,7 +325,7 @@ class Interpolator:
         elif self.method is scipy.interpolate.RBFInterpolator:
             self.method_kws = default_rbf_kws
         else:
-            raise ValueError("method_kws must be specified if scipy.interpolate.RBFInterpolator is not used")
+            self.method_kws = {}
 
         self.interpolate = self.method(
             self.points,
