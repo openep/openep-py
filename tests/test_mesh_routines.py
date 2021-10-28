@@ -7,7 +7,6 @@ import trimesh
 
 from openep.mesh.mesh_routines import (
     _create_trimesh,
-    FreeBoundary,
     get_free_boundaries,
     calculate_mesh_volume,
     calculate_field_area,
@@ -56,10 +55,12 @@ def broken_sphere():
 def triangles():
     return pyvista.read(TRIANGLES)
 
+
 @pytest.fixture(scope='module')
 def free_boundaries(triangles):
 
     return get_free_boundaries(triangles)
+
 
 def test_create_trimesh(cube):
 
@@ -69,6 +70,7 @@ def test_create_trimesh(cube):
     assert isinstance(trimesh_cube, trimesh.Trimesh)
     assert_allclose(cube.points, trimesh_cube.vertices)
     assert_allclose(faces, trimesh_cube.faces)
+
 
 def test_get_free_boundaries(triangles, free_boundaries):
 
@@ -83,6 +85,7 @@ def test_get_free_boundaries(triangles, free_boundaries):
     assert 2 == free_boundaries.n_boundaries
     assert_allclose([5, 4], free_boundaries.n_points_per_boundary)
 
+
 def test_FreeBoundary_calculate_areas(free_boundaries):
 
     # To calculate areas, we need to construct the boundary meshes based on the boundary points
@@ -90,10 +93,11 @@ def test_FreeBoundary_calculate_areas(free_boundaries):
     areas = free_boundaries.calculate_areas()
     assert_allclose([1, 0.5], areas)
 
-    # Upon requestning the areas a second time, the boundary meshes should already be present
+    # Upon requesting the areas a second time, the boundary meshes should already be present
     new_areas = free_boundaries.calculate_areas()
     assert free_boundaries._boundary_meshes is not None
     assert_allclose(areas, new_areas)
+
 
 def test_FreeBoundary_calculate_lengths(free_boundaries):
 
