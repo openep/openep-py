@@ -27,7 +27,9 @@ from openep.case.case_routines import (
     get_mapping_points_within_woi,
     get_electrograms_at_points,
     get_woi_times,
-    calculate_voltage_from_electrograms
+    calculate_voltage_from_electrograms,
+    calculate_distance,
+    calculate_points_within_distance,
 )
 
 
@@ -43,6 +45,10 @@ def mock_case(mocker):
 
     case.electric.bipolar_egm.egm = np.repeat(np.arange(20)[np.newaxis, :], 10, axis=0)
     case.electric.internal_names = np.arange(10).astype(str)
+
+    case.points = np.repeat(np.arange(10)[:, np.newaxis], repeats=3, axis=1)
+    case.electric.bipolar_egm.points = np.repeat(np.arange(5)[:, np.newaxis], repeats=3, axis=1)
+
     
     return case
 
@@ -203,4 +209,61 @@ def test_calculate_voltage_from_electrograms_no_buffer(mock_case):
     amplitudes = calculate_voltage_from_electrograms(mock_case, buffer=0)
     assert_allclose(9, amplitudes)
 
+
+def test_calculate_distance(mock_case):
+    
+    origin = mock_case.electric.bipolar_egm.points
+    destination = mock_case.points
+
+    distances = calculate_distance(origin, destination)
+    diagonal_distacnces = 0  # row-wise, origin and destination are the same
+
+    assert_allclose(diagonal_distacnces, distances.diagonal())
+    assert_allclose(distances[0, :5], distances[:, 0])  # there are only 5 emg points but 10 surface points
+    assert (5, 10) == distances.shape
+
+
+def test_calculate_distance_single_point(mock_case):
+    
+    origin = mock_case.electric.bipolar_egm.points[0]
+    destination = mock_case.points[-1]
+
+    distances = calculate_distance(origin, destination)
+    actual_distance = np.linalg.norm(origin - destination)
+
+    assert_allclose(actual_distance, distances)
+    assert (1, 1) == distances.shape
+
+
+def test_calculate_points_within_distance(mock_case):
+
+    origin = mock_case.electric.bipolar_egm.points
+    destination = mock_case.points
+
+    points_within_distance, distances = calculate_points_within_distance(
+        origin,
+        destination,
+        max_distance=0,
+        return_distances=True,
+    )
+
+    assert not (points_within_distance).all()
+    assert 5 == np.sum(points_within_distance)
+
+    assert_allclose(distances == 0, points_within_distance)
+
+
+def test_calculate_points_within_distance_all(mock_case):
+
+    origin = mock_case.electric.bipolar_egm.points
+    destination = mock_case.points
+
+    points_within_distance = calculate_points_within_distance(
+        origin,
+        destination,
+        max_distance=np.inf,
+        return_distances=False,
+    )
+
+    assert (points_within_distance).all()
 
