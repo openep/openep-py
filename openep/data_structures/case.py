@@ -45,7 +45,7 @@ class Case:
         return f"{self.name}( nodes: {self.points.shape} indices: {self.indices.shape} {self.fields} )"
 
     def create_mesh(
-        self, vertex_norms: bool = False,
+        self,
         recenter: bool = True,
         back_faces: bool = False,
     ):
@@ -71,10 +71,6 @@ class Case:
 
         mesh = pyvista.PolyData(self.points, faces.ravel())
 
-        # TODO: Refactor to remove this statement and the vertex_norms parameter.
-        if vertex_norms:
-            _ = mesh.point_normals  # compute vertex normals
-
         if recenter:
             mesh.translate(
                 -np.asarray(mesh.center)
@@ -86,14 +82,14 @@ class Case:
         """
         Returns the node and triangle index matrices, copying them if `copy` is True.
         """
-        nodes = self.points
+        points = self.points
         indices = self.indices
 
         if copy:
-            nodes = nodes.copy()
+            points = points.copy()
             indices = indices.copy()
 
-        return nodes, indices
+        return points, indices
 
     def get_field(self, fieldname: str, copy: bool = False) -> np.ndarray:
         """
