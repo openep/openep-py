@@ -183,13 +183,29 @@ def test_calculate_vertex_distance_disconnected_regions(triangles):
     assert np.isnan(test_dist)
 
 
+def test_calculate_vertex_distance_invalid_metric(sphere):
+
+    invalid_metric = "Manhattan"
+    start_index = 18  # top of sphere
+    end_index = 23  # bottom of sphere
+
+    match = "metric must be on of: geodesic, euclidian"
+    with pytest.raises(ValueError, match=match):
+        calculate_vertex_distance(
+            mesh=sphere,
+            start_index=start_index,
+            end_index=end_index,
+            metric=invalid_metric,
+        )
+
+
 def test_calculate_vertex_path(cube):
 
     path = calculate_vertex_path(cube, 0, 7)
     assert_allclose(path, [0, 1, 7])
 
 
-def test_calculate_vertex_path(triangles):
+def test_calculate_vertex_path_disconnected(triangles):
 
     # These indices belong to two distinct components
     start_index = 0
