@@ -363,7 +363,7 @@ class Interpolator:
 
     def __repr__(self):
         return f"Interpolator: method={self.method}, kws={self.method_kws}"
- 
+
 
 def interpolate_voltage_onto_surface(
         case,

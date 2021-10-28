@@ -42,9 +42,10 @@ from openep._datasets.openep_datasets import DATASET_2_V73
 def real_case():
     return openep.load_case(DATASET_2_V73)
 
+
 @pytest.fixture()
 def mock_case(mocker):
-    
+
     case = mocker.patch('openep.data_structures.case.Case')
 
     case.electric.annotations.reference_activation_time = np.full(10, fill_value=5, dtype=int)
@@ -138,6 +139,7 @@ def test_get_electrograms_at_points(mock_case):
     assert_array_equal(mock_case.electric.internal_names, names)
     assert_allclose(mock_case.electric.annotations.local_activation_time, lat)
 
+
 def test_get_electrograms_at_points_within_woi(mock_case):
 
     electrograms, names, lat = get_electrograms_at_points(mock_case, within_woi=True, buffer=5)
@@ -190,18 +192,19 @@ def test_get_electrograms_at_points_no_lat_or_names(mock_case):
 
 
 def test_get_woi_times(mock_case):
-    
+
     times = get_woi_times(mock_case)
     assert_allclose(np.arange(20), times)
 
 
 def test_get_woi_times_no_buffer(mock_case):
-    
+
     times = get_woi_times(mock_case, buffer=0)
     assert_allclose(np.arange(10, 20), times)
 
+
 def test_get_woi_times_no_buffer_relative(mock_case):
-    
+
     times = get_woi_times(mock_case, buffer=0, relative=True)
     assert_allclose(np.arange(5, 15), times)
 
@@ -219,7 +222,7 @@ def test_calculate_voltage_from_electrograms_no_buffer(mock_case):
 
 
 def test_calculate_distance(mock_case):
-    
+
     origin = mock_case.electric.bipolar_egm.points
     destination = mock_case.points
 
@@ -232,7 +235,7 @@ def test_calculate_distance(mock_case):
 
 
 def test_calculate_distance_single_point(mock_case):
-    
+
     origin = mock_case.electric.bipolar_egm.points[0]
     destination = mock_case.points[-1]
 
