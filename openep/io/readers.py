@@ -17,7 +17,7 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 """
-Loading datasets --- :mod:`openep.io.readers`
+Loading datasets --- :func:`openep.load_case`
 =============================================
 
 This module contains functions to load an OpenEP dataset.

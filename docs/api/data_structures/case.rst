@@ -1,0 +1,1 @@
+.. automodule:: openep.data_structures.case
