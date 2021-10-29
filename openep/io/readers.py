@@ -91,12 +91,12 @@ def load_case(filename, name=None):
 
     Currently, cases can only be loaded from files created using the MATLAB
     implementation of OpenEP.
-    
+
     Args:
         filename (str): path to MATLAB file to be loaded (including the .mat
             extension.)
         name (str): name to give this dataset. The default is `None`, in which case
-            the filename is used at the name.    
+            the filename is used at the name.
     """
     data = load_mat(filename)
 
