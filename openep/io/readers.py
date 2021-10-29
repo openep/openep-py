@@ -16,7 +16,38 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-"""Module containing functions to load an OpenEP dataset."""
+"""
+Loading datasets --- :mod:`openep.io.readers`
+=============================================
+
+This module contains functions to load an OpenEP dataset.
+
+Note
+----
+
+`openep-py` is currently only able to load data exported from the
+MATLAB implementation of OpenEP. Further, the `rfindex` data is not
+yet loaded.
+
+
+Example of loading a dataset
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Case data can be loaded as follows:
+
+.. code:: python
+
+    import openep
+    from openep._datasets.openep_datasets import DATASET_2_V73
+
+    case = openep.load_case(DATASET_2_V73)
+
+See :class:`openep.data_structures.case.Case` for information on the attributes
+and methods of the `case`.
+
+.. autofunction:: load_case
+
+"""
 
 import os
 import scipy.io
@@ -55,9 +86,16 @@ def load_mat(filename):
 
 def load_case(filename, name=None):
     """
-    Load a Case object from the given v7.3 MATLAB file.
+    Load a Case object from a MATLAB file.
 
-    This assumes a number of names for objects found in the file.
+    Currently, cases can only be loaded from files created using the MATLAB
+    implementation of OpenEP.
+    
+    Args:
+        filename (str): path to MATLAB file to be loaded (including the .mat
+            extension.)
+        name (str): name to give this dataset. The default is `None`, in which case
+            the filename is used at the name.    
     """
     data = load_mat(filename)
 
