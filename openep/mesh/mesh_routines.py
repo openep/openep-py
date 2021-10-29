@@ -16,6 +16,48 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
+"""
+Analyse a mesh - :mod:`openep.mesh.mesh_routines`
+=================================================
+
+This module provides methods for calculating the mesh :ref:`surface area and volume
+<geometry>`, calculating :ref:`Euclidian and geodesic distances <distances>`
+bewteen points on a mesh, and :ref:`identifying the free boundaries
+of a mesh <boundaries>`,
+
+.. _geometry:
+
+Calculating the mesh surface area and volume
+--------------------------------------------
+
+.. autofunction:: calculate_mesh_volume
+
+.. autofunction:: calculate_field_area
+
+.. autofunction:: calculate_per_triangle_field
+
+.. _distances:
+
+Distances between points on a mesh
+----------------------------------
+
+.. autofunction:: calculate_vertex_distance
+
+.. autofunction:: calculate_vertex_path
+
+
+.. _boundaries:
+
+Identifying and analysing the free boundaries of a mesh
+-------------------------------------------------------
+
+.. autofunction:: get_free_boundaries
+
+.. autoclass:: FreeBoundary
+    :members: separate_boundaries, calculate_lengths, calculate_areas
+
+"""
+
 from attr import attrs
 
 import numpy as np
@@ -94,8 +136,14 @@ class FreeBoundary:
 
         Args:
             original_lines (bool):
-                If True, FreeBoundary.original_indices will be used.
-                If False, FreeBoundary.original_indices will be used.
+                If True, `FreeBoundary.original_lines` will be used.
+                If False, `FreeBoundary.lines` will be used.
+
+        Returns:
+            boundaries (list): a list of numpy arrays - one array per free boundary.
+            Each array is of shape Nx2, where N is the number of lines in a given boundary.
+            Each array contains the indices of pairs of nodes that make up each line in the
+            boundary.
 
         """
 
@@ -109,7 +157,11 @@ class FreeBoundary:
 
     def calculate_lengths(self):
         """
-        Calculate the length of the perimeter of each free boundary.
+        Calculates the length of the perimeter of each free boundary.
+
+        Returns:
+            lengths (np.ndarray): the perimeter of each free boundary
+
         """
 
         lengths = [
@@ -137,7 +189,11 @@ class FreeBoundary:
 
     def calculate_areas(self):
         """
-        Returns the cross-sectional area of each boundary.
+        Calculates the cross-sectional area of each boundary.
+
+        Returns:
+            areas (np.ndarray): the area of each free boundary
+
         """
 
         if self._boundary_meshes is None:
@@ -294,6 +350,11 @@ def calculate_field_area(
 
     Returns:
         float: total area of selected cells
+
+    Note
+    ----
+    This function makes use of :func:`openep.mesh.mesh_routines.calculate_per_triangle_field`
+
     """
 
     areas = mesh.compute_cell_sizes(
