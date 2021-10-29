@@ -11,3 +11,4 @@ currently available in `openep-py`.
 
    io/load_case
    data_structures/case
+   case/case_routines

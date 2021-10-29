@@ -46,7 +46,14 @@ stored as the following data structures: :class:`openep.data_structures.surface.
 :class:`openep.data_structures.ablation.Ablation`.
 
 
+Scalar field data
+-----------------
+
 .. autoclass:: openep.data_structures.surface.Fields
+
+
+Electrical data
+---------------
 
 .. autoclass:: openep.data_structures.electric.Electric
 
@@ -57,6 +64,10 @@ stored as the following data structures: :class:`openep.data_structures.surface.
 .. autoclass:: openep.data_structures.electric.ElectricSurface
 
 .. autoclass:: openep.data_structures.electric.Annotations
+
+
+Ablation data
+-------------
 
 .. autoclass:: openep.data_structures.ablation.Ablation
 
