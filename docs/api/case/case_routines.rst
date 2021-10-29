@@ -1,0 +1,1 @@
+.. automodule:: openep.case.case_routines

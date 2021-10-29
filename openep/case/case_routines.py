@@ -16,6 +16,53 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
+"""
+Analyse a Case dataset - :mod:`openep.case.case_routines`
+=========================================================
+
+This module provides methods for :ref:`analysing <analysing>` or
+:ref:`extracting data <extracting>` from a case object, as
+well as :ref:`interpolating <interpolating>` electrical data from
+mapping points onto the 3D surface.
+
+
+.. _extracting:
+
+Extracting data from a Case
+---------------------------
+
+.. autofunction:: get_electrograms_at_points
+
+.. autofunction:: get_woi_times
+
+.. _analysing:
+
+Analyses
+--------
+
+.. autofunction:: calculate_voltage_from_electrograms
+
+.. _interpolating:
+
+Interpolate electrical data from mapping points onto the 3D surface
+-------------------------------------------------------------------
+
+
+.. autofunction:: interpolate_voltage_onto_surface
+
+Tip
+---
+
+    By default, `scipy`'s `RBFInterpolator` is used to perform the interpolation.
+    If you prefer to use a different interpolation method, you pass an interpolator
+    class and associated keyword arguments to the `method` and `method_kws`
+    arugments respectively.
+
+.. autoclass:: Interpolator
+    :members: __call__
+
+"""
+
 from attr import attrs
 
 import numpy as np
@@ -23,8 +70,8 @@ import scipy.interpolate
 
 __all__ = [
     'get_mapping_points_within_woi',
-    'get_woi_times',
     'get_electrograms_at_points',
+    'get_woi_times',
     'calculate_voltage_from_electrograms',
     'calculate_distance',
     'calculate_points_within_distance',
@@ -138,12 +185,15 @@ def get_electrograms_at_points(
         return_lat (bool): If True, the local activation time of each mapping point will also be
             returned.
 
-    Returns:
+    Returns:    
         traces (ndarray): A timeseries of voltages for each selected mapping point.
-        names (ndarray): If `return_names` is True, the internal names of the points used by the
-            clinical electroanatomic mapping system will be returned.
-            local_activation_time (ndarray): If `return_lat` is True, the local activation time of each
-            mapping point will be returned.
+        
+        names (ndarray, optional): If `return_names` is True, the internal names of the points used by the
+        clinical electroanatomic mapping system will be returned.
+        
+        local_activation_time (ndarray, optional): If `return_lat` is True, the local activation time of
+        each mapping point will be returned.
+
     """
 
     electrograms = case.electric.bipolar_egm.egm if bipolar else case.electric.unipolar_egm.egm
@@ -275,10 +325,11 @@ def calculate_points_within_distance(origin, destination, max_distance, return_d
 
     Returns:
         within_max_dist (ndarray, M x N): Boolean array
-            that is equal to True if the points are within the maximum distance
-            of one another and equal to False otherwise.
+        that is equal to True if the points are within the maximum distance
+        of one another and equal to False otherwise.
+
         distances (ndarray, M x N): distance between each point
-            and each test_point.
+        and each test_point.
     """
 
     distances = calculate_distance(origin, destination)
@@ -387,7 +438,7 @@ def interpolate_voltage_onto_surface(
 
     Returns:
         interpolated_voltages (ndarray): bipolar voltages, calculated from the
-            electrograms, interpolated onto the surface of the mesh.
+        electrograms, interpolated onto the surface of the mesh.
     """
 
     surface_points = case.points.copy()
