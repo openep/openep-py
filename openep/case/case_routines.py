@@ -185,12 +185,12 @@ def get_electrograms_at_points(
         return_lat (bool): If True, the local activation time of each mapping point will also be
             returned.
 
-    Returns:    
+    Returns:
         traces (ndarray): A timeseries of voltages for each selected mapping point.
-        
+
         names (ndarray, optional): If `return_names` is True, the internal names of the points used by the
         clinical electroanatomic mapping system will be returned.
-        
+
         local_activation_time (ndarray, optional): If `return_lat` is True, the local activation time of
         each mapping point will be returned.
 
