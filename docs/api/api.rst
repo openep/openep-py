@@ -10,4 +10,4 @@ currently available in `openep-py`.
    :maxdepth: 1
 
    io/load_case
-   data_structures/data_structures
+   data_structures/case
