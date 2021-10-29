@@ -31,7 +31,9 @@ autodoc_mock_imports = [
     'h5py',
     'numpy',
     'scipy',
+    'matplotlib',
     'pyvista',
+    'pymeshfix',
     'trimesh',
 ]
 
@@ -62,6 +64,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 autodoc_typehints = 'signature'
 autodoc_docstring_signature = True
 autoclass_content = 'both'
+autodoc_member_order = 'bysource'
 
 # -- Options for HTML output -------------------------------------------------
 
