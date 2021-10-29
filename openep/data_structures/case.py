@@ -25,14 +25,30 @@ import pyvista
 
 from .surface import Fields
 from .electric import Electric
-from .albation import Ablation
+from .ablation import Ablation
 
 __all__ = []
 
 
 @attrs(auto_attribs=True, auto_detect=True)
 class Case:
-    """OpenEP Case object."""
+    """
+    The fundamental OpenEP object.
+    
+    The class contains all the information on a single case exported from a clinical
+    mapping system.
+    
+    Args:
+        name (str): Name to assign to the dataset
+        points (ndarray): 3D coordinates of points on the mesh
+        indices (ndarray): Indices of points that make up each face of the mesh
+        fields (Fields): Numpy arrays of the scalar fields associated with each point on
+            the surface of a mesh
+        electtic (Electric): Electrical data obtained during a clinical mapping procedure.
+        ablation (Ablation, optional): Ablation data obtained during a clinical mapping procedure.
+        notes (list, optional): Notes associated with the dataset.
+
+    """
     name: str
     points: np.ndarray
     indices: np.ndarray
@@ -53,9 +69,11 @@ class Case:
         Create a new mesh object from the stored nodes and indices
 
         Args:
-            vertex_norms: if True, calculate vertex normals in the mesh
-            recenter: if True, recenter the mesh on the origin
+            recenter: if True, recenter the mesh to the origin
             back_faces: if True, calculate back face triangles
+        
+        Returns:
+            mesh (pyvista.Polydata): a mesh created from the case's points and indices
         """
 
         indices = self.indices
@@ -80,7 +98,15 @@ class Case:
 
     def get_surface_data(self, copy: bool = False) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Returns the node and triangle index matrices, copying them if `copy` is True.
+        Extract the surface data for the case.
+        
+        Args:
+            copy (bool, optional): If True, a copy of the data will be returned. The default
+                is False, in which case a view of the data is returned.
+        
+        Returns:
+           points (ndarray): 3D coordinates of points on the mesh
+           indices (ndarray): Indices of points that make up each face of the mesh
         """
         points = self.points
         indices = self.indices
@@ -93,7 +119,16 @@ class Case:
 
     def get_field(self, fieldname: str, copy: bool = False) -> np.ndarray:
         """
-        Returns the named field array, copying if `copy` is True.
+        Extract scalar field data associated with each point on the surface.
+
+        Args:
+            fieldname (str): Must be one of: `bipolar_voltage`, `unipolar_voltage`,
+                `local_activation_time`, `impedance`, `force`.
+            copy (bool, optional):  If True, a copy of the data will be returned. The
+                default is False, in which case a view of the data is returned.
+
+        Returns:
+            field (np.ndarray): scalar field data
         """
 
         field = self.fields[fieldname]

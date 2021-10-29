@@ -86,9 +86,9 @@ class Annotations:
     Class for storing information about activation times for electrograms.
 
     Args:
-        nearest_point (np.ndarray): The position of each mapping point projected to the nearest
-            point on the 3D surface constructed by the clinical mapping system.
-        normals (np.ndarray): Normal to the surface at each of the nearest points.
+        window_of_interest (np.ndarray): The window of interest for each mapping point
+        local_activation_time (np.ndarray): The local activation time for each mapping point
+        reference_activation_time (np.ndarray): The reference activation time for each mapping point
     """
 
     window_of_interest: np.ndarray
