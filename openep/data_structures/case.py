@@ -91,10 +91,10 @@ __all__ = []
 class Case:
     """
     The fundamental OpenEP object.
-    
+
     The class contains all the information on a single case exported from a clinical
     mapping system.
-    
+
     Args:
         name (str): Name to assign to the dataset
         points (ndarray): 3D coordinates of points on the mesh
@@ -128,7 +128,7 @@ class Case:
         Args:
             recenter: if True, recenter the mesh to the origin
             back_faces: if True, calculate back face triangles
-        
+
         Returns:
             mesh (pyvista.Polydata): a mesh created from the case's points and indices
         """
@@ -156,11 +156,11 @@ class Case:
     def get_surface_data(self, copy: bool = False) -> Tuple[np.ndarray, np.ndarray]:
         """
         Extract the surface data for the case.
-        
+
         Args:
             copy (bool, optional): If True, a copy of the data will be returned. The default
                 is False, in which case a view of the data is returned.
-        
+
         Returns:
            points (ndarray): 3D coordinates of points on the mesh
            indices (ndarray): Indices of points that make up each face of the mesh
