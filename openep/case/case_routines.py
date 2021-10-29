@@ -418,23 +418,29 @@ class Interpolator:
 
 def interpolate_voltage_onto_surface(
         case,
+        buffer=50,
+        method=scipy.interpolate.RBFInterpolator,
+        method_kws=None,
         max_distance=None,
 ):
     """Interpolate bipolar voltage onto the points of a mesh.
 
     For each mapping point within the window of interest, the bipolar voltage is
     calculated as the amplitude of an electrogram during the window of interest,
-    plus/minus 50 ms.
+    plus/minus an optional buffer time.
 
     Args:
         case (openep.case.Case): case from which the voltage will be calculated
-        max_distance (float): If provided, any points on the surface of the mesh
+        buffer (float, optional): extend the window of interest by this time.
+            The default is 50 ms.
+        method (callable): method to use for interpolation. The default is
+            scipy.interpolate.RBFInterpolator.
+        method_kws (dict): dictionary of keyword arguments to pass to `method`
+            when creating the interpolator.
+        max_distance (float, optional): If provided, any points on the surface of the mesh
             further than this distance to all mapping coordinates will have their
-            interpoalted voltages set NaN. The default it None, in which case
+            interpolated voltages set NaN. The default it None, in which case
             the distance from surface points to mapping points is not considered.
-        center (bool): If True, both the mapping points and the surface points will
-            be centered before performing the interpolation. They are centered by
-            removing the center of geometry of the surface.
 
     Returns:
         interpolated_voltages (ndarray): bipolar voltages, calculated from the
@@ -443,12 +449,14 @@ def interpolate_voltage_onto_surface(
 
     surface_points = case.points.copy()
     points = case.electric.bipolar_egm.points.copy()
-    bipolar_voltages = calculate_voltage_from_electrograms(case, buffer=50)
+    bipolar_voltages = calculate_voltage_from_electrograms(case, buffer=buffer)
 
-    within_woi = get_mapping_points_within_woi(case, buffer=50)
+    within_woi = get_mapping_points_within_woi(case, buffer=buffer)
     interpolator = Interpolator(
         points[within_woi],
         bipolar_voltages[within_woi],
+        method=method,
+        method_kws=method_kws,
     )
 
     interpolated_voltages = interpolator(surface_points, max_distance=max_distance)
