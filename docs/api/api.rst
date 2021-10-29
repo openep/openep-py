@@ -13,3 +13,4 @@ currently available in `openep-py`.
    data_structures/case
    case/case_routines
    mesh/mesh_routines
+   draw/draw_routines

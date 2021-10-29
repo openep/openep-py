@@ -16,6 +16,31 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
+"""
+Draw meshes and plot electrical data - :mod:`openep.draw.draw_routines`
+=======================================================================
+
+This module provides functions for :ref:`drawing 3D meshes <mesh>` using `pyvista`
+and :ref:`plotting electrical data <electrical>` using `matplotlib.`
+
+.. _mesh:
+
+Draw 3D meshes
+--------------
+
+.. autofunction:: draw_map
+
+.. autofunction:: draw_free_boundaries
+
+.. _electrical:
+
+Plotting electrical data
+------------------------
+
+.. autofunction:: plot_electrograms
+
+"""
+
 from typing import List, Union
 
 import numpy as np
@@ -42,8 +67,8 @@ def draw_free_boundaries(
     Draw the freeboundaries of a mesh.
 
     Args:
-        free_boundaries (FreeBoundary): FreeBoundary object. Can be generated using
-            openep.mesh.free_boundaries.
+        free_boundaries (FreeBoundary): `FreeBoundary` object. Can be generated using
+            :func:`openep.mesh.mesh_routines.get_free_boundaries`.
         colour (str, list): colour or list of colours to render the free boundaries.
         width (int): width of the free boundary lines.
         plotter (pyvista.Plotter): The free boundaries will be added to this plotting object.
