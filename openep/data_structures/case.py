@@ -22,6 +22,17 @@
 A `Case` stores all the information obtained during a clinical mapping
 procedure.
 
+Warning
+-------
+    This class should not be instatiated directly. Instead, a `Case` can be
+    created using :func:`openep.io.readers.load_case`.
+
+Tip
+---
+    Once you have a `Case`, you can perform analyses using the functions in
+    :mod:`openep.case.case_routines`. You can also create a 3D mesh using the
+    :func:`create_mesh` method.
+
 .. autoclass:: Case
     :members: create_mesh, get_surface_data, get_field
 
