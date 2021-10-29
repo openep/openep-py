@@ -46,13 +46,11 @@ By installing OpenEP with the above command, you can update to the latest versio
 
 Using PyPI
 ----------
-We have not yet relased a version of OpenEP on PyPI, but we're working on it.
+We have not yet released a version of OpenEP on PyPI, but we're working on it.
 
 .. end-description
 
 Documentation
 =============
 
-The full documentation of OpenEP-Py is available at: `openep-py.readthedocs.io <https://openep-py.readthedocs.io/en/latest/?badge=latest>__`
-
-
+The full documentation of OpenEP-Py is available at: `openep-py.readthedocs.io <https://openep-py.readthedocs.io/en/latest/?badge=latest>`__
