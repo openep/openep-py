@@ -42,8 +42,9 @@ Case data can be loaded as follows:
 
     case = openep.load_case(DATASET_2_V73)
 
+This will load the dataset and store the information in a `Case` object.
 See :class:`openep.data_structures.case.Case` for information on the attributes
-and methods of the `case`.
+and methods of `Case`.
 
 .. autofunction:: load_case
 
@@ -55,7 +56,7 @@ import scipy.io
 from .matlab import _load_mat_v73, _load_mat_below_v73
 from ..data_structures.surface import extract_surface_data
 from ..data_structures.electric import extract_electric_data
-from ..data_structures.albation import extract_ablation_data
+from ..data_structures.ablation import extract_ablation_data
 from ..data_structures.case import Case
 
 __all__ = ["load_case", "load_mat"]
