@@ -171,8 +171,8 @@ def get_electrograms_at_points(
         case (Case): openep case object
         within_woi (bool): If True, only electrograms within the window of interest will be extracted.
             If False, all electrograms will be extracted.
-        buffer (float): If within_woi is True, points within the woi plus/minus this buffer time will
-            be considered to be within the woi. If wihtin)woi is False, buffer is ignored.
+        buffer (float): If `within_woi` is True, the woi will be extended by this time. If `wihtin_woi`
+            is False, `buffer` is ignored.
         indices (ndarray), optional: indices of mapping points for which electrograms will
             be extracted. If provided along with `woi=True`, only the electrograms that
             are both within the window of interest and selected by `indices` will be extracted.
