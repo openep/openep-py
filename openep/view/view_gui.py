@@ -140,13 +140,13 @@ class OpenEpGUI(qtw.QWidget):
     def load_data(self):
         print("Please wait: Loading Data ... ")
         # Loading file from a Dialog Box
-        dlg = qtw.QFileDialog()
-        dlg.setFileMode(qtw.QFileDialog.AnyFile)
+        dialogue.setWindowTitle('Load an OpenEP dataset')
+        dialogue.setDirectory(QtCore.QDir.currentPath())
+        dialogue.setFileMode(QtWidgets.QFileDialog.ExistingFile)
+        dialogue.setNameFilter("MATLAB files (*.mat)")
 
-        if dlg.exec_():
-            self.filenames = dlg.selectedFiles()
-            self.ep_case = openep.load_case(self.filenames[0])
-            self.mesh = self.ep_case.create_mesh()
+            filename = dialogue.selectedFiles()[0]
+            self.case = openep.load_case(filename)
             self.mesh1 = deepcopy(self.mesh)
             self.mesh2 = deepcopy(self.mesh)
             self.volt = self.ep_case.fields.bipolar_voltage
