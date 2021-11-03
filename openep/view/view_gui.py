@@ -37,11 +37,7 @@ import openep
 class OpenEpGUI(qtw.QWidget):
     def __init__(self):
         super().__init__()
-        self.title = "OpenEp Application"
-        self.left = 10
-        self.top = 10
-        self.width = 840
-        self.height = 480
+        self.title = "OpenEP: The open-source solution for electrophysiology data analysis"
         self.initUI()
         self.thresholds = False
         self.minval = 0
@@ -50,7 +46,6 @@ class OpenEpGUI(qtw.QWidget):
 
     def initUI(self):
         self.setWindowTitle(self.title)
-        self.setGeometry(self.left, self.top, self.width, self.height)
 
         # # LAYOUTS
         self.mainLayout = qtw.QVBoxLayout(self)
@@ -276,7 +271,7 @@ def main():
     app = qtw.QApplication(sys.argv)
     # Create an instance of GUI
     window = OpenEpGUI()
-    window.show()
+    window.showMaximized()
     sys.exit(app.exec_())
 
 
