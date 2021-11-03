@@ -22,7 +22,7 @@ GUI code for OpenEp
 """
 import sys
 
-from PyQt5 import QtWidgets as qtw
+from PyQt5 import QtWidgets, QtCore
 from pyvistaqt import QtInteractor
 import numpy as np
 from copy import deepcopy
@@ -34,7 +34,7 @@ from matplotlib.backends.backend_qt5agg import (
 import openep
 
 
-class OpenEpGUI(qtw.QWidget):
+class OpenEpGUI(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         self.title = "OpenEP: The open-source solution for electrophysiology data analysis"
@@ -48,28 +48,27 @@ class OpenEpGUI(qtw.QWidget):
         self.setWindowTitle(self.title)
 
         # # LAYOUTS
-        self.mainLayout = qtw.QVBoxLayout(self)
-        self.menulayout = qtw.QGridLayout(self)
-        self.labelLayout = qtw.QFormLayout(self)
-        self.buttonLayout = qtw.QHBoxLayout(self)
+        self.mainLayout = QtWidgets.QVBoxLayout(self)
+        self.menulayout = QtWidgets.QGridLayout(self)
+        self.buttonLayout = QtWidgets.QHBoxLayout(self)
 
         # MenuBar
-        menubar = qtw.QMenuBar()
+        menubar = QtWidgets.QMenuBar()
         self.menulayout.addWidget(menubar, 0, 0)
         file_menu = menubar.addMenu("File")
 
-        self.load_case_act = qtw.QAction("Open File...")
+        self.load_case_act = QtWidgets.QAction("Open File...")
         self.load_case_act.triggered.connect(self.load_data)
         file_menu.addAction(self.load_case_act)
         file_menu.addSeparator()
 
-        plot_menu = qtw.QMenu("Plots", self)
-        voltage_map_plot_act = qtw.QAction("3-D Voltage Map", self)
-        self.voltage_map_interpolated_plot_act = qtw.QAction(
+        plot_menu = QtWidgets.QMenu("Plots", self)
+        voltage_map_plot_act = QtWidgets.QAction("3-D Voltage Map", self)
+        self.voltage_map_interpolated_plot_act = QtWidgets.QAction(
             "Interpolated Voltage Plot", self
         )
-        self.historgram_plot_act = qtw.QAction("Histogram Plot", self)
-        self.egm_plot_act = qtw.QAction("EGM Plot", self)
+        self.historgram_plot_act = QtWidgets.QAction("Histogram Plot", self)
+        self.egm_plot_act = QtWidgets.QAction("EGM Plot", self)
 
         voltage_map_plot_act.triggered.connect(self.plot_3d_map)
         plot_menu.addAction(voltage_map_plot_act)
@@ -89,8 +88,8 @@ class OpenEpGUI(qtw.QWidget):
 
         file_menu.addSeparator()
 
-        self.quit_app_act = qtw.QAction("Quit")
-        self.quit_app_act.triggered.connect(qtw.qApp.quit)
+        self.quit_app_act = QtWidgets.QAction("Quit")
+        self.quit_app_act.triggered.connect(QtWidgets.qApp.quit)
         file_menu.addAction(self.quit_app_act)
 
         menubar.addMenu("Edit")
@@ -98,41 +97,40 @@ class OpenEpGUI(qtw.QWidget):
         menubar.addMenu("Help")
 
         # Plot
-        self.plotLayout = qtw.QGridLayout()
+        self.plotLayout = QtWidgets.QGridLayout()
         self.plotLayout.setColumnStretch(0, 5)
         self.plotLayout.setColumnStretch(1, 5)
 
-        self.frame = qtw.QFrame()
+        self.frame = QtWidgets.QFrame()
         self.plotter = QtInteractor(self.frame)
         self.plotLayout.addWidget(self.plotter.interactor, 0, 0)
 
         # # VoltThresholds limit
-        self.limitLayout = qtw.QFormLayout(self)
-        self.lowerlimit = qtw.QLineEdit()
-        self.upperlimit = qtw.QLineEdit()
+        self.limitLayout = QtWidgets.QFormLayout(self)
+        self.lowerlimit = QtWidgets.QLineEdit()
+        self.upperlimit = QtWidgets.QLineEdit()
         self.lowerlimit.setText(str(0))
         self.upperlimit.setText(str(2))
         self.limitLayout.addRow("Voltage Threshold - Lower", self.lowerlimit)
         self.limitLayout.addRow("Voltage Threshold - Upper", self.upperlimit)
 
-        button_set_thresholds = qtw.QPushButton("Set Voltage Thresholds", self)
+        button_set_thresholds = QtWidgets.QPushButton("Set Voltage Thresholds", self)
         button_set_thresholds.setGeometry(200, 150, 100, 40)
         button_set_thresholds.clicked.connect(self.update_voltage_threshold)
         self.limitLayout.addRow(button_set_thresholds)
 
         # selecting the Egm points
-        self.egmselect = qtw.QLineEdit()
+        self.egmselect = QtWidgets.QLineEdit()
         self.egmselect.setText(str(0))
         self.limitLayout.addRow("Egm Point", self.egmselect)
 
-        button_egmselect = qtw.QPushButton("Set Egm Point", self)
+        button_egmselect = QtWidgets.QPushButton("Set Egm Point", self)
         button_egmselect.setGeometry(200, 150, 100, 40)
         button_egmselect.clicked.connect(self.plot_egm)
         self.limitLayout.addRow(button_egmselect)
 
         # Nesting Layouts and setting the main layout
         self.mainLayout.addLayout(self.menulayout)
-        self.mainLayout.addLayout(self.labelLayout)
         self.mainLayout.addLayout(self.plotLayout)
         self.mainLayout.addLayout(self.limitLayout)
         self.setLayout(self.mainLayout)
@@ -140,16 +138,19 @@ class OpenEpGUI(qtw.QWidget):
     def load_data(self):
         print("Please wait: Loading Data ... ")
         # Loading file from a Dialog Box
+        dialogue = QtWidgets.QFileDialog()
         dialogue.setWindowTitle('Load an OpenEP dataset')
         dialogue.setDirectory(QtCore.QDir.currentPath())
         dialogue.setFileMode(QtWidgets.QFileDialog.ExistingFile)
         dialogue.setNameFilter("MATLAB files (*.mat)")
 
+        if dialogue.exec_():
             filename = dialogue.selectedFiles()[0]
             self.case = openep.load_case(filename)
+            self.mesh = self.case.create_mesh()
             self.mesh1 = deepcopy(self.mesh)
             self.mesh2 = deepcopy(self.mesh)
-            self.volt = self.ep_case.fields.bipolar_voltage
+            self.volt = self.case.fields.bipolar_voltage
             self.minval = 0
             self.maxval = 2
             self.free_boundaries = openep.mesh.get_free_boundaries(self.mesh)
@@ -160,7 +161,7 @@ class OpenEpGUI(qtw.QWidget):
 
             # Interpolated voltage data
             self.voltage_data = openep.case.interpolate_voltage_onto_surface(
-                self.ep_case,
+                self.case,
                 max_distance=None,
             )
 
@@ -194,9 +195,9 @@ class OpenEpGUI(qtw.QWidget):
         self.add_mesh_kws["clim"] = [self.minval, self.maxval]
 
         # # QDock Widget
-        self.frame1 = qtw.QFrame()
+        self.frame1 = QtWidgets.QFrame()
         self.plotter1 = QtInteractor(self.frame1)
-        self.dock_plot = qtw.QDockWidget("Interpolated Voltage Plot", self)
+        self.dock_plot = QtWidgets.QDockWidget("Interpolated Voltage Plot", self)
         self.dock_plot.setFloating(False)
         self.dock_plot.setWidget(self.plotter1)
 
@@ -226,10 +227,10 @@ class OpenEpGUI(qtw.QWidget):
         self.fig.set_facecolor("white")
 
         self.egm_traces, self.egm_names, self.egm_lat = openep.case.get_electrograms_at_points(
-            self.ep_case, indices=self.egm_point
+            self.case, indices=self.egm_point
         )
-        times = openep.case.get_woi_times(self.ep_case)
-        relative_times = openep.case.get_woi_times(self.ep_case, relative=True)
+        times = openep.case.get_woi_times(self.case)
+        relative_times = openep.case.get_woi_times(self.case, relative=True)
         self.fig, self.ax = openep.draw.plot_electrograms(
             relative_times,
             self.egm_traces[:, times],
@@ -237,14 +238,14 @@ class OpenEpGUI(qtw.QWidget):
         )
         self.canvas = FigureCanvas(self.fig)
 
-        self.dock_plot1 = qtw.QDockWidget("EGM Plot", self)
+        self.dock_plot1 = QtWidgets.QDockWidget("EGM Plot", self)
         self.dock_plot1.setFloating(False)
         self.dock_plot1.setWidget(self.canvas)
         self.plotLayout.addWidget(self.dock_plot1, 1, 1)
 
     def plot_histogram(self):
         self.plotter3 = QtInteractor(self.frame)
-        self.dock_plot2 = qtw.QDockWidget("Histogram Plot", self)
+        self.dock_plot2 = QtWidgets.QDockWidget("Histogram Plot", self)
         self.dock_plot2.setFloating(False)
         self.dock_plot2.setWidget(self.plotter3)
 
@@ -258,7 +259,7 @@ class OpenEpGUI(qtw.QWidget):
 
 def main():
     # Create an instance of Qapplication
-    app = qtw.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)    
     # Create an instance of GUI
     window = OpenEpGUI()
     window.showMaximized()
