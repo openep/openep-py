@@ -97,16 +97,6 @@ class OpenEpGUI(qtw.QWidget):
         menubar.addMenu("View")
         menubar.addMenu("Help")
 
-        # Label
-        mainLabel1 = qtw.QLabel("OpenEp Tool", self)
-        self.labelLayout.addWidget(mainLabel1)
-        mainLabel2 = qtw.QLabel(
-            "The Open Source solution for electrophysiology data analysis", self
-        )
-        self.labelLayout.addWidget(mainLabel2)
-
-        self.labelLayout.addRow(self.buttonLayout)
-
         # Plot
         self.plotLayout = qtw.QGridLayout()
         self.plotLayout.setColumnStretch(0, 5)
