@@ -181,27 +181,30 @@ def plot_electrograms(times, electrograms, separation=1, names=None, axis=None, 
 
     if axis is None:
         figure, axis = plt.subplots(constrained_layout=True, figsize=(6, 0.4*len(electrograms)))
+    else:
+        figure = axis.get_figure()
 
     # Plot electrograms
-    plt.sca(axis)
+    #plt.sca(axis)
     if electrograms.ndim == 2:  # bipolar voltage
-        plt.plot(times, electrograms.T + separations, label=names, color=colours)
+        axis.plot(times, electrograms.T + separations, label=names, color=colours)
     else:  # unipolar voltages
-        plt.plot(times, electrograms[:, :, 0].T + separations, label=names, color=colours)
-        plt.plot(times, electrograms[:, :, 1].T + separations, label=names, color=colours)
+        axis.plot(times, electrograms[:, :, 0].T + separations, label=names, color=colours)
+        axis.plot(times, electrograms[:, :, 1].T + separations, label=names, color=colours)
 
     # Add names
     if names is not None:
         y_tick_positions = np.arange(electrograms.shape[0]) * separation
-        plt.yticks(y_tick_positions, labels=names)
+        axis.set_yticks(y_tick_positions)
+        axis.set_yticklabels(names)
 
     # Add a horizontal line for each electrogram at its zero voltage position
     for y in separations:
-        plt.axhline(y, color='grey', linestyle='--', linewidth=0.8, alpha=0.6)
+        axis.axhline(y, color='grey', linestyle='--', linewidth=0.8, alpha=0.6)
 
     # Vertical line at time zero (if we know what it is)
     if 0 in times:
-        plt.axvline(0, color="grey", linestyle='--', linewidth=0.8, alpha=0.6)
+        axis.axvline(0, color="grey", linestyle='--', linewidth=0.8, alpha=0.6)
 
     # Remove the border and ticks
     plt.tick_params(axis='both', which='both', length=0)
