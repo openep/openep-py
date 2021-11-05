@@ -385,8 +385,6 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             plotter=plotter,
         )
 
-        plotter.reset_camera()
-
     def plot_electrograms(self):
 
         self.egm_point = np.asarray(self.egm_select.text().split(','), dtype=int)
