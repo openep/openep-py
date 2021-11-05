@@ -185,7 +185,6 @@ def plot_electrograms(times, electrograms, separation=1, names=None, axis=None, 
         figure = axis.get_figure()
 
     # Plot electrograms
-    #plt.sca(axis)
     if electrograms.ndim == 2:  # bipolar voltage
         axis.plot(times, electrograms.T + separations, label=names, color=colours)
     else:  # unipolar voltages

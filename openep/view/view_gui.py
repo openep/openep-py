@@ -83,15 +83,15 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self._create_canvas_3_dock()
         self._create_canvas_4_dock()
         self._add_dock_widgets()
-    
+
     def _init_data(self):
         """
         Set default values for variables that can later be set by the user.
         """
-        
+
         # Display only the first electrogram
         self.egm_point = np.array([0], dtype=int)
-        
+
         # initial bipolar voltage colourbar limits
         self._initial_lower_limit_1 = 0
         self._initial_upper_limit_1 = 2
@@ -108,14 +108,14 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         """
 
         self.setWindowTitle("OpenEP: The open-source solution for electrophysiology data analysis")
-    
+
     def _add_menu_bar(self):
         """Add a menu bar to the GUI."""
 
         menubar = self.menuBar()
         file_menu = menubar.addMenu("File")
         menubar.setNativeMenuBar(True)
-        
+
         self.load_case_act = QtWidgets.QAction("Open File...")
         self.load_case_act.triggered.connect(self.load_data)
         file_menu.addAction(self.load_case_act)
@@ -124,16 +124,16 @@ class OpenEpGUI(QtWidgets.QMainWindow):
     def _create_plotter_1_dock(self):
         """
         Create a dockable pyvista-qt plotter for rendering 3D maps.
-        
+
         This can be used for projecting scalar fields onto the 3D surface.
         Currently, only bipolar voltage is supported.
         """
 
         # TODO: add support for changing the scalar field
-        
+
         # Plotter 1 defaults to bipolar voltage
         self.dock_1 = DockWidget("Voltage")
-        
+
         frame_1 = QtWidgets.QFrame()
         plotter_1 = QtInteractor(frame_1)
         plotter_1.background_color = 'white'
@@ -142,13 +142,13 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         # Add thresholds to plotter 1
         self.plotter_1.limitLayout = QtWidgets.QFormLayout(self)
-        
+
         self.lower_limit_1 = QtWidgets.QLineEdit("Lower threshold", self.plotter_1)
         self.lower_limit_1.setStyleSheet("background-color: white; border: 1px solid lightGray;")
         self.lower_limit_1.setGeometry(200, 10, 50, 40)
         self.lower_limit_1.setText(str(self._initial_lower_limit_1))
         self.plotter_1.limitLayout.addRow("Lower threshold", self.lower_limit_1)
-        
+
         self.upper_limit_1 = QtWidgets.QLineEdit("Upper threshold", self.plotter_1)
         self.upper_limit_1.setStyleSheet("background-color: white; border: 1px solid lightGray;")
         self.upper_limit_1.setGeometry(260, 10, 50, 40)
@@ -160,13 +160,13 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         button_set_thresholds_1.setGeometry(10, 10, 180, 40)
         button_set_thresholds_1.clicked.connect(self.update_colourbar_limits_1)
         self.plotter_1.limitLayout.addRow(button_set_thresholds_1)
-        
+
         self.dock_1.setWidget(self.plotter_1)
 
     def _create_plotter_2_dock(self):
         """
         Create a second dockable pyvista-qt plotter for rendering 3D maps.
-        
+
         This can be used for displaying alternative scalar fields to `plotter_1`.
         Currently, only local activation time is supported.
         """
@@ -183,14 +183,14 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.plotter_2 = plotter_2
 
         # Add thresholds to plotter 2
-        self.plotter_2.limitLayout = QtWidgets.QFormLayout(self)        
-        
+        self.plotter_2.limitLayout = QtWidgets.QFormLayout(self)
+
         self.lower_limit_2 = QtWidgets.QLineEdit("Lower threshold", self.plotter_2)
         self.lower_limit_2.setStyleSheet("background-color: white; border: 1px solid lightGray;")
         self.lower_limit_2.setGeometry(200, 10, 50, 40)
         self.lower_limit_2.setText(str(self._initial_lower_limit_2))
         self.plotter_2.limitLayout.addRow("Lower threshold", self.lower_limit_2)
-        
+
         self.upper_limit_2 = QtWidgets.QLineEdit("Upper threshold", self.plotter_2)
         self.upper_limit_2.setStyleSheet("background-color: white; border: 1px solid lightGray;")
         self.upper_limit_2.setGeometry(260, 10, 50, 40)
@@ -202,7 +202,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         button_set_thresholds_2.setGeometry(10, 10, 180, 40)
         button_set_thresholds_2.clicked.connect(self.update_colourbar_limits_2)
         self.plotter_2.limitLayout.addRow(button_set_thresholds_2)
-        
+
         self.dock_2.setWidget(self.plotter_2)
 
     def _create_canvas_3_dock(self):
@@ -218,7 +218,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         # Add EGM selections
         egm_layout = QtWidgets.QFormLayout(self)
-        
+
         self.egm_select = QtWidgets.QLineEdit("EGMs", self.canvas_3)
         self.egm_select.setStyleSheet("background-color: white; border: 1px solid lightGray;")
         self.egm_select.setGeometry(260, 10, 50, 40)
@@ -230,7 +230,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         button_egm_select.setGeometry(10, 10, 240, 40)
         button_egm_select.clicked.connect(self.plot_electrograms)
         egm_layout.addRow(button_egm_select)
-        
+
         # Create toolbar, passing canvas as first parament, parent (self, the MainWindow) as second.
         toolbar = NavigationToolbar(self.canvas_3, self.dock_3)
         canvas_layout = QtWidgets.QVBoxLayout()
@@ -306,7 +306,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 max_distance=None,
             )
             self.interpolated_fields = {"bipolar_voltage": interpolated_voltage}
-            
+
             # Draw default maps
             self.draw_map(
                 mesh=self.mesh_1,
@@ -323,9 +323,9 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
             self.axis_3.axis('on')  # make sure we can see the axes now
             self.plot_electrograms()
-    
+
     def update_colourbar_limits_1(self):
-        
+
         lower_limit = float(self.lower_limit_1.text())
         upper_limit = float(self.upper_limit_1.text())
         self.add_mesh_1_kws["clim"] = [lower_limit, upper_limit]
@@ -337,7 +337,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         )
 
     def update_colourbar_limits_2(self):
-        
+
         lower_limit = float(self.lower_limit_2.text())
         upper_limit = float(self.upper_limit_2.text())
         self.add_mesh_2_kws["clim"] = [lower_limit, upper_limit]
@@ -376,7 +376,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         )
         times = openep.case.get_woi_times(self.case)
         relative_times = openep.case.get_woi_times(self.case, relative=True)
-        
+
         _, self.axis_3.axes = openep.draw.plot_electrograms(
             relative_times,
             self.egm_traces[:, times],
