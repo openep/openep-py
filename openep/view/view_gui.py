@@ -24,7 +24,7 @@ import sys
 
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import Qt
-from pyvistaqt import QtInteractor
+from pyvistaqt import BackgroundPlotter
 from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg as FigureCanvas,
     NavigationToolbar2QT as NavigationToolbar
@@ -134,8 +134,18 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         # Plotter 1 defaults to bipolar voltage
         self.dock_1 = DockWidget("Voltage")
 
-        frame_1 = QtWidgets.QFrame()
-        plotter_1 = QtInteractor(frame_1)
+        plotter_1 = BackgroundPlotter(
+            show=False,
+            app=QtWidgets.QApplication.instance(),
+            allow_quit_keypress=False,
+            line_smoothing=False,
+            point_smoothing=False,
+            polygon_smoothing=False,
+            toolbar=False,
+            editor=False,
+            menu_bar=False,
+            title="Voltage",
+        )
         plotter_1.background_color = 'white'
         plotter_1.setMinimumSize(QtCore.QSize(50, 50))
         self.plotter_1 = plotter_1
@@ -176,8 +186,18 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         # Plotter 2 defaults to local activation time
         self.dock_2 = DockWidget("LAT")
 
-        frame_2 = QtWidgets.QFrame()
-        plotter_2 = QtInteractor(frame_2)
+        plotter_2 = BackgroundPlotter(
+            show=False,
+            app=QtWidgets.QApplication.instance(),
+            allow_quit_keypress=False,
+            line_smoothing=False,
+            point_smoothing=False,
+            polygon_smoothing=False,
+            toolbar=False,
+            editor=False,
+            menu_bar=False,
+            title="Voltage",
+        )
         plotter_2.background_color = 'white'
         plotter_2.setMinimumSize(QtCore.QSize(50, 50))
         self.plotter_2 = plotter_2
