@@ -377,12 +377,14 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         times = openep.case.get_woi_times(self.case)
         relative_times = openep.case.get_woi_times(self.case, relative=True)
 
+        self.axis_3.cla()
         _, self.axis_3.axes = openep.draw.plot_electrograms(
             relative_times,
             self.egm_traces[:, times],
             names=self.egm_names,
             axis=self.axis_3.axes,
         )
+        self.axis_3.set_ylim(-0.5, 12.5)
         self.canvas_3.draw()
 
 
