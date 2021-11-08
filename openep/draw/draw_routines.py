@@ -157,7 +157,16 @@ def draw_map(
     return plotter
 
 
-def plot_electrograms(times, electrograms, separation=1, names=None, axis=None, colours=None):
+def plot_electrograms(
+    times,
+    electrograms,
+    names=None,
+    woi=None,
+    y_separation=1,
+    y_start=0,
+    colour=None,
+    axis=None,
+    ):
     """
     Plot electrogram traces.
 
@@ -165,19 +174,23 @@ def plot_electrograms(times, electrograms, separation=1, names=None, axis=None, 
         times (ndarray): times at which voltages were measured
         electrograms (ndarray): Electrogram traces. Two-dimensional of size N_points x N_times for bipolar voltage,
             or two-dimensional of shape N_points x N_times x 2 for unipolar dimensional.
-        separation=1
-        woi (bool): If True, the traces will be plotted only within the window of interest.
-        buffer (float): If woi is True, points within the woi plus/minus this buffer time will
-            be considered to be within the woi. If woi is False, buffer is ignored.
-        axis (matplotlib.axes.Axes): Matplotlib Axes on which to plot the traces. If None, a new figure and axes
+        names (ndarray, optional): List of electrode names, on per electrogram. If provided, names these will be used to
+            label each electrogram.
+        woi (tuple, optional): start and stop times of the window of interest. If provided, dashed vertical lines
+            will be added to the plot at these times.
+        y_separation (float, optional): Vertical spacing to add between consecutive electrograms.
+        y_start (float, optional): The first electrogram will have this value added to it (to shift the electrogram
+            up or down the y axis).
+        colour (str or list, optional): Colour or list of colours to use for plotting. 
+        axis (matplotlib.axes.Axes, optional): Matplotlib Axes on which to plot the traces. If None, a new figure and axes
             will be created.
 
     Returns:
         axis (matplotlib.axes.Axes): Axes on which the traces have been plotted.
     """
 
-    separations = np.arange(electrograms.shape[0]) * separation
-    colours = "xkcd:cerulean" if colours is None else colours
+    separations = y_start + np.arange(electrograms.shape[0]) * y_separation
+    colour = "xkcd:cerulean" if colour is None else colour
 
     if axis is None:
         figure, axis = plt.subplots(constrained_layout=True, figsize=(6, 0.4*len(electrograms)))
@@ -186,24 +199,25 @@ def plot_electrograms(times, electrograms, separation=1, names=None, axis=None, 
 
     # Plot electrograms
     if electrograms.ndim == 2:  # bipolar voltage
-        axis.plot(times, electrograms.T + separations, label=names, color=colours)
+        axis.plot(times, electrograms.T + separations, label=names, color=colour)
     else:  # unipolar voltages
-        axis.plot(times, electrograms[:, :, 0].T + separations, label=names, color=colours)
-        axis.plot(times, electrograms[:, :, 1].T + separations, label=names, color=colours)
+        axis.plot(times, electrograms[:, :, 0].T + separations, label=names, color=colour)
+        axis.plot(times, electrograms[:, :, 1].T + separations, label=names, color=colour)
 
     # Add names
     if names is not None:
-        y_tick_positions = np.arange(electrograms.shape[0]) * separation
-        axis.set_yticks(y_tick_positions)
+        axis.set_yticks(separations)
         axis.set_yticklabels(names)
 
     # Add a horizontal line for each electrogram at its zero voltage position
     for y in separations:
         axis.axhline(y, color='grey', linestyle='--', linewidth=0.8, alpha=0.6)
 
-    # Vertical line at time zero (if we know what it is)
-    if 0 in times:
-        axis.axvline(0, color="grey", linestyle='--', linewidth=0.8, alpha=0.6)
+    # Vertical line at the window of interest
+    if woi is not None:
+        woi_start, woi_stop = woi
+        axis.axvline(woi_start, color="grey", linestyle='--', linewidth=0.8, alpha=0.6)
+        axis.axvline(woi_stop, color="grey", linestyle='--', linewidth=0.8, alpha=0.6)
 
     # Remove the border and ticks
     plt.tick_params(axis='both', which='both', length=0)
