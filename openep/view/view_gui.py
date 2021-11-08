@@ -237,21 +237,31 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.figure_3.set_facecolor("white")
         self.canvas_3 = FigureCanvas(self.figure_3)
         self.axis_3.axis('off')  # hide them until we have data to plot
-
-        # Add EGM selections
         egm_layout = QtWidgets.QFormLayout(self)
 
+        # Add EGM selections
         self.egm_select = QtWidgets.QLineEdit("EGMs", self.canvas_3)
         self.egm_select.setStyleSheet("background-color: white; border: 1px solid lightGray;")
-        self.egm_select.setGeometry(260, 10, 50, 40)
+        self.egm_select.setGeometry(250, 0, 50, 40)
         self.egm_select.setText(str(0))
         egm_layout.addRow("EGMs", self.egm_select)
 
         button_egm_select = QtWidgets.QPushButton("Select EGMs (indices of points)", self.canvas_3)
         button_egm_select.setStyleSheet("background-color: lightGray")
-        button_egm_select.setGeometry(10, 10, 240, 40)
+        button_egm_select.setGeometry(0, 0, 240, 40)
         button_egm_select.clicked.connect(self.plot_electrograms)
         egm_layout.addRow(button_egm_select)
+
+        # Add radio buttons to select bipolar, unipolar, and reference electrograms
+        egm_type_layout = QtWidgets.QHBoxLayout()
+        bipolar_checkbox = QtWidgets.QCheckBox("Bipolar", self.canvas_3)
+        bipolar_checkbox.setGeometry(0,45, 70, 20)
+        bipolar_checkbox.setChecked(True)
+        bipolar_checkbox.stateChanged.connect(self.plot_electrograms)
+        egm_type_layout.addWidget(bipolar_checkbox)
+        
+        self.bipolar_checkbox = bipolar_checkbox
+        egm_layout.addRow(egm_type_layout)
 
         # Create toolbar, passing canvas as first parament, parent (self, the MainWindow) as second.
         toolbar = NavigationToolbar(self.canvas_3, self.dock_3)
@@ -297,7 +307,6 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             dock.setAllowedAreas(Qt.AllDockWidgetAreas)
 
     def load_data(self):
-        print("Please wait: Loading Data ... ")
 
         dialogue = QtWidgets.QFileDialog()
         dialogue.setWindowTitle('Load an OpenEP dataset')
@@ -387,25 +396,38 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             plotter=plotter,
         )
 
-    def plot_electrograms(self):
+    def _plot_bipolar_electrograms(self, times, traces):
 
-        self.egm_point = np.asarray(self.egm_select.text().split(','), dtype=int)
-
-        self.egm_traces, self.egm_names, self.egm_lat = openep.case.get_electrograms_at_points(
-            self.case, indices=self.egm_point
-        )
-        times = openep.case.get_woi_times(self.case)
-        relative_times = openep.case.get_woi_times(self.case, relative=True)
-
-        self.axis_3.cla()
-        _, self.axis_3.axes = openep.draw.plot_electrograms(
-            relative_times,
-            self.egm_traces[:, times],
+        _, self.axis_3.axes, self.bipolar_curves = openep.draw.plot_electrograms(
+            times,
+            traces,
             names=self.egm_names,
             axis=self.axis_3.axes,
         )
+
+    def plot_electrograms(self):
+        
+        self.egm_point = np.asarray(self.egm_select.text().split(','), dtype=int)
+        self.egm_traces, self.egm_names, self.egm_lat = openep.case.get_electrograms_at_points(
+            self.case, indices=self.egm_point
+        )        
+        times = np.arange(self.egm_traces.shape[1])
+
+        
+        self.axis_3.cla()
+        self.axis_3.set_yticklabels([])
         self.axis_3.set_ylim(-0.5, 12.5)
+
+        if self.bipolar_checkbox.isChecked():
+            self._plot_bipolar_electrograms(
+                times=times,
+                traces=self.egm_traces,
+            )
+        else:
+            self.axis_3.set_xticklabels([])
+
         self.canvas_3.draw()
+
 
 
 def main():
