@@ -186,6 +186,7 @@ def plot_electrograms(
             will be created.
 
     Returns:
+        figure (matplotlib.Figure): Figure on which the traces have been plotted
         axis (matplotlib.axes.Axes): Axes on which the traces have been plotted.
     """
 
@@ -198,11 +199,7 @@ def plot_electrograms(
         figure = axis.get_figure()
 
     # Plot electrograms
-    if electrograms.ndim == 2:  # bipolar voltage
-        axis.plot(times, electrograms.T + separations, label=names, color=colour)
-    else:  # unipolar voltages
-        axis.plot(times, electrograms[:, :, 0].T + separations, label=names, color=colour)
-        axis.plot(times, electrograms[:, :, 1].T + separations, label=names, color=colour)
+    axis.plot(times, electrograms.T + separations, label=names, color=colour)
 
     # Add names
     if names is not None:
