@@ -398,7 +398,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
     def _plot_bipolar_electrograms(self, times, traces):
 
-        _, self.axis_3.axes, self.bipolar_curves = openep.draw.plot_electrograms(
+        _, self.axis_3.axes = openep.draw.plot_electrograms(
             times,
             traces,
             names=self.egm_names,
