@@ -21,14 +21,19 @@ import matplotlib.pyplot as plt
 import openep
 
 
-filename = "/Users/paul/github/openep-py/examples/data/new_dataset_1.mat"
+filename = "/Users/paul/github/openep-py/examples/data/new_dataset_2.mat"
 case = openep.load_case(filename)
 mesh = case.create_mesh()
+
+# determine the window of interest for each point
+woi = openep.case.case_routines._get_window_of_interest(case)
+reference_time = openep.case.case_routines._get_reference_annotation(case)
+woi += reference_time[:, np.newaxis]
 
 # Get mapping points within WOI
 mapping_points = openep.case.get_mapping_points_within_woi(case, indices=np.arange(10))
 
-# Get electrograms
+# Get electrograms for specific points
 electrograms, names, local_activation_times = openep.case.get_electrograms_at_points(
     case,
     indices=[1, 10, 100],
@@ -39,10 +44,12 @@ electrograms, names, local_activation_times = openep.case.get_electrograms_at_po
 # Plot the electrogram traces
 # Array of times that are within the window of interest:
 times = openep.case.get_woi_times(case)
-# Array of times that are within the window of interest. Pacing at time = 0 seconds.
-relative_times = openep.case.get_woi_times(case, relative=True)
-# Now plot the traces
-fig, axis = openep.draw.plot_electrograms(relative_times, electrograms[:, times], names=names)
+fig, axis = openep.draw.plot_electrograms(
+    times=times,
+    electrograms=electrograms[:, times],  # only show the electrograms within the woi
+    names=names,
+    woi=woi[0]
+)
 plt.show()
 
 # Plot Carto bipolar voltages
