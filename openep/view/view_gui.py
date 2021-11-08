@@ -145,6 +145,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             editor=False,
             menu_bar=False,
             title="Voltage",
+            border=False,
         )
         plotter_1.background_color = 'white'
         plotter_1.setMinimumSize(QtCore.QSize(50, 50))
@@ -197,6 +198,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             editor=False,
             menu_bar=False,
             title="Voltage",
+            border=False,
         )
         plotter_2.background_color = 'white'
         plotter_2.setMinimumSize(QtCore.QSize(50, 50))
