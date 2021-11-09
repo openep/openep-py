@@ -73,7 +73,7 @@ class CustomNavigationToolbar(NavigationToolbar):
     def _remove_unwanted_actions(self):
 
         # the following snippet is from: https://stackoverflow.com/a/63341907
-        unwanted_buttons = ['Pan', 'Subplots']
+        unwanted_buttons = ['Pan', 'Subplots', 'Customize']
         for action in self.actions():
             if action.text() in unwanted_buttons:
                 self.removeAction(action)
