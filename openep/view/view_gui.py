@@ -539,12 +539,22 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 y_separation=2,
             )
 
-        if self.reference_checkbox.isChecked() or self.bipolar_checkbox.isChecked():
+        # Add labels if necessary
+        yticks = []
+        yticklabels = []
+        separations = np.arange(self.egm_points.size) * 2
 
-            separations = np.arange(self.egm_points.size) * 2
-            self.axis_3.set_yticks(separations)
-            self.axis_3.set_yticklabels(self.egm_names)
-            
+        if self.reference_checkbox.isChecked() or self.bipolar_checkbox.isChecked():
+            yticks.extend(separations)
+            yticklabels.extend(self.egm_names)
+
+        if self.unipolar_A_checkbox.isChecked() or self.unipolar_B_checkbox.isChecked():
+            yticks.extend(separations + 1)
+            yticklabels.extend(self.egm_names)
+
+        self.axis_3.set_yticks(yticks)
+        self.axis_3.set_yticklabels(yticklabels)
+
         self.canvas_3.draw()
 
 
