@@ -22,7 +22,7 @@ A GUI for OpenEP-Py.
 """
 import sys
 
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 from pyvistaqt import BackgroundPlotter
 from matplotlib.backends.backend_qt5agg import (
@@ -35,6 +35,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import openep
+from .images import LOGO
 
 
 class DockWidget(QtWidgets.QDockWidget):
@@ -157,6 +158,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             menu_bar=False,
             title="Voltage",
             border=False,
+            update_app_icon=False,
         )
         plotter_1.background_color = 'white'
         plotter_1.setMinimumSize(QtCore.QSize(50, 50))
@@ -231,6 +233,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             menu_bar=False,
             title="Voltage",
             border=False,
+            update_app_icon=False,
         )
         plotter_2.background_color = 'white'
         plotter_2.setMinimumSize(QtCore.QSize(50, 50))
@@ -693,6 +696,7 @@ def main():
 
     # Create an instance of Qapplication
     app = QtWidgets.QApplication(sys.argv)
+    app.setWindowIcon(QtGui.QIcon(LOGO))
 
     # Create an instance of GUI
     window = OpenEpGUI()
