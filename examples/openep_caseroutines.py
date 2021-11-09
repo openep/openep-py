@@ -36,7 +36,7 @@ mapping_points = openep.case.get_mapping_points_within_woi(case, indices=np.aran
 # Get electrograms for specific points
 electrograms, names, local_activation_times = openep.case.get_electrograms_at_points(
     case,
-    egm_type="bipolar",
+    egm_type="reference",
     indices=[1, 10, 100],
     return_names=True,
     return_lat=True,
