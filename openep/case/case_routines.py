@@ -160,7 +160,7 @@ def get_electrograms_at_points(
     within_woi=True,
     buffer=50,
     indices=None,
-    bipolar=True,
+    egm_type="bipolar",
     return_names=True,
     return_lat=True,
 ):
@@ -178,8 +178,10 @@ def get_electrograms_at_points(
             are both within the window of interest and selected by `indices` will be extracted.
             If provided along with `woi=False`, all electrograms of mapping points selected by
             `indices` will be returned.
-        bipolar (bool): If True, the bipolar traces will be returned. If False, the unipolar
-            traces will be returned.
+        egm_type (bool): The electrogram traces to return. Valid options:
+            - bipolar
+            - unipolar
+            - reference
         return_names (bool): If True, the internal names of the points used by the
             clinical electroanatomic mapping system will also be returned.
         return_lat (bool): If True, the local activation time of each mapping point will also be
@@ -196,7 +198,15 @@ def get_electrograms_at_points(
 
     """
 
-    electrograms = case.electric.bipolar_egm.egm if bipolar else case.electric.unipolar_egm.egm
+    if egm_type.lower().strip() == "bipolar":
+        electrograms = case.electric.bipolar_egm.egm
+    elif egm_type.lower().strip() == "unipolar":
+        electrograms = case.electric.unipolar_egm.egm
+    elif egm_type.lower().strip() == "reference":
+        electrograms = case.electric.reference_egm.egm
+    else:
+        raise ValueError(f"egm_type {egm_type} is not recognised.")
+
     names = case.electric.internal_names
     local_activation_time = case.electric.annotations.local_activation_time
 
