@@ -273,7 +273,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         reference_checkbox = QtWidgets.QCheckBox("Reference", self.canvas_3)
         reference_checkbox.setStyleSheet("color: #be0119")  # xkcd:scarlet
         reference_checkbox.setGeometry(0, 45, 85, 20)
-        reference_checkbox.setChecked(True)
+        reference_checkbox.setChecked(False)
         reference_checkbox.stateChanged.connect(self.plot_electrograms)
         egm_type_layout.addWidget(reference_checkbox)
 
@@ -283,9 +283,17 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         bipolar_checkbox.setChecked(True)
         bipolar_checkbox.stateChanged.connect(self.plot_electrograms)
         egm_type_layout.addWidget(bipolar_checkbox)
+
+        unipolar_A_checkbox = QtWidgets.QCheckBox("Unipolar: A", self.canvas_3)
+        unipolar_A_checkbox.setStyleSheet("color: #2a7e19")  # xkcd:tree green
+        unipolar_A_checkbox.setGeometry(165, 45, 90, 20)
+        unipolar_A_checkbox.setChecked(True)
+        unipolar_A_checkbox.stateChanged.connect(self.plot_electrograms)
+        egm_type_layout.addWidget(unipolar_A_checkbox)
         
         self.bipolar_checkbox = bipolar_checkbox
         self.reference_checkbox = reference_checkbox
+        self.unipolar_A_checkbox = unipolar_A_checkbox
         egm_layout.addRow(egm_type_layout)
 
         # Create toolbar, passing canvas as first parament, parent (self, the MainWindow) as second.
@@ -495,6 +503,17 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 self.egm_bipolar_traces,
                 axis=self.axis_3.axes,
                 colour="xkcd:cerulean",
+            )
+
+        # Unipolar A voltage
+        if self.unipolar_A_checkbox.isChecked():
+
+            _, self.axis_3.axes = openep.draw.plot_electrograms(
+                self.egm_times,
+                self.egm_unipolar_A_traces,
+                axis=self.axis_3.axes,
+                colour="xkcd:tree green",
+                y_start=0.5,
             )
 
         if self.reference_checkbox.isChecked() or self.bipolar_checkbox.isChecked():
