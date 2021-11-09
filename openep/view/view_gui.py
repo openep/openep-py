@@ -389,6 +389,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             interpolated_voltage = openep.case.interpolate_voltage_onto_surface(
                 self.case,
                 max_distance=None,
+                buffer=0,
             )
             self.interpolated_fields = {"bipolar_voltage": interpolated_voltage}
 
