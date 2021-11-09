@@ -98,6 +98,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self._create_canvas_3_dock()
         self._create_canvas_4_dock()
         self._add_dock_widgets()
+        self._disable_dock_widgets()
 
     def _init_data(self):
         """
@@ -127,9 +128,9 @@ class OpenEpGUI(QtWidgets.QMainWindow):
     def _add_menu_bar(self):
         """Add a menu bar to the GUI."""
 
-        menubar = self.menuBar()
-        file_menu = menubar.addMenu("File")
-        menubar.setNativeMenuBar(True)
+        self.menubar = self.menuBar()
+        file_menu = self.menubar.addMenu("File")
+        self.menubar.setNativeMenuBar(True)
 
         self.load_case_act = QtWidgets.QAction("Open File...")
         self.load_case_act.triggered.connect(self.load_data)
@@ -349,6 +350,22 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         for dock in [self.dock_1, self.dock_2, self.dock_3, self.dock_4]:
             dock.setAllowedAreas(Qt.AllDockWidgetAreas)
 
+    def _disable_dock_widgets(self):
+        """Ignore all key presses in the dock widgets"""
+        
+        self.dock_1.setEnabled(False)
+        self.dock_2.setEnabled(False)
+        self.dock_3.setEnabled(False)
+        self.dock_4.setEnabled(False)
+
+    def _enable_dock_widgets(self):
+        """Enable all dock widgets"""
+        
+        self.dock_1.setEnabled(True)
+        self.dock_2.setEnabled(True)
+        self.dock_3.setEnabled(True)
+        self.dock_4.setEnabled(True)
+
     def load_data(self):
 
         dialogue = QtWidgets.QFileDialog()
@@ -400,6 +417,8 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             self.axis_3.set_xlim(self.egm_times[0]-100, self.egm_times[-1]+100)
             self.axis_3.set_ylim(-1, 13)
             self.update_electrograms()
+
+            self._enable_dock_widgets()
 
     def update_colourbar_limits_1(self):
 
