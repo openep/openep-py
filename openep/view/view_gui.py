@@ -183,6 +183,27 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         button_set_thresholds_1.clicked.connect(self.update_colourbar_limits_1)
         self.plotter_1.limitLayout.addRow(button_set_thresholds_1)
 
+        # Add radio buttons to select bipolar, unipolar, and reference electrograms
+        map_type_layout = QtWidgets.QHBoxLayout()
+
+        self.plotter_1_clinical_radio = QtWidgets.QRadioButton("Clinical", self.plotter_1)
+        self.plotter_1_clinical_radio.setGeometry(10, 55, 70, 20)
+        self.plotter_1_clinical_radio.setChecked(True)
+        self.plotter_1_clinical_radio.toggled.connect(
+            lambda: self.set_plotter_1_button_state(self.plotter_1_clinical_radio)
+        )
+
+        self.plotter_1_openep_radio = QtWidgets.QRadioButton("OpenEP", self.plotter_1)
+        self.plotter_1_openep_radio.setGeometry(90, 55, 70, 20)
+        self.plotter_1_openep_radio.setChecked(False)
+        self.plotter_1_openep_radio.toggled.connect(
+            lambda: self.set_plotter_1_button_state(self.plotter_1_openep_radio)
+        )
+        
+        map_type_layout.addWidget(self.plotter_1_clinical_radio)
+        map_type_layout.addWidget(self.plotter_1_openep_radio)
+        self.plotter_1.limitLayout.addRow(map_type_layout)
+
         self.dock_1.setWidget(self.plotter_1)
 
     def _create_plotter_2_dock(self):
@@ -501,6 +522,31 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             buffer=0,
         )
         self.interpolated_fields = {"bipolar_voltage": interpolated_voltage}
+
+        if self.plotter_1_openep_radio.isChecked():
+            self.draw_map(
+                mesh=self.mesh_1,
+                plotter=self.plotter_1,
+                data=self.interpolated_fields['bipolar_voltage'],
+                add_mesh_kws=self.add_mesh_1_kws
+            )
+
+    def set_plotter_1_button_state(self, button):
+        
+        if (button.text() == "Clinical") and button.isChecked():
+            self.draw_map(
+                mesh=self.mesh_1,
+                plotter=self.plotter_1,
+                data=self.case.fields.bipolar_voltage,
+                add_mesh_kws=self.add_mesh_1_kws
+            )
+        elif (button.text() == "OpenEP") and button.isChecked():
+            self.draw_map(
+                mesh=self.mesh_1,
+                plotter=self.plotter_1,
+                data=self.interpolated_fields['bipolar_voltage'],
+                add_mesh_kws=self.add_mesh_1_kws
+            )
 
     def draw_map(self, mesh, plotter, data, add_mesh_kws):
 
