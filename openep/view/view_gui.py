@@ -257,7 +257,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         # Add EGM selections
         self.egm_select = QtWidgets.QLineEdit("EGMs", self.canvas_3)
         self.egm_select.setStyleSheet("background-color: white; border: 1px solid lightGray;")
-        self.egm_select.setGeometry(250, 0, 50, 40)
+        self.egm_select.setGeometry(250, 0, 150, 40)
         self.egm_select.setText(str(0))
         egm_layout.addRow("EGMs", self.egm_select)
 
