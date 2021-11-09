@@ -387,12 +387,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             }
 
             # Interpolate some fields (e.g. bipolar volage)
-            interpolated_voltage = openep.case.interpolate_voltage_onto_surface(
-                self.case,
-                max_distance=None,
-                buffer=0,
-            )
-            self.interpolated_fields = {"bipolar_voltage": interpolated_voltage}
+            self.interpolate_fields()
 
             # Draw default maps
             self.draw_map(
@@ -498,6 +493,15 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             add_mesh_kws=self.add_mesh_2_kws
         )
 
+    def interpolate_fields(self):
+
+        interpolated_voltage = openep.case.interpolate_voltage_onto_surface(
+            self.case,
+            max_distance=None,
+            buffer=0,
+        )
+        self.interpolated_fields = {"bipolar_voltage": interpolated_voltage}
+
     def draw_map(self, mesh, plotter, data, add_mesh_kws):
 
         plotter = openep.draw.draw_map(
@@ -516,7 +520,9 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         )
 
     def update_window_of_interest(self, event=None):
-        pass
+        """Interpolate EGM data onto the surface, and re-draw if necessary."""
+
+        self.interpolate_fields()
 
     def update_electrograms(self):
 
