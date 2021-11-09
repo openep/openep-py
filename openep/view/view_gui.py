@@ -105,7 +105,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         """
 
         # Display only the first electrogram
-        self.egm_point = np.array([0], dtype=int)
+        self.egm_points = np.array([0], dtype=int)
 
         # initial bipolar voltage colourbar limits
         self._initial_lower_limit_1 = 0
@@ -264,7 +264,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         button_egm_select = QtWidgets.QPushButton("Select EGMs (indices of points)", self.canvas_3)
         button_egm_select.setStyleSheet("background-color: lightGray")
         button_egm_select.setGeometry(0, 0, 240, 40)
-        button_egm_select.clicked.connect(self.plot_electrograms)
+        button_egm_select.clicked.connect(self.update_electrograms)
         egm_layout.addRow(button_egm_select)
 
         # Add radio buttons to select bipolar, unipolar, and reference electrograms
@@ -383,8 +383,8 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             self.axis_3.axis('on')  # make sure we can see the axes now
             self.axis_3.set_xlim(self.egm_times[0]-100, self.egm_times[-1]+100)
             self.axis_3.set_ylim(-0.5, 12.5)
+            self.update_electrograms()
 
-            self.plot_electrograms()
     def update_colourbar_limits_1(self):
 
         lower_limit = float(self.lower_limit_1.text())
@@ -426,20 +426,47 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             plotter=plotter,
         )
 
-    def plot_electrograms(self):
+    def update_electrograms(self):
 
         # Get data for new set of points
-        self.egm_point = np.asarray(self.egm_select.text().split(','), dtype=int)
+        self.egm_points = np.asarray(self.egm_select.text().split(','), dtype=int)
 
-        self.egm_bipolar_traces, self.egm_names = openep.case.get_electrograms_at_points(
+        self.egm_reference_traces, self.egm_names = openep.case.get_electrograms_at_points(
             self.case,
             within_woi=False,
             buffer=0,
-            indices=self.egm_point,
-            egm_type="bipolar",
+            indices=self.egm_points,
+            egm_type="reference",
             return_names=True,
             return_lat=False,
         )
+
+        self.egm_bipolar_traces = openep.case.get_electrograms_at_points(
+            self.case,
+            within_woi=False,
+            buffer=0,
+            indices=self.egm_points,
+            egm_type="bipolar",
+            return_names=False,
+            return_lat=False,
+        )
+
+        unipolar_traces = openep.case.get_electrograms_at_points(
+            self.case,
+            within_woi=False,
+            buffer=0,
+            indices=self.egm_points,
+            egm_type="unipolar",
+            return_names=False,
+            return_lat=False,
+        )
+        self.egm_unipolar_A_traces = unipolar_traces[:, :, 0]
+        self.egm_unipolar_B_traces = unipolar_traces[:, :, 1]
+
+        self.plot_electrograms()
+
+
+    def plot_electrograms(self):
 
         # Set up axis for new plots
         ylim = self.axis_3.get_ylim()
@@ -450,17 +477,33 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.axis_3.set_ylim(ylim)
         self.axis_3.set_xlim(xlim)
 
+        # Reference voltage
+        if self.reference_checkbox.isChecked():
+
+            _, self.axis_3.axes = openep.draw.plot_electrograms(
+                self.egm_times,
+                self.egm_reference_traces,
+                axis=self.axis_3.axes,
+                colour="xkcd:scarlet",
+            )
+
         # Bipolar voltage
         if self.bipolar_checkbox.isChecked():
+
             _, self.axis_3.axes = openep.draw.plot_electrograms(
                 self.egm_times,
                 self.egm_bipolar_traces,
-                names=self.egm_names,
                 axis=self.axis_3.axes,
-            )        
+                colour="xkcd:cerulean",
+            )
 
+        if self.reference_checkbox.isChecked() or self.bipolar_checkbox.isChecked():
+
+            separations = np.arange(self.egm_points.size)
+            self.axis_3.set_yticks(separations)
+            self.axis_3.set_yticklabels(self.egm_names)
+            
         self.canvas_3.draw()
-
 
 
 def main():
