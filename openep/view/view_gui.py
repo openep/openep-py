@@ -399,19 +399,11 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             plotter=plotter,
         )
 
-    def _plot_bipolar_electrograms(self, traces):
-
-        _, self.axis_3.axes = openep.draw.plot_electrograms(
-            self.egm_times,
-            traces,
-            names=self.egm_names,
-            axis=self.axis_3.axes,
-        )
-
     def plot_electrograms(self):
 
         # Get data for new set of points
         self.egm_point = np.asarray(self.egm_select.text().split(','), dtype=int)
+
         self.egm_bipolar_traces, self.egm_names = openep.case.get_electrograms_at_points(
             self.case,
             within_woi=False,
@@ -433,7 +425,12 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         # Bipolar voltage
         if self.bipolar_checkbox.isChecked():
-            self._plot_bipolar_electrograms(traces=self.egm_bipolar_traces)
+            _, self.axis_3.axes = openep.draw.plot_electrograms(
+                self.egm_times,
+                self.egm_bipolar_traces,
+                names=self.egm_names,
+                axis=self.axis_3.axes,
+            )        
 
         self.canvas_3.draw()
 
