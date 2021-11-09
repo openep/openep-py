@@ -62,12 +62,6 @@ class DockWidget(QtWidgets.QDockWidget):
         return QtCore.QSize(100, 100)
 
 
-class MplCanvas(FigureCanvas):
-
-    def __init__(self, nrows=1, ncols=1):
-        figure, self.axes = plt.subplots(nrows=nrows, ncols=ncols)
-        super(MplCanvas, self).__init__(figure)
-
 class CustomNavigationToolbar(NavigationToolbar):
 
     def __init__(self, canvas_, parent_):
