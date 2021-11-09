@@ -286,10 +286,17 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         unipolar_A_checkbox = QtWidgets.QCheckBox("Unipolar: A", self.canvas_3)
         unipolar_A_checkbox.setStyleSheet("color: #2a7e19")  # xkcd:tree green
-        unipolar_A_checkbox.setGeometry(165, 45, 90, 20)
+        unipolar_A_checkbox.setGeometry(170, 45, 90, 20)
         unipolar_A_checkbox.setChecked(True)
         unipolar_A_checkbox.stateChanged.connect(self.plot_electrograms)
         egm_type_layout.addWidget(unipolar_A_checkbox)
+
+        unipolar_B_checkbox = QtWidgets.QCheckBox("Unipolar: B", self.canvas_3)
+        unipolar_B_checkbox.setStyleSheet("color: #fb7d07")  # xkcd:pumpkin
+        unipolar_B_checkbox.setGeometry(270, 45, 90, 20)
+        unipolar_B_checkbox.setChecked(True)
+        unipolar_B_checkbox.stateChanged.connect(self.plot_electrograms)
+        egm_type_layout.addWidget(unipolar_B_checkbox)
         
         self.bipolar_checkbox = bipolar_checkbox
         self.reference_checkbox = reference_checkbox
