@@ -255,19 +255,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         # Add radio buttons to select bipolar, unipolar, and reference electrograms
         egm_type_layout = QtWidgets.QHBoxLayout()
         bipolar_checkbox = QtWidgets.QCheckBox("Bipolar", self.canvas_3)
-        bipolar_checkbox.setStyleSheet(
-            "QCheckBox::indicator::checked"
-            "{"
-            "color: black;"
-            "background-color: red;"
-            "border: 3px grey;"
-            "padding: 10px"
-            "border-top-left-radius : 5px;"
-            "border-top-right-radius : 5px;"
-            "border-bottom-left-radius : 5px;"
-            "border-bottom-right-radius : 5px;"
-            "}"
-        )
+        bipolar_checkbox.setStyleSheet("color: #0485d1")
         bipolar_checkbox.setGeometry(0,45, 70, 20)
         bipolar_checkbox.setChecked(True)
         bipolar_checkbox.stateChanged.connect(self.plot_electrograms)
