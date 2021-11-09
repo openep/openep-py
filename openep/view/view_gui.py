@@ -352,9 +352,12 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 add_mesh_kws=self.add_mesh_2_kws,
             )
 
+            self.egm_times = np.arange(self.case.electric.bipolar_egm.egm.shape[1])
             self.axis_3.axis('on')  # make sure we can see the axes now
-            self.plot_electrograms()
+            self.axis_3.set_xlim(self.egm_times[0]-100, self.egm_times[-1]+100)
+            self.axis_3.set_ylim(-0.5, 12.5)
 
+            self.plot_electrograms()
     def update_colourbar_limits_1(self):
 
         lower_limit = float(self.lower_limit_1.text())
@@ -396,35 +399,41 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             plotter=plotter,
         )
 
-    def _plot_bipolar_electrograms(self, times, traces):
+    def _plot_bipolar_electrograms(self, traces):
 
         _, self.axis_3.axes = openep.draw.plot_electrograms(
-            times,
+            self.egm_times,
             traces,
             names=self.egm_names,
             axis=self.axis_3.axes,
         )
 
     def plot_electrograms(self):
-        
-        self.egm_point = np.asarray(self.egm_select.text().split(','), dtype=int)
-        self.egm_traces, self.egm_names, self.egm_lat = openep.case.get_electrograms_at_points(
-            self.case, indices=self.egm_point
-        )        
-        times = np.arange(self.egm_traces.shape[1])
 
+        # Get data for new set of points
+        self.egm_point = np.asarray(self.egm_select.text().split(','), dtype=int)
+        self.egm_bipolar_traces, self.egm_names = openep.case.get_electrograms_at_points(
+            self.case,
+            within_woi=False,
+            buffer=0,
+            indices=self.egm_point,
+            egm_type="bipolar",
+            return_names=True,
+            return_lat=False,
+        )
+
+        # Set up axis for new plots
+        ylim = self.axis_3.get_ylim()
+        xlim = self.axis_3.get_xlim()
         
         self.axis_3.cla()
         self.axis_3.set_yticklabels([])
-        self.axis_3.set_ylim(-0.5, 12.5)
+        self.axis_3.set_ylim(ylim)
+        self.axis_3.set_xlim(xlim)
 
+        # Bipolar voltage
         if self.bipolar_checkbox.isChecked():
-            self._plot_bipolar_electrograms(
-                times=times,
-                traces=self.egm_traces,
-            )
-        else:
-            self.axis_3.set_xticklabels([])
+            self._plot_bipolar_electrograms(traces=self.egm_bipolar_traces)
 
         self.canvas_3.draw()
 
