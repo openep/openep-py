@@ -301,6 +301,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.bipolar_checkbox = bipolar_checkbox
         self.reference_checkbox = reference_checkbox
         self.unipolar_A_checkbox = unipolar_A_checkbox
+        self.unipolar_B_checkbox = unipolar_B_checkbox
         egm_layout.addRow(egm_type_layout)
 
         # Create toolbar, passing canvas as first parament, parent (self, the MainWindow) as second.
@@ -522,6 +523,18 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 self.egm_unipolar_A_traces,
                 axis=self.axis_3.axes,
                 colour="xkcd:tree green",
+                y_start=1,
+                y_separation=2,
+            )
+
+        # Unipolar B voltage
+        if self.unipolar_B_checkbox.isChecked():
+
+            _, self.axis_3.axes = openep.draw.plot_electrograms(
+                self.egm_times,
+                self.egm_unipolar_B_traces,
+                axis=self.axis_3.axes,
+                colour="xkcd:pumpkin",
                 y_start=1,
                 y_separation=2,
             )
