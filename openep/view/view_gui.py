@@ -27,7 +27,7 @@ from PyQt5.QtCore import Qt
 from pyvistaqt import BackgroundPlotter
 from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg as FigureCanvas,
-    NavigationToolbar2QT as NavigationToolbar
+    NavigationToolbar2QT as NavigationToolbar,
 )
 
 import numpy as np
@@ -67,6 +67,21 @@ class MplCanvas(FigureCanvas):
     def __init__(self, nrows=1, ncols=1):
         figure, self.axes = plt.subplots(nrows=nrows, ncols=ncols)
         super(MplCanvas, self).__init__(figure)
+
+class CustomNavigationToolbar(NavigationToolbar):
+
+    def __init__(self, canvas_, parent_):
+        
+        super().__init__(canvas_, parent_)
+        self._remove_unwanted_actions()
+
+    def _remove_unwanted_actions(self):
+
+        # the following snippet is from: https://stackoverflow.com/a/63341907
+        unwanted_buttons = ['Pan', 'Subplots']
+        for action in self.actions():
+            if action.text() in unwanted_buttons:
+                self.removeAction(action)
 
 
 class OpenEpGUI(QtWidgets.QMainWindow):
@@ -274,12 +289,14 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         egm_layout.addRow(egm_type_layout)
 
         # Create toolbar, passing canvas as first parament, parent (self, the MainWindow) as second.
-        toolbar = NavigationToolbar(self.canvas_3, self.dock_3)
+        toolbar = CustomNavigationToolbar(self.canvas_3, self.dock_3)
+        self.axis_3.format_coord = lambda x, y: ""  # don't display xy coordinates in the toolbar
+
+        # Create a placeholder widget to hold our toolbar and canvas.
         canvas_layout = QtWidgets.QVBoxLayout()
         canvas_layout.addWidget(self.canvas_3)
         canvas_layout.addWidget(toolbar)
-
-        # Create a placeholder widget to hold our toolbar and canvas.
+        
         canvas_widget = QtWidgets.QWidget()
         canvas_widget.setLayout(canvas_layout)
         canvas_widget.setStyleSheet("border-width: 0px; border: 0px; background-color:white;")
