@@ -304,16 +304,9 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         toolbar = CustomNavigationToolbar(self.canvas_3, self.dock_3)
         self.axis_3.format_coord = lambda x, y: ""  # don't display xy coordinates in the toolbar
 
-        # Add widget to set window of interest
-        button_update_woi = QtWidgets.QPushButton("Set WOI", self.dock_3)
-        button_update_woi.setStyleSheet("background-color: lightGray")
-        button_update_woi.setGeometry(10, -10, 20, 20)
-        button_update_woi.clicked.connect(self.update_window_of_interest)
-
         # Create a placeholder widget to hold our toolbar and canvas.
         canvas_layout = QtWidgets.QVBoxLayout()
         canvas_layout.addWidget(self.canvas_3)
-        canvas_layout.addWidget(button_update_woi)
         canvas_layout.addWidget(toolbar)
         
         canvas_widget = QtWidgets.QWidget()
