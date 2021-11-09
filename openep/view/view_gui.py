@@ -414,7 +414,17 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             self.axis_3.set_ylim(-1, 13)
             
             slider_axis = self.figure_3.add_axes([0.1535, 0.05, 0.7185, 0.01])
-            self.slider = matplotlib.widgets.RangeSlider(slider_axis, "WOI", self.egm_times[0], self.egm_times[-1])
+            self.slider = matplotlib.widgets.RangeSlider(
+                ax=slider_axis,
+                label="WOI",
+                valmin=self.egm_times[0],
+                valmax=self.egm_times[-1],
+                closedmin=False,
+                closedmax=False,
+                dragging=True,
+                valstep=5,
+                facecolor="xkcd:light grey",
+            )
             self._initialise_slider_limits()
             self.slider.on_changed(self._update_slider_limits)
             self.update_electrograms()
@@ -452,8 +462,9 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.slider_lower_limit.set_xdata([start_woi, start_woi])
         self.slider_upper_limit.set_xdata([stop_woi, stop_woi])
 
-        self.case.electric.annotations.window_of_interest[:, 0] = start_woi
-        self.case.electric.annotations.window_of_interest[:, 0] = stop_woi
+        reference_annotation = self.case.electric.annotations.reference_activation_time[0]
+        self.case.electric.annotations.window_of_interest[:, 0] = start_woi - reference_annotation
+        self.case.electric.annotations.window_of_interest[:, 1] = stop_woi - reference_annotation
 
     def update_colourbar_limits_1(self):
 
