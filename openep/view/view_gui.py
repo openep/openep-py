@@ -390,7 +390,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             self.egm_times = np.arange(self.case.electric.bipolar_egm.egm.shape[1])
             self.axis_3.axis('on')  # make sure we can see the axes now
             self.axis_3.set_xlim(self.egm_times[0]-100, self.egm_times[-1]+100)
-            self.axis_3.set_ylim(-0.5, 12.5)
+            self.axis_3.set_ylim(-1, 13)
             self.update_electrograms()
 
     def update_colourbar_limits_1(self):
@@ -493,6 +493,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 self.egm_reference_traces,
                 axis=self.axis_3.axes,
                 colour="xkcd:scarlet",
+                y_separation=2,
             )
 
         # Bipolar voltage
@@ -503,6 +504,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 self.egm_bipolar_traces,
                 axis=self.axis_3.axes,
                 colour="xkcd:cerulean",
+                y_separation=2,
             )
 
         # Unipolar A voltage
@@ -513,12 +515,13 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 self.egm_unipolar_A_traces,
                 axis=self.axis_3.axes,
                 colour="xkcd:tree green",
-                y_start=0.5,
+                y_start=1,
+                y_separation=2,
             )
 
         if self.reference_checkbox.isChecked() or self.bipolar_checkbox.isChecked():
 
-            separations = np.arange(self.egm_points.size)
+            separations = np.arange(self.egm_points.size) * 2
             self.axis_3.set_yticks(separations)
             self.axis_3.set_yticklabels(self.egm_names)
             
