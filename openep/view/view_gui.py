@@ -29,6 +29,7 @@ from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg as FigureCanvas,
     NavigationToolbar2QT as NavigationToolbar,
 )
+import matplotlib.widgets
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -411,9 +412,48 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             self.axis_3.axis('on')  # make sure we can see the axes now
             self.axis_3.set_xlim(self.egm_times[0]-100, self.egm_times[-1]+100)
             self.axis_3.set_ylim(-1, 13)
+            
+            slider_axis = self.figure_3.add_axes([0.1535, 0.05, 0.7185, 0.01])
+            self.slider = matplotlib.widgets.RangeSlider(slider_axis, "WOI", self.egm_times[0], self.egm_times[-1])
+            self._initialise_slider_limits()
+            self.slider.on_changed(self._update_slider_limits)
             self.update_electrograms()
 
             self._enable_dock_widgets()
+
+    def _initialise_slider_limits(self):
+
+            start_woi, stop_woi = self.case.electric.annotations.window_of_interest[0]
+            start_woi += self.case.electric.annotations.reference_activation_time[0]
+            stop_woi += self.case.electric.annotations.reference_activation_time[0]
+
+            self.slider.set_val([start_woi, stop_woi])
+
+            self.slider_lower_limit = self.axis_3.axvline(
+                start_woi,
+                color="grey",
+                linestyle='--',
+                linewidth=0.8,
+                alpha=0.6,
+            )
+
+            self.slider_upper_limit = self.axis_3.axvline(
+                stop_woi,
+                color="grey",
+                linestyle='--',
+                linewidth=0.8,
+                alpha=0.6,
+            )
+
+    def _update_slider_limits(self, val):
+
+        # from https://matplotlib.org/devdocs/gallery/widgets/range_slider.html
+        start_woi, stop_woi = val
+        self.slider_lower_limit.set_xdata([start_woi, start_woi])
+        self.slider_upper_limit.set_xdata([stop_woi, stop_woi])
+
+        self.case.electric.annotations.window_of_interest[:, 0] = start_woi
+        self.case.electric.annotations.window_of_interest[:, 0] = stop_woi
 
     def update_colourbar_limits_1(self):
 
@@ -568,6 +608,9 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         self.axis_3.set_yticks(yticks)
         self.axis_3.set_yticklabels(yticklabels)
+
+        # draw vertical lines at the window of interest
+        self._initialise_slider_limits()
 
         self.canvas_3.draw()
 
