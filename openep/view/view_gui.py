@@ -429,6 +429,14 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             self.slider.on_changed(self._update_slider_limits)
             self.update_electrograms()
 
+            set_woi_axis = self.figure_3.add_axes([0.782, 0.02, 0.09, 0.025])
+            self.set_woi_button = matplotlib.widgets.Button(
+                ax=set_woi_axis,
+                label="Set WOI",
+                color="xkcd:light grey",
+            )
+            self.set_woi_button.on_clicked(self.update_window_of_interest)
+
             self._enable_dock_widgets()
 
     def _initialise_slider_limits(self):
@@ -507,7 +515,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             plotter=plotter,
         )
 
-    def update_window_of_interest(self):
+    def update_window_of_interest(self, event=None):
         pass
 
     def update_electrograms(self):
