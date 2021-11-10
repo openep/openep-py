@@ -188,39 +188,19 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         # Add radio buttons to select bipolar, unipolar, and reference electrograms
         egm_type_layout = QtWidgets.QHBoxLayout()
+        self.reference_checkbox, self.bipolar_checkbox, self.unipolar_A_checkbox, self.unipolar_B_checkbox = \
+            openep.view.canvases.add_egm_type_widgets(
+                canvas=self.canvas_3,
+            )
+        self.reference_checkbox.stateChanged.connect(self.plot_electrograms)
+        self.bipolar_checkbox.stateChanged.connect(self.plot_electrograms)
+        self.unipolar_A_checkbox.stateChanged.connect(self.plot_electrograms)
+        self.unipolar_B_checkbox.stateChanged.connect(self.plot_electrograms)
 
-        reference_checkbox = QtWidgets.QCheckBox("Reference", self.canvas_3)
-        reference_checkbox.setStyleSheet("color: #be0119")  # xkcd:scarlet
-        reference_checkbox.setGeometry(0, 45, 85, 20)
-        reference_checkbox.setChecked(False)
-        reference_checkbox.stateChanged.connect(self.plot_electrograms)
-        egm_type_layout.addWidget(reference_checkbox)
-
-        bipolar_checkbox = QtWidgets.QCheckBox("Bipolar", self.canvas_3)
-        bipolar_checkbox.setStyleSheet("color: #0485d1")  # xkcd:cerulean
-        bipolar_checkbox.setGeometry(95, 45, 70, 20)
-        bipolar_checkbox.setChecked(True)
-        bipolar_checkbox.stateChanged.connect(self.plot_electrograms)
-        egm_type_layout.addWidget(bipolar_checkbox)
-
-        unipolar_A_checkbox = QtWidgets.QCheckBox("Unipolar: A", self.canvas_3)
-        unipolar_A_checkbox.setStyleSheet("color: #2a7e19")  # xkcd:tree green
-        unipolar_A_checkbox.setGeometry(170, 45, 90, 20)
-        unipolar_A_checkbox.setChecked(True)
-        unipolar_A_checkbox.stateChanged.connect(self.plot_electrograms)
-        egm_type_layout.addWidget(unipolar_A_checkbox)
-
-        unipolar_B_checkbox = QtWidgets.QCheckBox("Unipolar: B", self.canvas_3)
-        unipolar_B_checkbox.setStyleSheet("color: #fb7d07")  # xkcd:pumpkin
-        unipolar_B_checkbox.setGeometry(270, 45, 90, 20)
-        unipolar_B_checkbox.setChecked(True)
-        unipolar_B_checkbox.stateChanged.connect(self.plot_electrograms)
-        egm_type_layout.addWidget(unipolar_B_checkbox)
-        
-        self.bipolar_checkbox = bipolar_checkbox
-        self.reference_checkbox = reference_checkbox
-        self.unipolar_A_checkbox = unipolar_A_checkbox
-        self.unipolar_B_checkbox = unipolar_B_checkbox
+        egm_type_layout.addWidget(self.reference_checkbox)
+        egm_type_layout.addWidget(self.bipolar_checkbox)
+        egm_type_layout.addWidget(self.unipolar_A_checkbox)
+        egm_type_layout.addWidget(self.unipolar_B_checkbox)
         egm_layout.addRow(egm_type_layout)
 
         # Create toolbar
