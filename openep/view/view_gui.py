@@ -538,6 +538,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         )
 
     def update_electrograms(self):
+        """Extract electrograms at specified indices and re-plot."""
 
         # Get data for new set of points
         self.egm_points = np.asarray(self.egm_select.text().split(','), dtype=int)
@@ -578,6 +579,13 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
 
     def plot_electrograms(self):
+        """
+        Plot electrograms for the currently-selected set of points.
+        
+        Electrograms must first have been extracted using update_electrograms.
+        Here we will plot the reference, bipolar, unipolar A, unipolar B
+        electrograms for each point.
+        """
 
         # Set up axis for new plots
         ylim = self.axis_3.get_ylim()
@@ -643,6 +651,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             yticks.extend(separations)
             yticklabels.extend(self.egm_names)
 
+        # Unipolar A and B are shifted above the bipolar and reference electrograms for clarity
         if self.unipolar_A_checkbox.isChecked() or self.unipolar_B_checkbox.isChecked():
             yticks.extend(separations + 1)
             yticklabels.extend(self.egm_names)
