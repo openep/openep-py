@@ -46,3 +46,22 @@ def create_plotter():
     plotter.setMinimumSize(QtCore.QSize(50, 50))
 
     return plotter
+
+def create_colourbar_widgets(plotter, lower, upper):
+    """Create widgets for setting the colourbar limits of a BackgroundPlotter"""
+
+    lower_limit = QtWidgets.QLineEdit(plotter)
+    lower_limit.setStyleSheet("background-color: white; border: 1px solid lightGray;")
+    lower_limit.setGeometry(200, 10, 50, 40)
+    lower_limit.setText(str(lower))
+
+    upper_limit = QtWidgets.QLineEdit(plotter)
+    upper_limit.setStyleSheet("background-color: white; border: 1px solid lightGray;")
+    upper_limit.setGeometry(260, 10, 50, 40)
+    upper_limit.setText(str(upper))
+
+    button_set_thresholds = QtWidgets.QPushButton("Set colourbar limits:", plotter)
+    button_set_thresholds.setStyleSheet("background-color: lightGray")
+    button_set_thresholds.setGeometry(10, 10, 180, 40)
+
+    return lower_limit, upper_limit, button_set_thresholds
