@@ -23,11 +23,15 @@ Create and manipulate Matplotlib canvases.
 
 from PyQt5 import QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+import matplotlib.widgets
 import matplotlib.pyplot as plt
 
 import openep.view.custom_widgets
 
 def create_canvas():
+    """
+    Create an interactive matploblib canvas.
+    """
     
     figure, axis = plt.subplots(ncols=1, nrows=1)
     figure.set_facecolor("white")
@@ -43,6 +47,14 @@ def create_canvas():
 
 
 def add_toolbar(canvas, parent, keep_actions=None):
+    """
+    Add a toolbar to a canvas.
+    
+    Args:
+        keep_actions (list): list of actions to be kept in the toolbar.
+            The default is None, in which case the following actions
+            will be kept: 
+    """
 
     toolbar = openep.view.custom_widgets.CustomNavigationToolbar(
         canvas,
@@ -66,3 +78,55 @@ def create_canvas_widget(canvas, toolbar):
     canvas_widget.setStyleSheet("border-width: 0px; border: 0px; background-color:white;")
 
     return canvas_widget
+
+
+def add_woi_range_slider(figure, axis, valmin, valmax, valstep=5):
+    """
+    Add a RangeSlider to a figure. The RangeSlider is for setting the window of interest.
+
+    Args:
+        figure (matplotlib.Figure): figure to which the slider will be added.
+        axis (list): list of points ([xstart, ystart, xlength, ylength]) that will be
+            used to define the position of the RangeSlider on the figure.
+        valmin ([type]): Minimum value of the slider.
+        valmax ([type]): Maximum value of the slider.
+        valstep (int, optional): The slider can take values in this step size. Defaults to 5.
+    """
+
+    slider_axis = figure.add_axes(axis)
+    slider = matplotlib.widgets.RangeSlider(
+        ax=slider_axis,
+        label="WOI",
+        valmin=valmin,
+        valmax=valmax,
+        closedmin=True,
+        closedmax=True,
+        dragging=True,
+        valstep=valstep,
+        facecolor="xkcd:light grey",
+    )
+
+    return slider
+
+
+def add_woi_set_button(figure, axis):
+    """
+    Add a button to set the window of interest.
+    
+    When pressed, the electrogram traces will be used to interpolate
+    data onto the surface of the mesh and draw the map if nececssary.
+
+    Args:
+        figure (matplotlib.Figure): figure to which the button will be added.
+        axis (list): list of points ([xstart, ystart, xlength, ylength]) that will be
+            used to define the position of the Button on the figure.
+    """
+
+    set_woi_axis = figure.add_axes(axis)
+    set_woi_button = matplotlib.widgets.Button(
+        ax=set_woi_axis,
+        label="Set WOI",
+        color="xkcd:light grey",
+    )
+
+    return set_woi_button
