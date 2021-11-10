@@ -491,6 +491,18 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 add_mesh_kws=self.add_mesh_1_kws
             )
 
+    def update_window_of_interest(self, event=None):
+        """
+        Interpolate EGM data onto the surface.
+        
+        We need a wrapper function around interpolate_fields because
+        self.set_woi_button.on_clicked (mpl.widgets.Button) passes an
+        event to the called function.
+        """
+
+        self.interpolate_fields()
+
+
     def set_plotter_1_button_state(self, button):
         
         if (button.text() == "Clinical") and button.isChecked():
@@ -524,11 +536,6 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             width=5,
             plotter=plotter,
         )
-
-    def update_window_of_interest(self, event=None):
-        """Interpolate EGM data onto the surface, and re-draw if necessary."""
-
-        self.interpolate_fields()
 
     def update_electrograms(self):
 
