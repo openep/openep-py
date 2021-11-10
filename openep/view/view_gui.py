@@ -275,6 +275,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_1)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_2)
         self.tabifyDockWidget(self.dock_1, self.dock_2)
+
         self.addDockWidget(Qt.RightDockWidgetArea, self.dock_3)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_4)
         self.tabifyDockWidget(self.dock_3, self.dock_4)
