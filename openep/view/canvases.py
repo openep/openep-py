@@ -60,6 +60,36 @@ def add_egm_select(canvas):
 
     return egm_select, button_egm_select
 
+
+def add_egm_type_widgets(canvas):
+    """Add widgets for selecting which type(s) of electrograms to plot."""
+
+    reference_checkbox = QtWidgets.QCheckBox("Reference", canvas)
+    reference_checkbox.setStyleSheet("color: #be0119")  # xkcd:scarlet
+    reference_checkbox.setGeometry(0, 45, 85, 20)
+    reference_checkbox.setChecked(False)
+
+
+    bipolar_checkbox = QtWidgets.QCheckBox("Bipolar", canvas)
+    bipolar_checkbox.setStyleSheet("color: #0485d1")  # xkcd:cerulean
+    bipolar_checkbox.setGeometry(95, 45, 70, 20)
+    bipolar_checkbox.setChecked(True)
+
+
+    unipolar_A_checkbox = QtWidgets.QCheckBox("Unipolar: A", canvas)
+    unipolar_A_checkbox.setStyleSheet("color: #2a7e19")  # xkcd:tree green
+    unipolar_A_checkbox.setGeometry(170, 45, 90, 20)
+    unipolar_A_checkbox.setChecked(True)
+
+
+    unipolar_B_checkbox = QtWidgets.QCheckBox("Unipolar: B", canvas)
+    unipolar_B_checkbox.setStyleSheet("color: #fb7d07")  # xkcd:pumpkin
+    unipolar_B_checkbox.setGeometry(270, 45, 90, 20)
+    unipolar_B_checkbox.setChecked(True)
+
+    return reference_checkbox, bipolar_checkbox, unipolar_A_checkbox, unipolar_B_checkbox
+
+
 def add_toolbar(canvas, parent, keep_actions=None):
     """
     Add a toolbar to a canvas.
