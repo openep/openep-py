@@ -46,6 +46,20 @@ def create_canvas():
     return canvas, figure, axis
 
 
+def add_egm_select(canvas):
+    """Add widgets for selecting which electrograms to plot."""
+
+    egm_select = QtWidgets.QLineEdit("EGMs", canvas)
+    egm_select.setStyleSheet("background-color: white; border: 1px solid lightGray;")
+    egm_select.setGeometry(250, 0, 150, 40)
+    egm_select.setText(str(0))  # By default, plot the first electrogram only
+
+    button_egm_select = QtWidgets.QPushButton("Select EGMs (indices of points)", canvas)
+    button_egm_select.setStyleSheet("background-color: lightGray")
+    button_egm_select.setGeometry(0, 0, 240, 40)
+
+    return egm_select, button_egm_select
+
 def add_toolbar(canvas, parent, keep_actions=None):
     """
     Add a toolbar to a canvas.
