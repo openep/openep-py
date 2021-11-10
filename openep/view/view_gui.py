@@ -179,16 +179,11 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         egm_layout = QtWidgets.QFormLayout(self)
 
         # Add EGM selections
-        self.egm_select = QtWidgets.QLineEdit("EGMs", self.canvas_3)
-        self.egm_select.setStyleSheet("background-color: white; border: 1px solid lightGray;")
-        self.egm_select.setGeometry(250, 0, 150, 40)
-        self.egm_select.setText(str(0))
-        egm_layout.addRow("EGMs", self.egm_select)
-
-        button_egm_select = QtWidgets.QPushButton("Select EGMs (indices of points)", self.canvas_3)
-        button_egm_select.setStyleSheet("background-color: lightGray")
-        button_egm_select.setGeometry(0, 0, 240, 40)
+        self.egm_select, button_egm_select = openep.view.canvases.add_egm_select(
+            canvas=self.canvas_3,
+        )
         button_egm_select.clicked.connect(self.update_electrograms)
+        egm_layout.addRow("EGMs", self.egm_select)
         egm_layout.addRow(button_egm_select)
 
         # Add radio buttons to select bipolar, unipolar, and reference electrograms
