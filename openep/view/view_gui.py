@@ -192,15 +192,13 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             openep.view.canvases.add_egm_type_widgets(
                 canvas=self.canvas_3,
             )
-        self.reference_checkbox.stateChanged.connect(self.plot_electrograms)
-        self.bipolar_checkbox.stateChanged.connect(self.plot_electrograms)
-        self.unipolar_A_checkbox.stateChanged.connect(self.plot_electrograms)
-        self.unipolar_B_checkbox.stateChanged.connect(self.plot_electrograms)
 
-        egm_type_layout.addWidget(self.reference_checkbox)
-        egm_type_layout.addWidget(self.bipolar_checkbox)
-        egm_type_layout.addWidget(self.unipolar_A_checkbox)
-        egm_type_layout.addWidget(self.unipolar_B_checkbox)
+        for box in [self.reference_checkbox, self.bipolar_checkbox,
+                    self.unipolar_A_checkbox, self.unipolar_B_checkbox]:
+            
+            box.stateChanged.connect(self.plot_electrograms)
+            egm_type_layout.addWidget(box)
+
         egm_layout.addRow(egm_type_layout)
 
         # Create toolbar
