@@ -231,11 +231,10 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.unipolar_B_checkbox = unipolar_B_checkbox
         egm_layout.addRow(egm_type_layout)
 
-        # Create toolbar, passing canvas as first parament, parent (self, the MainWindow) as second.
-        toolbar = openep.view.custom_widgets.CustomNavigationToolbar(
-            self.canvas_3,
-            self.dock_3,
-            keep_actions=['Home', 'Back', 'Forward', 'Zoom', 'Save'],
+        # Create toolbar
+        toolbar = openep.view.canvases.add_toolbar(
+            canvas=self.canvas_3,
+            parent=self.dock_3,
         )
 
         # Create a placeholder widget to hold our toolbar and canvas.
@@ -259,11 +258,9 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         self.dock_4 = openep.view.custom_widgets.CustomDockWidget("Analysis")
         self.canvas_4, self.figure_4, self.axis_4 = openep.view.canvases.create_canvas()
-
-        # Create toolbar, passing canvas as first parament, parent (self, the MainWindow) as second.
-        toolbar = openep.view.custom_widgets.CustomNavigationToolbar(
-            self.canvas_4,
-            self.dock_4,
+        toolbar = openep.view.canvases.add_toolbar(
+            canvas=self.canvas_4,
+            parent=self.dock_4,
             keep_actions=['Save'],
         )
 

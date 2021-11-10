@@ -65,7 +65,7 @@ class CustomNavigationToolbar(NavigationToolbar):
         
         super().__init__(canvas_, parent_)
         
-        self._keep_actions = keep_actions
+        self._keep_actions = keep_actions if keep_actions is not None else ['Home', 'Back', 'Forward', 'Zoom', 'Save']
         self._remove_unwanted_buttons()
 
     def _remove_unwanted_buttons(self):
