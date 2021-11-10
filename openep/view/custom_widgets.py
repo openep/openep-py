@@ -28,10 +28,9 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 class CustomDockWidget(QtWidgets.QDockWidget):
     """
     A draggable and resizable dockwidget.
-    
+
     From: https://stackoverflow.com/a/63642583
     """
-
 
     def __init__(self, title: str):
         super().__init__(title)
@@ -62,9 +61,9 @@ class CustomNavigationToolbar(NavigationToolbar):
     """A pared-down matplotlib toolbar."""
 
     def __init__(self, canvas_, parent_, keep_actions):
-        
+
         super().__init__(canvas_, parent_)
-        
+
         self._keep_actions = keep_actions if keep_actions is not None else ['Home', 'Back', 'Forward', 'Zoom', 'Save']
         self._remove_unwanted_buttons()
 

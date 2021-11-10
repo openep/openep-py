@@ -20,4 +20,3 @@
 """
 Qt stylesheets for the OpenEP-Py GUI.
 """
-
