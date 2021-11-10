@@ -57,7 +57,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         Set default values for variables that can later be set by the user.
         """
 
-        # Display only the first electrogram
+        # Initially, display first electrogram only
         self.egm_points = np.array([0], dtype=int)
 
         # initial bipolar voltage colourbar limits
@@ -165,7 +165,17 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.dock_2.setWidget(self.plotter_2)
 
     def _create_canvas_3_dock(self):
-        """Create a dockable widget for plotting interactive electrograms with matplotlib"""
+        """
+        Create a dockable widget for plotting interactive electrograms with matplotlib.
+        
+        The user can select which points the electrograms will be plotted for, as well
+        as the type(s) of electrograms to plot: reference, bipolar, unipolar A,
+        unipolar B.
+        
+        The user can also change the window of interest with a RangeSlider,
+        and setting the window of interest with a push button will re-interpolate
+        the electrogram data onto the surface.
+        """
 
         # Canvas 3 is for the electrograms
         self.dock_3 = openep.view.custom_widgets.CustomDockWidget("EGMs")
@@ -256,7 +266,11 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.dock_4.setWidget(content4)
 
     def _add_dock_widgets(self):
-        """Add dockable widgets to the main window."""
+        """
+        Add dockable widgets to the main window.
+        
+        The two BackgroundPlotters are tabified, as are the two MPL canvases.
+        """
 
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_1)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_2)
@@ -272,7 +286,12 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             dock.setAllowedAreas(Qt.AllDockWidgetAreas)
 
     def _disable_dock_widgets(self):
-        """Ignore all key presses in the dock widgets"""
+        """
+        Ignore all key presses in the dock widgets.
+        
+        This is required if there is no file loaded, otherwise
+        the GUI will crash.
+        """
         
         self.dock_1.setEnabled(False)
         self.dock_2.setEnabled(False)
@@ -280,7 +299,11 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.dock_4.setEnabled(False)
 
     def _enable_dock_widgets(self):
-        """Enable all dock widgets"""
+        """
+        Enable all dock widgets.
+
+        Once a file has been loaded it is save to enable to dock widgets.
+        """
         
         self.dock_1.setEnabled(True)
         self.dock_2.setEnabled(True)
@@ -288,6 +311,12 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.dock_4.setEnabled(True)
 
     def load_data(self):
+        """
+        Load an OpenEP case.
+
+        Create separate meshes for the two BackgrounPlotters.
+        Interpolate data ready to be plotted.
+        """
 
         dialogue = QtWidgets.QFileDialog()
         dialogue.setWindowTitle('Load an OpenEP dataset')
@@ -457,6 +486,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         """
 
         self.interpolate_fields()
+
         if self.plotter_1_openep_radio.isChecked():
             self.draw_map(
                 mesh=self.mesh_1,
@@ -466,7 +496,11 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             )
 
     def interpolate_fields(self):
-        """Interpolate EGM data onto the surface.
+        """
+        Interpolate EGM data onto the surface.
+
+        We use a buffer of zero as the window of interest if determined by the user,
+        via self.slider (mpl.widgets.RangeSlider) and self.set_woi_button (mpl.widgets.Button).
         """
 
         interpolated_voltage = openep.case.interpolate_voltage_onto_surface(
@@ -476,8 +510,12 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         )
         self.interpolated_fields = {"bipolar_voltage": interpolated_voltage}
 
-
     def set_plotter_1_button_state(self, button):
+        """
+        Draw a bipolar voltage map.
+        The type of map drawn (clinical or interpolated from electrograms) depends
+        on which button was pressed.
+        """
         
         if (button.text() == "Clinical") and button.isChecked():
             self.draw_map(
@@ -495,6 +533,11 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             )
 
     def draw_map(self, mesh, plotter, data, add_mesh_kws):
+        """
+        Project scalar values onto the surface of the mesh.
+
+        Also draw the free boundaries (anatomical structures) as black lines.
+        """
 
         plotter = openep.draw.draw_map(
             mesh=mesh,
@@ -512,7 +555,12 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         )
 
     def update_electrograms(self):
-        """Extract electrograms at specified indices and re-plot."""
+        """
+        Extract electrograms at specified indices and re-plot.
+
+        The points are specified by the user and set via use of the
+        self.egm_select (QLineEdit) and button_egm_select (QPushButton) widgets.
+        """
         
         # Get data for new set of points
         self.egm_points = np.asarray(self.egm_select.text().split(','), dtype=int)
