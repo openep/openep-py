@@ -103,25 +103,18 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.dock_1 = openep.view.custom_widgets.CustomDockWidget("Voltage")
         self.plotter_1 = openep.view.plotters.create_plotter()
 
-        # Add thresholds to plotter 1
+        # Add thresholds to plotter 1        
         self.plotter_1.plotterLayout = QtWidgets.QFormLayout(self)
-
-        self.lower_limit_1 = QtWidgets.QLineEdit("Lower threshold", self.plotter_1)
-        self.lower_limit_1.setStyleSheet("background-color: white; border: 1px solid lightGray;")
-        self.lower_limit_1.setGeometry(200, 10, 50, 40)
-        self.lower_limit_1.setText(str(self._initial_lower_limit_1))
-        self.plotter_1.plotterLayout.addRow("Lower threshold", self.lower_limit_1)
-
-        self.upper_limit_1 = QtWidgets.QLineEdit("Upper threshold", self.plotter_1)
-        self.upper_limit_1.setStyleSheet("background-color: white; border: 1px solid lightGray;")
-        self.upper_limit_1.setGeometry(260, 10, 50, 40)
-        self.upper_limit_1.setText(str(self._initial_upper_limit_1))
-        self.plotter_1.plotterLayout.addRow("Upper threshold", self.upper_limit_1)
-
-        button_set_thresholds_1 = QtWidgets.QPushButton("Set colourbar limits:", self.plotter_1)
-        button_set_thresholds_1.setStyleSheet("background-color: lightGray")
-        button_set_thresholds_1.setGeometry(10, 10, 180, 40)
+        self.lower_limit_1, self.upper_limit_1, button_set_thresholds_1 = \
+            openep.view.plotters.create_colourbar_widgets(
+                self.plotter_1,
+                lower=self._initial_lower_limit_1,
+                upper=self._initial_upper_limit_1,
+                )
         button_set_thresholds_1.clicked.connect(self.update_colourbar_limits_1)
+
+        self.plotter_1.plotterLayout.addRow(self.lower_limit_1)
+        self.plotter_1.plotterLayout.addRow(self.upper_limit_1)
         self.plotter_1.plotterLayout.addRow(button_set_thresholds_1)
 
         # Add radio buttons to select bipolar, unipolar, and reference electrograms
@@ -161,25 +154,18 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.dock_2 = openep.view.custom_widgets.CustomDockWidget("LAT")
         self.plotter_2 = openep.view.plotters.create_plotter()
 
-        # Add thresholds to plotter 2
+        # Add thresholds to plotter 1        
         self.plotter_2.plotterLayout = QtWidgets.QFormLayout(self)
-
-        self.lower_limit_2 = QtWidgets.QLineEdit("Lower threshold", self.plotter_2)
-        self.lower_limit_2.setStyleSheet("background-color: white; border: 1px solid lightGray;")
-        self.lower_limit_2.setGeometry(200, 10, 50, 40)
-        self.lower_limit_2.setText(str(self._initial_lower_limit_2))
-        self.plotter_2.plotterLayout.addRow("Lower threshold", self.lower_limit_2)
-
-        self.upper_limit_2 = QtWidgets.QLineEdit("Upper threshold", self.plotter_2)
-        self.upper_limit_2.setStyleSheet("background-color: white; border: 1px solid lightGray;")
-        self.upper_limit_2.setGeometry(260, 10, 50, 40)
-        self.upper_limit_2.setText(str(self._initial_upper_limit_2))
-        self.plotter_2.plotterLayout.addRow("Upper threshold", self.upper_limit_2)
-
-        button_set_thresholds_2 = QtWidgets.QPushButton("Set colourbar limits:", self.plotter_2)
-        button_set_thresholds_2.setStyleSheet("background-color: lightGray")
-        button_set_thresholds_2.setGeometry(10, 10, 180, 40)
+        self.lower_limit_2, self.upper_limit_2, button_set_thresholds_2 = \
+            openep.view.plotters.create_colourbar_widgets(
+                self.plotter_2,
+                lower=self._initial_lower_limit_2,
+                upper=self._initial_upper_limit_2,
+                )
         button_set_thresholds_2.clicked.connect(self.update_colourbar_limits_2)
+
+        self.plotter_2.plotterLayout.addRow(self.lower_limit_2)
+        self.plotter_2.plotterLayout.addRow(self.upper_limit_2)
         self.plotter_2.plotterLayout.addRow(button_set_thresholds_2)
 
         self.dock_2.setWidget(self.plotter_2)
