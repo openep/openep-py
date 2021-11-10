@@ -124,7 +124,7 @@ def draw_map(
         above_label=" ",
     )
     if add_mesh_kws is not None and "scalar_bar_args" in add_mesh_kws:
-        add_mesh_kws["scalar_bar_args"] = {**scalar_bar_args, **add_mesh_kws["scalar_bar_args"]}
+        scalar_bar_args = {**scalar_bar_args, **add_mesh_kws["scalar_bar_args"]}
 
     default_add_mesh_kws = {
         "style": "surface",

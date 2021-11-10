@@ -32,7 +32,6 @@ import openep.view.plotters
 import openep.view.canvases
 import openep.view.images
 
-
 class OpenEpGUI(QtWidgets.QMainWindow):
 
     def __init__(self):
@@ -318,11 +317,37 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         self.add_mesh_1_kws = {
             "clim": [self._initial_lower_limit_1, self._initial_upper_limit_1],
-            "scalar_bar_args": {"label_font_size": 8}
+            "scalar_bar_args": {
+                "title": "Voltage (mV)",
+                "title_font_size": 8,
+                "label_font_size": 8,
+                "color": "#363737",
+                "vertical": False,
+                "width": 0.4,
+                "height": 0.04,
+                "position_x": 0.025,
+                "position_y": 0.025,
+                "interactive": False,
+                "below_label": " ",
+                "above_label": " ",
+            }
         }
         self.add_mesh_2_kws = {
             "clim": [self._initial_lower_limit_2, self._initial_upper_limit_2],
-            "scalar_bar_args": {"label_font_size": 8}
+            "scalar_bar_args": {
+                "title": "Local activation time (ms)",
+                "title_font_size": 8,
+                "label_font_size": 8,
+                "color": "#363737",
+                "vertical": False,
+                "width": 0.4,
+                "height": 0.04,
+                "position_x": 0.025,
+                "position_y": 0.025,
+                "interactive": False,
+                "below_label": " ",
+                "above_label": " ",
+            }
         }
 
         # Interpolate some fields (e.g. bipolar volage)
