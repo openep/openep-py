@@ -393,8 +393,11 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             self._add_woi_range_slider()
             self._initialise_woi_slider_limits()
             self._add_set_woi_button()
+
+            # Draw default electrograms - bipolar and unipolar egms for point at index 0
             self.update_electrograms()
 
+            # Un-freeze the GUI
             self._enable_dock_widgets()
 
     def _add_woi_range_slider(self):
@@ -423,7 +426,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         Add a button to set the window of interest.
         
         When pressed, the electrogram traces will be used to interpolate
-        data onto the surface of the mesh.
+        data onto the surface of the mesh and draw the map if nececssary.
         """
 
         set_woi_axis = self.figure_3.add_axes([0.782, 0.02, 0.09, 0.025])
@@ -432,31 +435,32 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             label="Set WOI",
             color="xkcd:light grey",
         )
-        self.set_woi_button.on_clicked(self.interpolate_fields)
+        self.set_woi_button.on_clicked(self.interpolate_fields_and_draw)
 
     def _initialise_woi_slider_limits(self):
+        """Set the limits to be the window of interest."""
 
-            start_woi, stop_woi = self.case.electric.annotations.window_of_interest[0]
-            start_woi += self.case.electric.annotations.reference_activation_time[0]
-            stop_woi += self.case.electric.annotations.reference_activation_time[0]
+        start_woi, stop_woi = self.case.electric.annotations.window_of_interest[0]
+        start_woi += self.case.electric.annotations.reference_activation_time[0]
+        stop_woi += self.case.electric.annotations.reference_activation_time[0]
 
-            self.slider.set_val([start_woi, stop_woi])
+        self.slider.set_val([start_woi, stop_woi])
 
-            self.slider_lower_limit = self.axis_3.axvline(
-                start_woi,
-                color="grey",
-                linestyle='--',
-                linewidth=0.8,
-                alpha=0.6,
-            )
+        self.slider_lower_limit = self.axis_3.axvline(
+            start_woi,
+            color="grey",
+            linestyle='--',
+            linewidth=0.8,
+            alpha=0.6,
+        )
 
-            self.slider_upper_limit = self.axis_3.axvline(
-                stop_woi,
-                color="grey",
-                linestyle='--',
-                linewidth=0.8,
-                alpha=0.6,
-            )
+        self.slider_upper_limit = self.axis_3.axvline(
+            stop_woi,
+            color="grey",
+            linestyle='--',
+            linewidth=0.8,
+            alpha=0.6,
+        )
 
     def _update_woi_slider_limits(self, val):
         """
@@ -498,13 +502,26 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             add_mesh_kws=self.add_mesh_2_kws
         )
 
-    def interpolate_fields(self, event=None):
+    def interpolate_fields_and_draw(self, event=None):
         """
-        Interpolate EGM data onto the surface.
+        Interpolate EGM data onto the surface and draw a map if necessary.
         
         The event argument is ignored. It is there because when
         self.set_woi_button.on_clicked (mpl.widgets.Button) is pressed,
         matplotlib passes an event to the called function (i.e. this one).
+        """
+
+        self.interpolate_fields()
+        if self.plotter_1_openep_radio.isChecked():
+            self.draw_map(
+                mesh=self.mesh_1,
+                plotter=self.plotter_1,
+                data=self.interpolated_fields['bipolar_voltage'],
+                add_mesh_kws=self.add_mesh_1_kws
+            )
+
+    def interpolate_fields(self):
+        """Interpolate EGM data onto the surface.
         """
 
         interpolated_voltage = openep.case.interpolate_voltage_onto_surface(
@@ -514,13 +531,6 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         )
         self.interpolated_fields = {"bipolar_voltage": interpolated_voltage}
 
-        if self.plotter_1_openep_radio.isChecked():
-            self.draw_map(
-                mesh=self.mesh_1,
-                plotter=self.plotter_1,
-                data=self.interpolated_fields['bipolar_voltage'],
-                add_mesh_kws=self.add_mesh_1_kws
-            )
 
     def set_plotter_1_button_state(self, button):
         
