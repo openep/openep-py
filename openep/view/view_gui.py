@@ -93,13 +93,12 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         """
         Create a dockable pyvista-qt plotter for rendering 3D maps.
 
-        This can be used for projecting scalar fields onto the 3D surface.
-        Currently, only bipolar voltage is supported.
+        This can be used for projecting the bipolar voltage the 3D surface.
+        The user can select to use the clinical values or values interpolated
+        from the electrograms.
         """
 
-        # TODO: add support for changing the scalar field
-
-        # Plotter 1 defaults to bipolar voltage
+        # Plotter 1 is used for the bipolar voltage
         self.dock_1 = openep.view.custom_widgets.CustomDockWidget("Voltage")
         self.plotter_1 = openep.view.plotters.create_plotter()
 
@@ -142,15 +141,14 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
     def _create_plotter_2_dock(self):
         """
-        Create a second dockable pyvista-qt plotter for rendering 3D maps.
+        Create a dockable pyvista-qt plotter for rendering 3D maps.
 
-        This can be used for displaying alternative scalar fields to `plotter_1`.
-        Currently, only local activation time is supported.
+        This can be used for projecting the local activation time the 3D surface.
+        Currently, only the values obtained from the clinical mapping system can
+        be used (interpolation based on electrograms is not yet suppoerted.)
         """
 
-        # TODO: add support for changing the scalar field
-
-        # Plotter 2 defaults to local activation time
+        # Plotter 2 is used for the local activation time
         self.dock_2 = openep.view.custom_widgets.CustomDockWidget("LAT")
         self.plotter_2 = openep.view.plotters.create_plotter()
 
