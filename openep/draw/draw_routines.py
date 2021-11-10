@@ -166,7 +166,7 @@ def plot_electrograms(
     y_start=0,
     colour=None,
     axis=None,
-    ):
+):
     """
     Plot electrogram traces.
 
@@ -181,7 +181,7 @@ def plot_electrograms(
         y_separation (float, optional): Vertical spacing to add between consecutive electrograms.
         y_start (float, optional): The first electrogram will have this value added to it (to shift the electrogram
             up or down the y axis).
-        colour (str or list, optional): Colour or list of colours to use for plotting. 
+        colour (str or list, optional): Colour or list of colours to use for plotting.
         axis (matplotlib.axes.Axes, optional): Matplotlib Axes on which to plot the traces. If None, a new figure and axes
             will be created.
 
