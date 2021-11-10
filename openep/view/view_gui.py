@@ -25,59 +25,16 @@ import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 from pyvistaqt import BackgroundPlotter
-from matplotlib.backends.backend_qt5agg import (
-    FigureCanvasQTAgg as FigureCanvas,
-    NavigationToolbar2QT as NavigationToolbar,
-)
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas 
 import matplotlib.widgets
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 import openep
+
+from .custom_widgets import CustomDockWidget, CustomNavigationToolbar
 from .images import LOGO
-
-
-class DockWidget(QtWidgets.QDockWidget):
-    def __init__(self, title: str):
-        super().__init__(title)
-        self.setTitleBarWidget(QtWidgets.QWidget())
-        self.dockLocationChanged.connect(self.on_dockLocationChanged)
-
-    def on_dockLocationChanged(self):
-        main: QtWidgets.QMainWindow = self.parent()
-        all_dock_widgets = main.findChildren(QtWidgets.QDockWidget)
-
-        for dock_widget in all_dock_widgets:
-            sibling_tabs = main.tabifiedDockWidgets(dock_widget)
-            # If you pull a tab out of a group the other tabs still see it as a sibling while dragging...
-            sibling_tabs = [s for s in sibling_tabs if not s.isFloating()]
-
-            if len(sibling_tabs) != 0:
-                # Hide title bar
-                dock_widget.setTitleBarWidget(QtWidgets.QWidget())
-            else:
-                # Re-enable title bar
-                dock_widget.setTitleBarWidget(None)
-
-    def minimumSizeHint(self) -> QtCore.QSize:
-        return QtCore.QSize(100, 100)
-
-
-class CustomNavigationToolbar(NavigationToolbar):
-
-    def __init__(self, canvas_, parent_):
-        
-        super().__init__(canvas_, parent_)
-        self._remove_unwanted_actions()
-
-    def _remove_unwanted_actions(self):
-
-        # the following snippet is from: https://stackoverflow.com/a/63341907
-        unwanted_buttons = ['Pan', 'Subplots', 'Customize']
-        for action in self.actions():
-            if action.text() in unwanted_buttons:
-                self.removeAction(action)
 
 
 class OpenEpGUI(QtWidgets.QMainWindow):
@@ -144,7 +101,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         # TODO: add support for changing the scalar field
 
         # Plotter 1 defaults to bipolar voltage
-        self.dock_1 = DockWidget("Voltage")
+        self.dock_1 = CustomDockWidget("Voltage")
 
         plotter_1 = BackgroundPlotter(
             show=False,
@@ -219,7 +176,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         # TODO: add support for changing the scalar field
 
         # Plotter 2 defaults to local activation time
-        self.dock_2 = DockWidget("LAT")
+        self.dock_2 = CustomDockWidget("LAT")
 
         plotter_2 = BackgroundPlotter(
             show=False,
@@ -266,7 +223,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         """Create a dockable widget for plotting interactive electrograms with matplotlib"""
 
         # Canvas 3 is for the electrograms
-        self.dock_3 = DockWidget("EGMs")
+        self.dock_3 = CustomDockWidget("EGMs")
 
         self.figure_3, self.axis_3 = plt.subplots(ncols=1, nrows=1)
         self.figure_3.set_facecolor("white")
@@ -345,7 +302,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         # TODO: Add matplotlib canvas for plotting results from other analyses
 
         # Canvas 4 is for plotting other analyses (e.g. histogram of voltages)
-        self.dock_4 = DockWidget("Analysis")
+        self.dock_4 = CustomDockWidget("Analysis")
 
         content4 = QtWidgets.QWidget()
         content4.setStyleSheet("background-color:white;")
