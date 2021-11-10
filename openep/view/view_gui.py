@@ -238,13 +238,10 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         )
 
         # Create a placeholder widget to hold our toolbar and canvas.
-        canvas_layout = QtWidgets.QVBoxLayout()
-        canvas_layout.addWidget(self.canvas_3)
-        canvas_layout.addWidget(toolbar)
-        
-        canvas_widget = QtWidgets.QWidget()
-        canvas_widget.setLayout(canvas_layout)
-        canvas_widget.setStyleSheet("border-width: 0px; border: 0px; background-color:white;")
+        canvas_widget = openep.view.canvases.create_canvas_widget(
+            canvas=self.canvas_3,
+            toolbar=toolbar,
+        ) 
 
         self.dock_3.setWidget(canvas_widget)
 
@@ -265,13 +262,10 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         )
 
         # Create a placeholder widget to hold our toolbar and canvas.
-        canvas_layout = QtWidgets.QVBoxLayout()
-        canvas_layout.addWidget(self.canvas_4)
-        canvas_layout.addWidget(toolbar)
-        
-        canvas_widget = QtWidgets.QWidget()
-        canvas_widget.setLayout(canvas_layout)
-        canvas_widget.setStyleSheet("border-width: 0px; border: 0px; background-color:white;")
+        canvas_widget = openep.view.canvases.create_canvas_widget(
+            canvas=self.canvas_4,
+            toolbar=toolbar,
+        ) 
 
         self.dock_4.setWidget(canvas_widget)
 
