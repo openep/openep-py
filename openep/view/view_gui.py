@@ -568,9 +568,15 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
     def update_electrograms(self):
         """Extract electrograms at specified indices and re-plot."""
-
+        
         # Get data for new set of points
         self.egm_points = np.asarray(self.egm_select.text().split(','), dtype=int)
+
+        self.extract_electrograms()
+        self.plot_electrograms()
+
+    def extract_electrograms(self):
+        """Extract electrograms at specified indices"""
 
         self.egm_reference_traces, self.egm_names = openep.case.get_electrograms_at_points(
             self.case,
@@ -603,9 +609,6 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         )
         self.egm_unipolar_A_traces = unipolar_traces[:, :, 0]
         self.egm_unipolar_B_traces = unipolar_traces[:, :, 1]
-
-        self.plot_electrograms()
-
 
     def plot_electrograms(self):
         """
