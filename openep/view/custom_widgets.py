@@ -61,15 +61,16 @@ class CustomDockWidget(QtWidgets.QDockWidget):
 class CustomNavigationToolbar(NavigationToolbar):
     """A pared-down matplotlib toolbar."""
 
-    def __init__(self, canvas_, parent_):
+    def __init__(self, canvas_, parent_, keep_actions):
         
         super().__init__(canvas_, parent_)
-        self._remove_unwanted_actions()
+        
+        self._keep_actions = keep_actions
+        self._remove_unwanted_buttons()
 
-    def _remove_unwanted_actions(self):
+    def _remove_unwanted_buttons(self):
 
         # the following snippet is from: https://stackoverflow.com/a/63341907
-        unwanted_buttons = ['Pan', 'Subplots', 'Customize']
         for action in self.actions():
-            if action.text() in unwanted_buttons:
+            if action.text() not in self._keep_actions:
                 self.removeAction(action)

@@ -24,7 +24,6 @@ import sys
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas 
 import matplotlib.widgets
 
 import numpy as np
@@ -33,6 +32,7 @@ import matplotlib.pyplot as plt
 import openep
 import openep.view.custom_widgets
 import openep.view.plotters
+import openep.view.canvases
 import openep.view.images
 
 
@@ -177,13 +177,8 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         the electrogram data onto the surface.
         """
 
-        # Canvas 3 is for the electrograms
-        self.dock_3 = openep.view.custom_widgets.CustomDockWidget("EGMs")
-
-        self.figure_3, self.axis_3 = plt.subplots(ncols=1, nrows=1)
-        self.figure_3.set_facecolor("white")
-        self.canvas_3 = FigureCanvas(self.figure_3)
-        self.axis_3.axis('off')  # hide them until we have data to plot
+        self.dock_3 = openep.view.custom_widgets.CustomDockWidget("EGMs")        
+        self.canvas_3, self.figure_3, self.axis_3 = openep.view.canvases.create_canvas()
         egm_layout = QtWidgets.QFormLayout(self)
 
         # Add EGM selections
@@ -237,7 +232,11 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         egm_layout.addRow(egm_type_layout)
 
         # Create toolbar, passing canvas as first parament, parent (self, the MainWindow) as second.
-        toolbar = openep.view.custom_widgets.CustomNavigationToolbar(self.canvas_3, self.dock_3)
+        toolbar = openep.view.custom_widgets.CustomNavigationToolbar(
+            self.canvas_3,
+            self.dock_3,
+            keep_actions=['Home', 'Back', 'Forward', 'Zoom', 'Save'],
+        )
         self.axis_3.format_coord = lambda x, y: ""  # don't display xy coordinates in the toolbar
 
         # Create a placeholder widget to hold our toolbar and canvas.
@@ -252,18 +251,34 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.dock_3.setWidget(canvas_widget)
 
     def _create_canvas_4_dock(self):
-        """Create a dockable widget for other matplotlib plots."""
+        """
+        Create a dockable widget for other matplotlib plots.
+        
+        For example, plotting a histogram of the surface area occupied by
+        a range of bipolar voltages.
+        """
 
-        # TODO: Add matplotlib canvas for plotting results from other analyses
-
-        # Canvas 4 is for plotting other analyses (e.g. histogram of voltages)
         self.dock_4 = openep.view.custom_widgets.CustomDockWidget("Analysis")
+        self.canvas_4, self.figure_4, self.axis_4 = openep.view.canvases.create_canvas()
 
-        content4 = QtWidgets.QWidget()
-        content4.setStyleSheet("background-color:white;")
-        content4.setMinimumSize(QtCore.QSize(50, 50))
+        # Create toolbar, passing canvas as first parament, parent (self, the MainWindow) as second.
+        toolbar = openep.view.custom_widgets.CustomNavigationToolbar(
+            self.canvas_4,
+            self.dock_4,
+            keep_actions=['Save'],
+        )
+        self.axis_4.format_coord = lambda x, y: ""  # don't display xy coordinates in the toolbar
 
-        self.dock_4.setWidget(content4)
+        # Create a placeholder widget to hold our toolbar and canvas.
+        canvas_layout = QtWidgets.QVBoxLayout()
+        canvas_layout.addWidget(self.canvas_4)
+        canvas_layout.addWidget(toolbar)
+        
+        canvas_widget = QtWidgets.QWidget()
+        canvas_widget.setLayout(canvas_layout)
+        canvas_widget.setStyleSheet("border-width: 0px; border: 0px; background-color:white;")
+
+        self.dock_4.setWidget(canvas_widget)
 
     def _add_dock_widgets(self):
         """
