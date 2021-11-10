@@ -102,7 +102,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.dock_1 = openep.view.custom_widgets.CustomDockWidget("Voltage")
         self.plotter_1 = openep.view.plotters.create_plotter()
 
-        # Add thresholds to plotter 1        
+        # Add thresholds to plotter 1 colourbar
         self.plotter_1.plotterLayout = QtWidgets.QFormLayout(self)
         self.lower_limit_1, self.upper_limit_1, button_set_thresholds_1 = \
             openep.view.plotters.create_colourbar_widgets(
@@ -116,23 +116,19 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.plotter_1.plotterLayout.addRow(self.upper_limit_1)
         self.plotter_1.plotterLayout.addRow(button_set_thresholds_1)
 
-        # Add radio buttons to select bipolar, unipolar, and reference electrograms
+        # Add radio buttons to select clinical or interpolated bipolar voltages
         map_type_layout = QtWidgets.QHBoxLayout()
+        self.plotter_1_clinical_radio, self.plotter_1_openep_radio = \
+            openep.view.plotters.create_map_type_widgets(self.plotter_1)
 
-        self.plotter_1_clinical_radio = QtWidgets.QRadioButton("Clinical", self.plotter_1)
-        self.plotter_1_clinical_radio.setGeometry(10, 55, 70, 20)
-        self.plotter_1_clinical_radio.setChecked(True)
         self.plotter_1_clinical_radio.toggled.connect(
             lambda: self.set_plotter_1_button_state(self.plotter_1_clinical_radio)
         )
 
-        self.plotter_1_openep_radio = QtWidgets.QRadioButton("OpenEP", self.plotter_1)
-        self.plotter_1_openep_radio.setGeometry(90, 55, 70, 20)
-        self.plotter_1_openep_radio.setChecked(False)
         self.plotter_1_openep_radio.toggled.connect(
             lambda: self.set_plotter_1_button_state(self.plotter_1_openep_radio)
         )
-        
+
         map_type_layout.addWidget(self.plotter_1_clinical_radio)
         map_type_layout.addWidget(self.plotter_1_openep_radio)
         self.plotter_1.plotterLayout.addRow(map_type_layout)
