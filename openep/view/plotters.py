@@ -78,10 +78,12 @@ def create_map_type_widgets(plotter):
     """
 
     clinical_radio = QtWidgets.QRadioButton("Clinical", plotter)
+    clinical_radio.setStyleSheet("background-color: white;")
     clinical_radio.setGeometry(10, 55, 70, 20)
     clinical_radio.setChecked(True)
 
     openep_radio = QtWidgets.QRadioButton("OpenEP", plotter)
+    openep_radio.setStyleSheet("background-color: white;")
     openep_radio.setGeometry(90, 55, 70, 20)
     openep_radio.setChecked(False)
 
