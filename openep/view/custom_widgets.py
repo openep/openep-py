@@ -26,6 +26,13 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 
 
 class CustomDockWidget(QtWidgets.QDockWidget):
+    """
+    A draggable and resizable dockwidget.
+    
+    From: https://stackoverflow.com/a/63642583
+    """
+
+
     def __init__(self, title: str):
         super().__init__(title)
         self.setTitleBarWidget(QtWidgets.QWidget())
@@ -52,6 +59,7 @@ class CustomDockWidget(QtWidgets.QDockWidget):
 
 
 class CustomNavigationToolbar(NavigationToolbar):
+    """A pared-down matplotlib toolbar."""
 
     def __init__(self, canvas_, parent_):
         
