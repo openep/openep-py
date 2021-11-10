@@ -28,21 +28,22 @@ import matplotlib.pyplot as plt
 
 import openep.view.custom_widgets
 
+
 def create_canvas():
     """
     Create an interactive matploblib canvas.
     """
-    
+
     figure, axis = plt.subplots(ncols=1, nrows=1)
     figure.set_facecolor("white")
-    
+
     # hide it until we have data to plot
     axis.axis('off')
     # and don't display xy coordinates in the toolbar when hovering over the axis
     axis.format_coord = lambda x, y: ""
 
     canvas = FigureCanvas(figure)
-    
+
     return canvas, figure, axis
 
 
@@ -69,18 +70,15 @@ def add_egm_type_widgets(canvas):
     reference_checkbox.setGeometry(0, 45, 85, 20)
     reference_checkbox.setChecked(False)
 
-
     bipolar_checkbox = QtWidgets.QCheckBox("Bipolar", canvas)
     bipolar_checkbox.setStyleSheet("color: #0485d1")  # xkcd:cerulean
     bipolar_checkbox.setGeometry(95, 45, 70, 20)
     bipolar_checkbox.setChecked(True)
 
-
     unipolar_A_checkbox = QtWidgets.QCheckBox("Unipolar: A", canvas)
     unipolar_A_checkbox.setStyleSheet("color: #2a7e19")  # xkcd:tree green
     unipolar_A_checkbox.setGeometry(170, 45, 90, 20)
     unipolar_A_checkbox.setChecked(True)
-
 
     unipolar_B_checkbox = QtWidgets.QCheckBox("Unipolar: B", canvas)
     unipolar_B_checkbox.setStyleSheet("color: #fb7d07")  # xkcd:pumpkin
@@ -93,11 +91,11 @@ def add_egm_type_widgets(canvas):
 def add_toolbar(canvas, parent, keep_actions=None):
     """
     Add a toolbar to a canvas.
-    
+
     Args:
         keep_actions (list): list of actions to be kept in the toolbar.
             The default is None, in which case the following actions
-            will be kept: 
+            will be kept: 'Home', 'Back', 'Forward', 'Zoom', 'Save'.
     """
 
     toolbar = openep.view.custom_widgets.CustomNavigationToolbar(
@@ -116,7 +114,7 @@ def create_canvas_widget(canvas, toolbar):
     canvas_layout = QtWidgets.QVBoxLayout()
     canvas_layout.addWidget(canvas)
     canvas_layout.addWidget(toolbar)
-    
+
     canvas_widget = QtWidgets.QWidget()
     canvas_widget.setLayout(canvas_layout)
     canvas_widget.setStyleSheet("border-width: 0px; border: 0px; background-color:white;")
@@ -156,7 +154,7 @@ def add_woi_range_slider(figure, axis, valmin, valmax, valstep=5):
 def add_woi_set_button(figure, axis):
     """
     Add a button to set the window of interest.
-    
+
     When pressed, the electrogram traces will be used to interpolate
     data onto the surface of the mesh and draw the map if nececssary.
 
