@@ -47,6 +47,7 @@ def create_plotter():
 
     return plotter
 
+
 def create_colourbar_widgets(plotter, lower, upper):
     """Create widgets for setting the colourbar limits of a BackgroundPlotter"""
 
@@ -65,3 +66,23 @@ def create_colourbar_widgets(plotter, lower, upper):
     button_set_thresholds.setGeometry(10, 10, 180, 40)
 
     return lower_limit, upper_limit, button_set_thresholds
+
+
+def create_map_type_widgets(plotter):
+    """
+    Create radio buttons for a BackgrounPlotter to select whether the projected scalar fields
+    are obtained from the clinical mapping system or via an interpolation of the electrogram
+    data onto the surface.
+
+    Defaults to the clinical data.
+    """
+
+    clinical_radio = QtWidgets.QRadioButton("Clinical", plotter)
+    clinical_radio.setGeometry(10, 55, 70, 20)
+    clinical_radio.setChecked(True)
+
+    openep_radio = QtWidgets.QRadioButton("OpenEP", plotter)
+    openep_radio.setGeometry(90, 55, 70, 20)
+    openep_radio.setChecked(False)
+
+    return clinical_radio, openep_radio
