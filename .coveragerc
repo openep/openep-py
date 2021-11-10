@@ -12,7 +12,7 @@ omit =
     *__init__.py
     openep/_version.py
     openep/_datasets/*
-    openep/view/view_gui.py
+    openep/view/*
 
 [report]
 show_missing = true
