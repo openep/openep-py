@@ -33,8 +33,8 @@ import matplotlib.pyplot as plt
 
 import openep
 
-from .custom_widgets import CustomDockWidget, CustomNavigationToolbar
-from .images import LOGO
+from openep.view.custom_widgets import CustomDockWidget, CustomNavigationToolbar
+from openep.view.images import LOGO
 
 
 class OpenEpGUI(QtWidgets.QMainWindow):
@@ -388,34 +388,53 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             self.axis_3.axis('on')  # make sure we can see the axes now
             self.axis_3.set_xlim(self.egm_times[0]-100, self.egm_times[-1]+100)
             self.axis_3.set_ylim(-1, 13)
-            
-            slider_axis = self.figure_3.add_axes([0.1535, 0.05, 0.7185, 0.01])
-            self.slider = matplotlib.widgets.RangeSlider(
-                ax=slider_axis,
-                label="WOI",
-                valmin=self.egm_times[0],
-                valmax=self.egm_times[-1],
-                closedmin=True,
-                closedmax=True,
-                dragging=True,
-                valstep=5,
-                facecolor="xkcd:light grey",
-            )
-            self._initialise_slider_limits()
-            self.slider.on_changed(self._update_slider_limits)
-            self.update_electrograms()
 
-            set_woi_axis = self.figure_3.add_axes([0.782, 0.02, 0.09, 0.025])
-            self.set_woi_button = matplotlib.widgets.Button(
-                ax=set_woi_axis,
-                label="Set WOI",
-                color="xkcd:light grey",
-            )
-            self.set_woi_button.on_clicked(self.update_window_of_interest)
+            # We can't create the slider earlier because we need to know the min and max egm times
+            self._add_woi_range_slider()
+            self._initialise_woi_slider_limits()
+            self._add_set_woi_button()
+            self.update_electrograms()
 
             self._enable_dock_widgets()
 
-    def _initialise_slider_limits(self):
+    def _add_woi_range_slider(self):
+        """Add a range slider for controlling the window of interest"""
+        
+        
+        slider_axis = self.figure_3.add_axes([0.1535, 0.05, 0.7185, 0.01])
+        self.slider = matplotlib.widgets.RangeSlider(
+            ax=slider_axis,
+            label="WOI",
+            valmin=self.egm_times[0],
+            valmax=self.egm_times[-1],
+            closedmin=True,
+            closedmax=True,
+            dragging=True,
+            valstep=5,
+            facecolor="xkcd:light grey",
+        )
+        
+        # This must be called before setting slider.on_changed
+        self._initialise_woi_slider_limits()
+        self.slider.on_changed(self._update_woi_slider_limits)
+
+    def _add_set_woi_button(self):
+        """
+        Add a button to set the window of interest.
+        
+        When pressed, the electrogram traces will be used to interpolate
+        data onto the surface of the mesh.
+        """
+
+        set_woi_axis = self.figure_3.add_axes([0.782, 0.02, 0.09, 0.025])
+        self.set_woi_button = matplotlib.widgets.Button(
+            ax=set_woi_axis,
+            label="Set WOI",
+            color="xkcd:light grey",
+        )
+        self.set_woi_button.on_clicked(self.interpolate_fields)
+
+    def _initialise_woi_slider_limits(self):
 
             start_woi, stop_woi = self.case.electric.annotations.window_of_interest[0]
             start_woi += self.case.electric.annotations.reference_activation_time[0]
@@ -439,7 +458,12 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 alpha=0.6,
             )
 
-    def _update_slider_limits(self, val):
+    def _update_woi_slider_limits(self, val):
+        """
+        Take the min and max values from the RangeSlider widget.
+        Use this to set the window of interest and to change the x location
+        of the two axvlines drawn on the EGM canvas.
+        """
 
         # from https://matplotlib.org/devdocs/gallery/widgets/range_slider.html
         start_woi, stop_woi = val
@@ -474,7 +498,14 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             add_mesh_kws=self.add_mesh_2_kws
         )
 
-    def interpolate_fields(self):
+    def interpolate_fields(self, event=None):
+        """
+        Interpolate EGM data onto the surface.
+        
+        The event argument is ignored. It is there because when
+        self.set_woi_button.on_clicked (mpl.widgets.Button) is pressed,
+        matplotlib passes an event to the called function (i.e. this one).
+        """
 
         interpolated_voltage = openep.case.interpolate_voltage_onto_surface(
             self.case,
@@ -490,18 +521,6 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 data=self.interpolated_fields['bipolar_voltage'],
                 add_mesh_kws=self.add_mesh_1_kws
             )
-
-    def update_window_of_interest(self, event=None):
-        """
-        Interpolate EGM data onto the surface.
-        
-        We need a wrapper function around interpolate_fields because
-        self.set_woi_button.on_clicked (mpl.widgets.Button) passes an
-        event to the called function.
-        """
-
-        self.interpolate_fields()
-
 
     def set_plotter_1_button_state(self, button):
         
@@ -660,7 +679,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.axis_3.set_yticklabels(yticklabels)
 
         # draw vertical lines at the window of interest
-        self._initialise_slider_limits()
+        self._initialise_woi_slider_limits()
 
         self.canvas_3.draw()
 
