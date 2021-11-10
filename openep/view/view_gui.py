@@ -85,7 +85,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.menubar.setNativeMenuBar(True)
 
         self.load_case_act = QtWidgets.QAction("Open File...")
-        self.load_case_act.triggered.connect(self.load_data)
+        self.load_case_act.triggered.connect(self._load_data)
         file_menu.addAction(self.load_case_act)
         file_menu.addSeparator()
 
@@ -303,25 +303,25 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.dock_3.setEnabled(False)
         self.dock_4.setEnabled(False)
 
-    def _enable_dock_widgets(self):
+    def _enable_dock_widgets(self, exclude=None):
         """
         Enable all dock widgets.
 
         Once a file has been loaded it is save to enable to dock widgets.
-        """
         
-        self.dock_1.setEnabled(True)
-        self.dock_2.setEnabled(True)
-        self.dock_3.setEnabled(True)
-        self.dock_4.setEnabled(True)
-
-    def load_data(self):
+        Args:
+            exclude (list): a list of dock widgets to exclude from enabling.
+                May be useful if a different file format is loaded and it
+                does not contain data required by some dock widgets.
         """
-        Load an OpenEP case.
+        exclude = exclude if exclude is not None else []
 
-        Create separate meshes for the two BackgrounPlotters.
-        Interpolate data ready to be plotted.
-        """
+        for dock in [self.dock_1, self.dock_2, self.dock_3, self.dock_4]:
+            if dock not in exclude:
+                dock.setEnabled(True)
+
+    def _load_data(self):
+        """Load an OpenEP case."""
 
         dialogue = QtWidgets.QFileDialog()
         dialogue.setWindowTitle('Load an OpenEP dataset')
@@ -332,52 +332,61 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         if dialogue.exec_():
 
             filename = dialogue.selectedFiles()[0]
-            self.case = openep.load_case(filename)
-            self.mesh_1 = self.case.create_mesh()
-            self.mesh_2 = self.case.create_mesh()
-            self.free_boundaries = openep.mesh.get_free_boundaries(self.mesh_1)
+            self._load_case_and_initialise(filename)
 
-            self.add_mesh_1_kws = {
-                "clim": [self._initial_lower_limit_1, self._initial_upper_limit_1],
-                "scalar_bar_args": {"label_font_size": 8}
-            }
-            self.add_mesh_2_kws = {
-                "clim": [self._initial_lower_limit_2, self._initial_upper_limit_2],
-                "scalar_bar_args": {"label_font_size": 8}
-            }
+    def _load_case_and_initialise(self, filename):
+        """Load an OpenEP case object.
 
-            # Interpolate some fields (e.g. bipolar volage)
-            self.interpolate_fields()
+        Create separate meshes for the two BackgroundPlotters.
+        Interpolate data ready to be plotted.
+        """
 
-            # Draw default maps
-            self.draw_map(
-                mesh=self.mesh_1,
-                plotter=self.plotter_1,
-                data=self.case.fields.bipolar_voltage,
-                add_mesh_kws=self.add_mesh_1_kws,
-            )
-            self.draw_map(
-                mesh=self.mesh_2,
-                plotter=self.plotter_2,
-                data=self.case.fields.local_activation_time,
-                add_mesh_kws=self.add_mesh_2_kws,
-            )
+        self.case = openep.load_case(filename)
+        self.mesh_1 = self.case.create_mesh()
+        self.mesh_2 = self.case.create_mesh()
+        self.free_boundaries = openep.mesh.get_free_boundaries(self.mesh_1)
 
-            self.egm_times = np.arange(self.case.electric.bipolar_egm.egm.shape[1])
-            self.axis_3.axis('on')  # make sure we can see the axes now
-            self.axis_3.set_xlim(self.egm_times[0]-100, self.egm_times[-1]+100)
-            self.axis_3.set_ylim(-1, 13)
+        self.add_mesh_1_kws = {
+            "clim": [self._initial_lower_limit_1, self._initial_upper_limit_1],
+            "scalar_bar_args": {"label_font_size": 8}
+        }
+        self.add_mesh_2_kws = {
+            "clim": [self._initial_lower_limit_2, self._initial_upper_limit_2],
+            "scalar_bar_args": {"label_font_size": 8}
+        }
 
-            # We can't create the slider earlier because we need to know the min and max egm times
-            self._add_woi_range_slider()
-            self._initialise_woi_slider_limits()
-            self._add_set_woi_button()
+        # Interpolate some fields (e.g. bipolar volage)
+        self.interpolate_fields()
 
-            # Draw default electrograms - bipolar and unipolar egms for point at index 0
-            self.update_electrograms()
+        # Draw default maps
+        self.draw_map(
+            mesh=self.mesh_1,
+            plotter=self.plotter_1,
+            data=self.case.fields.bipolar_voltage,
+            add_mesh_kws=self.add_mesh_1_kws,
+        )
+        self.draw_map(
+            mesh=self.mesh_2,
+            plotter=self.plotter_2,
+            data=self.case.fields.local_activation_time,
+            add_mesh_kws=self.add_mesh_2_kws,
+        )
 
-            # Un-freeze the GUI
-            self._enable_dock_widgets()
+        self.egm_times = np.arange(self.case.electric.bipolar_egm.egm.shape[1])
+        self.axis_3.axis('on')  # make sure we can see the axes now
+        self.axis_3.set_xlim(self.egm_times[0]-100, self.egm_times[-1]+100)
+        self.axis_3.set_ylim(-1, 13)
+
+        # We can't create the slider earlier because we need to know the min and max egm times
+        self._add_woi_range_slider()
+        self._initialise_woi_slider_limits()
+        self._add_set_woi_button()
+
+        # Draw default electrograms - bipolar and unipolar egms for point at index 0
+        self.update_electrograms()
+
+        # Un-freeze the GUI
+        self._enable_dock_widgets()
 
     def _add_woi_range_slider(self):
         """Add a range slider for controlling the window of interest"""
