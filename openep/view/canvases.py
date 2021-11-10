@@ -21,6 +21,7 @@
 Create and manipulate Matplotlib canvases.
 """
 
+from PyQt5 import QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 
@@ -40,6 +41,7 @@ def create_canvas():
     
     return canvas, figure, axis
 
+
 def add_toolbar(canvas, parent, keep_actions=None):
 
     toolbar = openep.view.custom_widgets.CustomNavigationToolbar(
@@ -49,3 +51,18 @@ def add_toolbar(canvas, parent, keep_actions=None):
     )
 
     return toolbar
+
+
+def create_canvas_widget(canvas, toolbar):
+    """Create a placeholder widget to hold a toolbar and canvas.
+    """
+
+    canvas_layout = QtWidgets.QVBoxLayout()
+    canvas_layout.addWidget(canvas)
+    canvas_layout.addWidget(toolbar)
+    
+    canvas_widget = QtWidgets.QWidget()
+    canvas_widget.setLayout(canvas_layout)
+    canvas_widget.setStyleSheet("border-width: 0px; border: 0px; background-color:white;")
+
+    return canvas_widget
