@@ -237,7 +237,6 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             self.dock_3,
             keep_actions=['Home', 'Back', 'Forward', 'Zoom', 'Save'],
         )
-        self.axis_3.format_coord = lambda x, y: ""  # don't display xy coordinates in the toolbar
 
         # Create a placeholder widget to hold our toolbar and canvas.
         canvas_layout = QtWidgets.QVBoxLayout()
@@ -267,7 +266,6 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             self.dock_4,
             keep_actions=['Save'],
         )
-        self.axis_4.format_coord = lambda x, y: ""  # don't display xy coordinates in the toolbar
 
         # Create a placeholder widget to hold our toolbar and canvas.
         canvas_layout = QtWidgets.QVBoxLayout()

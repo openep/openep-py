@@ -28,7 +28,12 @@ def create_canvas():
     
     figure, axis = plt.subplots(ncols=1, nrows=1)
     figure.set_facecolor("white")
-    axis.axis('off')  # hide them until we have data to plot
+    
+    # hide it until we have data to plot
+    axis.axis('off')
+    # and don't display xy coordinates in the toolbar when hovering over the axis
+    axis.format_coord = lambda x, y: ""
+
     canvas = FigureCanvas(figure)
     
     return canvas, figure, axis
