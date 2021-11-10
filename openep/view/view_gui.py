@@ -24,10 +24,7 @@ import sys
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
-import matplotlib.widgets
-
 import numpy as np
-import matplotlib.pyplot as plt
 
 import openep
 import openep.view.custom_widgets
@@ -378,9 +375,20 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.axis_3.set_ylim(-1, 13)
 
         # We can't create the slider earlier because we need to know the min and max egm times
-        self._add_woi_range_slider()
-        self._initialise_woi_slider_limits()
-        self._add_set_woi_button()
+        self.slider = openep.view.canvases.add_woi_range_slider(
+            figure=self.figure_3,
+            axis=[0.1535, 0.05, 0.7185, 0.01],  # location of the RangeSlider on the figure
+            valmin=self.egm_times[0],
+            valmax=self.egm_times[-1],
+        )
+        self.initialise_woi_slider_limits()
+        self.slider.on_changed(self.update_woi_slider_limits)
+
+        self.set_woi_button = openep.view.canvases.add_woi_set_button(
+            figure=self.figure_3,
+            axis=[0.782, 0.02, 0.09, 0.025],
+        )
+        self.set_woi_button.on_clicked(self.interpolate_fields_and_draw)
 
         # Draw default electrograms - bipolar and unipolar egms for point at index 0
         self.update_electrograms()
@@ -388,44 +396,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         # Un-freeze the GUI
         self._enable_dock_widgets()
 
-    def _add_woi_range_slider(self):
-        """Add a range slider for controlling the window of interest"""
-        
-        
-        slider_axis = self.figure_3.add_axes([0.1535, 0.05, 0.7185, 0.01])
-        self.slider = matplotlib.widgets.RangeSlider(
-            ax=slider_axis,
-            label="WOI",
-            valmin=self.egm_times[0],
-            valmax=self.egm_times[-1],
-            closedmin=True,
-            closedmax=True,
-            dragging=True,
-            valstep=5,
-            facecolor="xkcd:light grey",
-        )
-        
-        # This must be called before setting slider.on_changed
-        self._initialise_woi_slider_limits()
-        self.slider.on_changed(self._update_woi_slider_limits)
-
-    def _add_set_woi_button(self):
-        """
-        Add a button to set the window of interest.
-        
-        When pressed, the electrogram traces will be used to interpolate
-        data onto the surface of the mesh and draw the map if nececssary.
-        """
-
-        set_woi_axis = self.figure_3.add_axes([0.782, 0.02, 0.09, 0.025])
-        self.set_woi_button = matplotlib.widgets.Button(
-            ax=set_woi_axis,
-            label="Set WOI",
-            color="xkcd:light grey",
-        )
-        self.set_woi_button.on_clicked(self.interpolate_fields_and_draw)
-
-    def _initialise_woi_slider_limits(self):
+    def initialise_woi_slider_limits(self):
         """Set the limits to be the window of interest."""
 
         start_woi, stop_woi = self.case.electric.annotations.window_of_interest[0]
@@ -450,7 +421,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             alpha=0.6,
         )
 
-    def _update_woi_slider_limits(self, val):
+    def update_woi_slider_limits(self, val):
         """
         Take the min and max values from the RangeSlider widget.
         Use this to set the window of interest and to change the x location
@@ -699,7 +670,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.axis_3.set_yticklabels(yticklabels)
 
         # draw vertical lines at the window of interest
-        self._initialise_woi_slider_limits()
+        self.initialise_woi_slider_limits()
 
         self.canvas_3.draw()
 
