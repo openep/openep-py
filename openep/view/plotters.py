@@ -77,14 +77,22 @@ def create_map_type_widgets(plotter):
     Defaults to the clinical data.
     """
 
+    # TODO: This is broken! We must use a group of radio buttons
+    # See: https://stackoverflow.com/a/14798229
+
     clinical_radio = QtWidgets.QRadioButton("Clinical", plotter)
     clinical_radio.setStyleSheet("background-color: white;")
     clinical_radio.setGeometry(10, 55, 70, 20)
     clinical_radio.setChecked(True)
 
-    openep_radio = QtWidgets.QRadioButton("OpenEP", plotter)
-    openep_radio.setStyleSheet("background-color: white;")
-    openep_radio.setGeometry(90, 55, 70, 20)
-    openep_radio.setChecked(False)
+    openep_bipolar_radio = QtWidgets.QRadioButton("OpenEP - Bipolar", plotter)
+    openep_bipolar_radio.setStyleSheet("background-color: white;")
+    openep_bipolar_radio.setGeometry(100, 55, 150, 20)
+    openep_bipolar_radio.setChecked(False)
 
-    return clinical_radio, openep_radio
+    openep_unipolar_radio = QtWidgets.QRadioButton("OpenEP - Unipolar", plotter)
+    openep_unipolar_radio.setStyleSheet("background-color: white;")
+    openep_unipolar_radio.setGeometry(260, 55, 150, 20)
+    openep_unipolar_radio.setChecked(False)
+
+    return clinical_radio, openep_bipolar_radio, openep_unipolar_radio

@@ -90,9 +90,9 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         """
         Create a dockable pyvista-qt plotter for rendering 3D maps.
 
-        This can be used for projecting the bipolar voltage the 3D surface.
+        This can be used for projecting the voltage the 3D surface.
         The user can select to use the clinical values or values interpolated
-        from the electrograms.
+        from the bipolar or unipolar electrograms.
         """
 
         # Plotter 1 is used for the bipolar voltage
@@ -115,19 +115,23 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         # Add radio buttons to select clinical or interpolated bipolar voltages
         map_type_layout = QtWidgets.QHBoxLayout()
-        self.plotter_1_clinical_radio, self.plotter_1_openep_radio = \
+        self.plotter_1_clinical_radio, self.plotter_1_openep_bipolar_radio, self.plotter_1_openep_unipolar_radio = \
             openep.view.plotters.create_map_type_widgets(self.plotter_1)
 
         self.plotter_1_clinical_radio.toggled.connect(
             lambda: self.set_plotter_1_button_state(self.plotter_1_clinical_radio)
         )
 
-        self.plotter_1_openep_radio.toggled.connect(
-            lambda: self.set_plotter_1_button_state(self.plotter_1_openep_radio)
+        self.plotter_1_openep_bipolar_radio.toggled.connect(
+            lambda: self.set_plotter_1_button_state(self.plotter_1_openep_bipolar_radio)
+        )
+        self.plotter_1_openep_unipolar_radio.toggled.connect(
+            lambda: self.set_plotter_1_button_state(self.plotter_1_openep_unipolar_radio)
         )
 
         map_type_layout.addWidget(self.plotter_1_clinical_radio)
-        map_type_layout.addWidget(self.plotter_1_openep_radio)
+        map_type_layout.addWidget(self.plotter_1_openep_bipolar_radio)
+        map_type_layout.addWidget(self.plotter_1_openep_unipolar_radio)
         self.plotter_1.plotterLayout.addRow(map_type_layout)
 
         self.dock_1.setWidget(self.plotter_1)
@@ -138,7 +142,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         This can be used for projecting the local activation time the 3D surface.
         Currently, only the values obtained from the clinical mapping system can
-        be used (interpolation based on electrograms is not yet suppoerted.)
+        be used (interpolation based on electrograms is not yet supported.)
         """
 
         # Plotter 2 is used for the local activation time
@@ -471,11 +475,18 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         self.interpolate_fields()
 
-        if self.plotter_1_openep_radio.isChecked():
+        if self.plotter_1_openep_bipolar_radio.isChecked():
             self.draw_map(
                 mesh=self.mesh_1,
                 plotter=self.plotter_1,
                 data=self.interpolated_fields['bipolar_voltage'],
+                add_mesh_kws=self.add_mesh_1_kws
+            )
+        if self.plotter_1_openep_unipolar_radio.isChecked():
+            self.draw_map(
+                mesh=self.mesh_1,
+                plotter=self.plotter_1,
+                data=self.interpolated_fields['unipolar_voltage'],
                 add_mesh_kws=self.add_mesh_1_kws
             )
 
@@ -487,12 +498,22 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         via self.slider (mpl.widgets.RangeSlider) and self.set_woi_button (mpl.widgets.Button).
         """
 
-        interpolated_voltage = openep.case.interpolate_voltage_onto_surface(
+        bipolar_voltage = openep.case.interpolate_voltage_onto_surface(
             self.case,
             max_distance=None,
             buffer=0,
         )
-        self.interpolated_fields = {"bipolar_voltage": interpolated_voltage}
+        unipolar_voltage = openep.case.interpolate_voltage_onto_surface(
+            self.case,
+            max_distance=None,
+            buffer=0,
+            bipolar=False,
+        )
+
+        self.interpolated_fields = {
+            "bipolar_voltage": bipolar_voltage,
+            "unipolar_voltage": unipolar_voltage,
+        }
 
     def set_plotter_1_button_state(self, button):
         """
@@ -501,6 +522,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         on which button was pressed.
         """
 
+        print(button.text(), button.isChecked())
         if (button.text() == "Clinical") and button.isChecked():
             self.draw_map(
                 mesh=self.mesh_1,
@@ -508,11 +530,18 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 data=self.case.fields.bipolar_voltage,
                 add_mesh_kws=self.add_mesh_1_kws
             )
-        elif (button.text() == "OpenEP") and button.isChecked():
+        elif (button.text() == "OpenEP - Bipolar") and button.isChecked():
             self.draw_map(
                 mesh=self.mesh_1,
                 plotter=self.plotter_1,
                 data=self.interpolated_fields['bipolar_voltage'],
+                add_mesh_kws=self.add_mesh_1_kws
+            )
+        elif (button.text() == "OpenEP - Unipolar") and button.isChecked():
+            self.draw_map(
+                mesh=self.mesh_1,
+                plotter=self.plotter_1,
+                data=self.interpolated_fields['unipolar_voltage'],
                 add_mesh_kws=self.add_mesh_1_kws
             )
 
