@@ -19,10 +19,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import openep
+from openep._datasets.openep_datasets import DATASET_2_V73
 
-
-filename = "/Users/paul/github/openep-py/examples/data/new_dataset_2.mat"
-case = openep.load_case(filename)
+case = openep.load_case(DATASET_2_V73)
 mesh = case.create_mesh()
 
 # determine the window of interest for each point
@@ -62,10 +61,11 @@ plotter.background_color = "white"
 plotter.show()
 
 # Interpolate bipolar voltage onto surface from raw electrograms
-interpolated_voltages = openep.case.interpolate_voltage_onto_surface(case, max_distance=15)
+interpolated_voltages = openep.case.interpolate_voltage_onto_surface(case, max_distance=15, bipolar=False)
 plotter = openep.draw.draw_map(
     mesh=mesh,
     field=interpolated_voltages,
+    add_mesh_kws={"clim": (0, 5)}
 )
 plotter.background_color = "white"
 plotter.show()
