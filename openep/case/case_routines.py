@@ -271,23 +271,28 @@ def get_woi_times(case, buffer=50, relative=False):
     return times[keep_times]
 
 
-def calculate_voltage_from_electrograms(case, buffer=50):
+def calculate_voltage_from_electrograms(case, buffer=50, bipolar=True):
     """
-    Calculates the peak-to-peak bipolar voltage from electrograms.
+    Calculates the peak-to-peak voltage from electrograms.
 
-    For each mapping point, the bipolar voltage will be calculated as the
+    For each mapping point, the voltage will be calculated as the
     amplitude of its corresponding electrogram during the window of interest.
 
     Args:
         case (Case): openep case object
         buffer (float): Amplitudes will be calculated using the window of interest
             plus/minus this buffer time.
+        bipolar (bool, optional): If True, the bipolar voltages will calculated. If False,
+            the unipolar voltages will be calculated.
 
     Returns:
         voltages (ndarray): Bipolar voltages
     """
 
-    electrograms = case.electric.bipolar_egm.egm.copy()
+    if bipolar:
+        electrograms = case.electric.bipolar_egm.egm.copy()
+    else:
+        electrograms = case.electric.unipolar_egm.egm.copy()
 
     woi_times = get_woi_times(case, buffer=buffer, relative=False)
     electrograms = electrograms[:, woi_times]
@@ -432,10 +437,11 @@ def interpolate_voltage_onto_surface(
         method=scipy.interpolate.RBFInterpolator,
         method_kws=None,
         max_distance=None,
+        bipolar=True,
 ):
-    """Interpolate bipolar voltage onto the points of a mesh.
+    """Interpolate voltage onto the points of a mesh.
 
-    For each mapping point within the window of interest, the bipolar voltage is
+    For each mapping point within the window of interest, the voltage is
     calculated as the amplitude of an electrogram during the window of interest,
     plus/minus an optional buffer time.
 
@@ -451,6 +457,8 @@ def interpolate_voltage_onto_surface(
             further than this distance to all mapping coordinates will have their
             interpolated voltages set NaN. The default it None, in which case
             the distance from surface points to mapping points is not considered.
+        bipolar (bool, optional): If True, the bipolar voltage will be interpolated onto the
+            surface. If False, the unipolar voltage will be used instead.
 
     Returns:
         interpolated_voltages (ndarray): bipolar voltages, calculated from the
@@ -458,13 +466,25 @@ def interpolate_voltage_onto_surface(
     """
 
     surface_points = case.points.copy()
-    points = case.electric.bipolar_egm.points.copy()
-    bipolar_voltages = calculate_voltage_from_electrograms(case, buffer=buffer)
+
+    if bipolar:
+        points = case.electric.bipolar_egm.points.copy()
+        voltages = calculate_voltage_from_electrograms(case, buffer=buffer)
+    else:
+        points = case.electric.unipolar_egm.points.copy()
+        voltages = calculate_voltage_from_electrograms(case, buffer=buffer, bipolar=False)
 
     within_woi = get_mapping_points_within_woi(case, buffer=buffer)
+    if bipolar:
+        points = points[within_woi]
+        voltages = voltages[within_woi]
+    else:
+        points = np.concatenate(points[within_woi], axis=1).T
+        voltages = voltages[within_woi].flatten()
+
     interpolator = Interpolator(
-        points[within_woi],
-        bipolar_voltages[within_woi],
+        points,
+        voltages,
         method=method,
         method_kws=method_kws,
     )
