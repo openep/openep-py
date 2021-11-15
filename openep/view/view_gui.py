@@ -115,8 +115,10 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         # Add radio buttons to select clinical or interpolated bipolar voltages
         map_type_layout = QtWidgets.QHBoxLayout()
-        self.plotter_1_clinical_radio, self.plotter_1_openep_bipolar_radio, self.plotter_1_openep_unipolar_radio = \
-            openep.view.plotters.create_map_type_widgets(self.plotter_1)
+        radio_buttons = openep.view.plotters.create_map_type_widgets(self.plotter_1)
+        self.plotter_1_clinical_radio = radio_buttons[1]
+        self.plotter_1_openep_bipolar_radio = radio_buttons[2]
+        self.plotter_1_openep_unipolar_radio = radio_buttons[3]
 
         self.plotter_1_clinical_radio.toggled.connect(
             lambda: self.set_plotter_1_button_state(self.plotter_1_clinical_radio)
@@ -445,12 +447,10 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         lower_limit = float(self.lower_limit_1.text())
         upper_limit = float(self.upper_limit_1.text())
         self.add_mesh_1_kws["clim"] = [lower_limit, upper_limit]
-        self.draw_map(
-            mesh=self.mesh_1,
-            plotter=self.plotter_1,
-            data=self.case.fields.bipolar_voltage,
-            add_mesh_kws=self.add_mesh_1_kws,
-        )
+
+        # Now we need to redraw the map using the correct scalars
+        # TODO: this should be replaced to use pyvista's set active scalars
+        self.set_plotter_1_button_state(self.plotter_1_radio_checked)
 
     def update_colourbar_limits_2(self):
 
@@ -522,7 +522,6 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         on which button was pressed.
         """
 
-        print(button.text(), button.isChecked())
         if (button.text() == "Clinical") and button.isChecked():
             self.draw_map(
                 mesh=self.mesh_1,
@@ -530,6 +529,8 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 data=self.case.fields.bipolar_voltage,
                 add_mesh_kws=self.add_mesh_1_kws
             )
+            self.plotter_1_radio_checked = self.plotter_1_clinical_radio
+
         elif (button.text() == "OpenEP - Bipolar") and button.isChecked():
             self.draw_map(
                 mesh=self.mesh_1,
@@ -537,6 +538,8 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 data=self.interpolated_fields['bipolar_voltage'],
                 add_mesh_kws=self.add_mesh_1_kws
             )
+            self.plotter_1_radio_checked = self.plotter_1_openep_bipolar_radio
+
         elif (button.text() == "OpenEP - Unipolar") and button.isChecked():
             self.draw_map(
                 mesh=self.mesh_1,
@@ -544,6 +547,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 data=self.interpolated_fields['unipolar_voltage'],
                 add_mesh_kws=self.add_mesh_1_kws
             )
+            self.plotter_1_radio_checked = self.plotter_1_openep_unipolar_radio
 
     def draw_map(self, mesh, plotter, data, add_mesh_kws):
         """
