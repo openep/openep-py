@@ -116,7 +116,7 @@ def draw_map(
     plotter = pyvista.Plotter() if plotter is None else plotter
 
     # Create default settings for the plot
-    scalar_bar_args = dict(
+    default_scalar_bar_args = dict(
         interactive=True,
         n_labels=2,
         label_font_size=30,
@@ -124,7 +124,7 @@ def draw_map(
         above_label=" ",
     )
     if add_mesh_kws is not None and "scalar_bar_args" in add_mesh_kws:
-        scalar_bar_args = {**scalar_bar_args, **add_mesh_kws["scalar_bar_args"]}
+        default_scalar_bar_args = {**default_scalar_bar_args, **add_mesh_kws["scalar_bar_args"]}
 
     default_add_mesh_kws = {
         "style": "surface",
@@ -136,16 +136,16 @@ def draw_map(
         "above_color": "magenta",
         "below_color": "brown",
         "nan_color": "gray",
-        "scalar_bar_args": scalar_bar_args,
+        "scalar_bar_args": default_scalar_bar_args,
     }
 
     # combine the default and user-given kwargs
-    add_mesh_kws = default_add_mesh_kws if add_mesh_kws is None else {**default_add_mesh_kws, **add_mesh_kws}
+    default_add_mesh_kws = default_add_mesh_kws if add_mesh_kws is None else {**default_add_mesh_kws, **add_mesh_kws}
 
     plotter.add_mesh(
         mesh=mesh,
         scalars=field,
-        **add_mesh_kws,
+        **default_add_mesh_kws,
     )
 
     if free_boundaries:
