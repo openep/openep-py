@@ -21,6 +21,7 @@
 A GUI for OpenEP-Py.
 """
 import sys
+import pathlib
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
@@ -303,13 +304,30 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         dialogue = QtWidgets.QFileDialog()
         dialogue.setWindowTitle('Load an OpenEP dataset')
         dialogue.setDirectory(QtCore.QDir.currentPath())
-        dialogue.setFileMode(QtWidgets.QFileDialog.ExistingFile)
-        dialogue.setNameFilter("MATLAB files (*.mat)")
+        dialogue.setFileMode(QtWidgets.QFileDialog.ExistingFiles)
+        dialogue.setNameFilters(["MATLAB files (*.mat)", "openCARP files (*.pts *.elem *.dat)"])
+        dialogue.selectNameFilter("MATLAB files (*.mat);;openCARP files (*.pts *.elem *.dat)")
 
         if dialogue.exec_():
 
-            filename = dialogue.selectedFiles()[0]
-            self._load_case_and_initialise(filename)
+            filenames = dialogue.selectedFiles()
+            if (len(filenames) == 0) and (pathlib.Path(filenames[0]).suffix == ".mat"):
+                self._load_case_and_initialise(filenames[0])
+            elif len(filenames) == 3:
+                self._load_openCARP_and_initialise(filenames)
+
+    def _load_openCARP_and_initialise(self, filenames):
+        """Load data from an openCARP simulation.
+        
+        """
+        
+        extensions = [pathlib.Path(f).suffix for f in filenames]
+        if (".pts" in extensions) and (".elem" in extensions) and (".dat" in extensions):
+            self.carp = openep.load_openCARP(
+                points=filenames[extensions.index(".pts")],
+                indices=filenames[extensions.index(".elem")],
+                unipolar_egm=filenames[extensions.index(".dat")],
+            )                
 
     def _load_case_and_initialise(self, filename):
         """Load an OpenEP case object.
