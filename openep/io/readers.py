@@ -53,13 +53,16 @@ and methods of `Case`.
 import os
 import scipy.io
 
+import numpy as np
+
 from .matlab import _load_mat_v73, _load_mat_below_v73
 from ..data_structures.surface import extract_surface_data
 from ..data_structures.electric import extract_electric_data
 from ..data_structures.ablation import extract_ablation_data
 from ..data_structures.case import Case
+from ..data_structures.openCARP import CARPData
 
-__all__ = ["load_case", "load_mat"]
+__all__ = ["load_case", "load_mat", "load_openCARP"]
 
 
 def _check_mat_version_73(filename):
@@ -117,3 +120,26 @@ def load_case(filename, name=None):
         notes = []
 
     return Case(name, points, indices, fields, electric, ablation, notes)
+
+
+def load_openCARP(
+    points,
+    indices,
+    unipolar_egm,
+):
+    """
+    Load data from and OpenCARP simulation.
+
+    Args:
+        points (str): Path to the openCARP points file.
+        indices (str): Path to the openCARP element file. Currently, only triangular meshes are
+            supported.
+        unipolar_egm (str): Path to the openCARP auxiliary grid file containing
+            unipolar electrograms.
+    """
+
+    points_data = np.loadtxt(points, skiprows=1)
+    indices_data = np.loadtxt(indices, skiprows=1, usecols=[1, 2, 3], dtype=int)
+    unipolar_egm_data = np.loadtxt(unipolar_egm)
+
+    return CARPData(points_data, indices_data, unipolar_egm_data)
