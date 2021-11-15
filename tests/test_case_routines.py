@@ -191,6 +191,41 @@ def test_get_electrograms_at_points_no_lat_or_names(mock_case):
     assert_allclose(mock_case.electric.bipolar_egm.egm, electrograms)
 
 
+def test_get_electrograms_at_points_unipolar(real_case):
+
+    electrograms = get_electrograms_at_points(
+        real_case,
+        within_woi=False,
+        egm_type='unipolar',
+        return_lat=False,
+        return_names=False,
+    )
+    assert_allclose(real_case.electric.unipolar_egm.egm, electrograms)
+
+
+def test_get_electrograms_at_points_reference(real_case):
+
+    electrograms = get_electrograms_at_points(
+        real_case,
+        within_woi=False,
+        egm_type='reference',
+        return_lat=False,
+        return_names=False,
+    )
+    assert_allclose(real_case.electric.reference_egm.egm, electrograms)
+
+
+def test_get_electrograms_at_points_invalid_type(mock_case):
+
+    invalid_type = "other"
+    match = f"egm_type {invalid_type} is not recognised."
+    with pytest.raises(ValueError, match=match):
+        get_electrograms_at_points(
+            mock_case,
+            egm_type="other",
+        )
+
+
 def test_get_woi_times(mock_case):
 
     times = get_woi_times(mock_case)
@@ -219,6 +254,13 @@ def test_calculate_voltage_from_electrograms_no_buffer(mock_case):
 
     amplitudes = calculate_voltage_from_electrograms(mock_case, buffer=0)
     assert_allclose(9, amplitudes)
+
+
+def test_calculate_voltage_from_electrograms_unipolar(real_case):
+
+    n_electrograms = 800
+    amplitudes = calculate_voltage_from_electrograms(real_case, bipolar=False)
+    assert_allclose((n_electrograms, 2),  amplitudes.shape)
 
 
 def test_calculate_distance(mock_case):
@@ -341,6 +383,15 @@ def test_interpolate_voltage_onto_surface(real_case):
 
     n_surface_points = real_case.points.shape[0]
     interpolated_voltages = interpolate_voltage_onto_surface(real_case)
+
+    assert n_surface_points == interpolated_voltages.size
+    assert 5535 == np.sum(np.isnan(interpolated_voltages))
+
+
+def test_interpolate_voltage_onto_surface_unipolar(real_case):
+
+    n_surface_points = real_case.points.shape[0]
+    interpolated_voltages = interpolate_voltage_onto_surface(real_case, bipolar=False)
 
     assert n_surface_points == interpolated_voltages.size
     assert 5535 == np.sum(np.isnan(interpolated_voltages))
