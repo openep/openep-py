@@ -119,6 +119,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.plotter_1_clinical_radio = radio_buttons[0]
         self.plotter_1_openep_bipolar_radio = radio_buttons[1]
         self.plotter_1_openep_unipolar_radio = radio_buttons[2]
+        self.plotter_1_radio_checked = self.plotter_1_clinical_radio  # default checked button
 
         self.plotter_1_clinical_radio.toggled.connect(
             lambda: self.set_plotter_1_button_state(self.plotter_1_clinical_radio)
