@@ -316,7 +316,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             elif len(filenames) == 3:
                 self._load_openCARP_and_initialise(filenames)
             else:
-                
+
                 error = QtWidgets.QMessageBox()
                 error.setIcon(QtWidgets.QMessageBox.Critical)
                 error.setText("File selection error")
@@ -329,19 +329,19 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
     def _load_openCARP_and_initialise(self, filenames):
         """Load data from an openCARP simulation.
-        
+
         """
-        
+
         # TODO: create a new dock widget for the simulation data
         # Allow user to draw either bipolar or unipolar voltages
-        
+
         extensions = [pathlib.Path(f).suffix for f in filenames]
         if (".pts" in extensions) and (".elem" in extensions) and (".dat" in extensions):
             self.carp = openep.load_openCARP(
                 points=filenames[extensions.index(".pts")],
                 indices=filenames[extensions.index(".elem")],
                 unipolar_egm=filenames[extensions.index(".dat")],
-            )                
+            )
 
     def _load_case_and_initialise(self, filename):
         """Load an OpenEP case object.
