@@ -305,8 +305,8 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         dialogue.setWindowTitle('Load an OpenEP dataset')
         dialogue.setDirectory(QtCore.QDir.currentPath())
         dialogue.setFileMode(QtWidgets.QFileDialog.ExistingFiles)
-        dialogue.setNameFilters(["MATLAB files (*.mat)", "openCARP files (*.pts *.elem *.dat)"])
         dialogue.selectNameFilter("MATLAB files (*.mat);;openCARP files (*.pts *.elem *.dat)")
+        dialogue.setNameFilters(["MATLAB files (*.mat)", "openCARP files (*.pts *.elem *.dat)"])
 
         if dialogue.exec_():
 
@@ -315,11 +315,25 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 self._load_case_and_initialise(filenames[0])
             elif len(filenames) == 3:
                 self._load_openCARP_and_initialise(filenames)
+            else:
+                
+                error = QtWidgets.QMessageBox()
+                error.setIcon(QtWidgets.QMessageBox.Critical)
+                error.setText("File selection error")
+                error.setInformativeText(
+                    "Please select either a single MATLAB file (*.mat), or a single "
+                    "set of openCARP files (one each of *.pts, *.elem, *.dat)."
+                )
+                error.setWindowTitle("Error")
+                error.exec_()
 
     def _load_openCARP_and_initialise(self, filenames):
         """Load data from an openCARP simulation.
         
         """
+        
+        # TODO: create a new dock widget for the simulation data
+        # Allow user to draw either bipolar or unipolar voltages
         
         extensions = [pathlib.Path(f).suffix for f in filenames]
         if (".pts" in extensions) and (".elem" in extensions) and (".dat" in extensions):
