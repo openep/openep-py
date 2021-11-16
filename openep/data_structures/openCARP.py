@@ -79,11 +79,11 @@ class CARPData:
     def bipolar_from_unipolar(self):
         """
         Calculate bipolar electrograms from unipolar electrograms for each point on the mesh.
-        
+
         Returns
             all_bipolar_egm (np.ndarray): Bipolar electrograms
         """
-        
+
         all_bipolar_egm = np.full_like(self.unipolar_egm, fill_value=np.NaN)
 
         for index, egm in enumerate(self.unipolar_egm):
@@ -120,7 +120,7 @@ class CARPData:
             neighbour_egms (np.narray): unipolar electrograms at all points
                 neighbouring the given point
         """
-        
+
         difference = neighbour_egms - egm
         voltage = np.ptp(difference, axis=1)
         pair_index = np.argmax(voltage)
