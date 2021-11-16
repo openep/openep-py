@@ -311,7 +311,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         if dialogue.exec_():
 
             filenames = dialogue.selectedFiles()
-            if (len(filenames) == 0) and (pathlib.Path(filenames[0]).suffix == ".mat"):
+            if (len(filenames) == 1) and (pathlib.Path(filenames[0]).suffix == ".mat"):
                 self._load_case_and_initialise(filenames[0])
             elif len(filenames) == 3:
                 self._load_openCARP_and_initialise(filenames)
