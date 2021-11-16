@@ -82,10 +82,15 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         file_menu = self.menubar.addMenu("File")
         self.menubar.setNativeMenuBar(True)
 
-        self.load_case_act = QtWidgets.QAction("Open File...")
-        self.load_case_act.triggered.connect(self._load_data)
-        file_menu.addAction(self.load_case_act)
-        file_menu.addSeparator()
+        load_menu = QtWidgets.QMenu("Load", self)
+        load_case_action = QtWidgets.QAction("OpenEP", self)
+        load_case_action.triggered.connect(self._load_case)
+        load_menu.addAction(load_case_action)
+        load_openCARP_action = QtWidgets.QAction("openCARP", self)
+        load_openCARP_action.triggered.connect(self._load_openCARP)
+        load_menu.addAction(load_openCARP_action)
+
+        file_menu.addMenu(load_menu)
 
     def _create_plotter_1_dock(self):
         """
@@ -298,37 +303,45 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             if dock not in exclude:
                 dock.setEnabled(True)
 
-    def _load_data(self):
-        """Load an OpenEP case."""
+    def _load_case(self):
+        "Load an OpenEP case."
 
         dialogue = QtWidgets.QFileDialog()
-        dialogue.setWindowTitle('Load an OpenEP dataset')
+        dialogue.setWindowTitle('Load an OpenEP file')
         dialogue.setDirectory(QtCore.QDir.currentPath())
-        dialogue.setFileMode(QtWidgets.QFileDialog.ExistingFiles)
-        dialogue.selectNameFilter("MATLAB files (*.mat);;openCARP files (*.pts *.elem *.dat)")
-        dialogue.setNameFilters(["MATLAB files (*.mat)", "openCARP files (*.pts *.elem *.dat)"])
+        dialogue.setFileMode(QtWidgets.QFileDialog.ExistingFile)
+        dialogue.setNameFilter("MATLAB files (*.mat)")
 
         if dialogue.exec_():
+            filename = dialogue.selectedFiles()[0]
+            self._initialise_case(filename)
 
+    def _load_openCARP(self):
+        """Load a set of openCARP files."""
+
+        dialogue = QtWidgets.QFileDialog()
+        dialogue.setWindowTitle('Load a set of openCARP files')
+        dialogue.setDirectory(QtCore.QDir.currentPath())
+        dialogue.setFileMode(QtWidgets.QFileDialog.ExistingFiles)
+        dialogue.setNameFilter("openCARP files (*.pts *.elem *.dat)")
+
+        if dialogue.exec_():
+            
             filenames = dialogue.selectedFiles()
-            if (len(filenames) == 1) and (pathlib.Path(filenames[0]).suffix == ".mat"):
-                self._load_case_and_initialise(filenames[0])
-            elif len(filenames) == 3:
-                self._load_openCARP_and_initialise(filenames)
+            if len(filenames) == 3:
+                self._initialise_openCARP(filenames)
             else:
-
                 error = QtWidgets.QMessageBox()
                 error.setIcon(QtWidgets.QMessageBox.Critical)
                 error.setText("File selection error")
                 error.setInformativeText(
-                    "Please select either a single MATLAB file (*.mat), or a single "
-                    "set of openCARP files (one each of *.pts, *.elem, *.dat)."
+                    "Please select a single set of openCARP files (one each of *.pts, *.elem, *.dat)."
                 )
                 error.setWindowTitle("Error")
                 error.exec_()
 
-    def _load_openCARP_and_initialise(self, filenames):
-        """Load data from an openCARP simulation.
+    def _initialise_openCARP(self, filenames):
+        """Initialise data from an openCARP simulation.
 
         """
 
@@ -343,8 +356,8 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 unipolar_egm=filenames[extensions.index(".dat")],
             )
 
-    def _load_case_and_initialise(self, filename):
-        """Load an OpenEP case object.
+    def _initialise_case(self, filename):
+        """Initialise data from an OpenEP case object.
 
         Create separate meshes for the two BackgroundPlotters.
         Interpolate data ready to be plotted.
