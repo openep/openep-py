@@ -125,7 +125,6 @@ def load_case(filename, name=None):
 def load_openCARP(
     points,
     indices,
-    unipolar_egm,
 ):
     """
     Load data from and OpenCARP simulation.
@@ -139,7 +138,6 @@ def load_openCARP(
     """
 
     points_data = np.loadtxt(points, skiprows=1)
-    indices_data = np.loadtxt(indices, skiprows=1, usecols=[1, 2, 3], dtype=int)
-    unipolar_egm_data = np.loadtxt(unipolar_egm)
+    indices_data = np.loadtxt(indices, skiprows=1, usecols=[1, 2, 3], dtype=int)  # ignore the tag for now
 
-    return CARPData(points_data, indices_data, unipolar_egm_data)
+    return CARPData(points_data, indices_data)
