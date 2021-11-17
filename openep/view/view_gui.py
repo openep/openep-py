@@ -73,7 +73,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         # We will use this to determine which egms to plot
         # All windows belonging to the main case will be given red borders
-        self._main_system = None
+        self._active_system = None
 
     def _init_ui(self):
         """
@@ -164,6 +164,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         add_mesh_kws = new_system._create_default_kws()
         free_boundaries = openep.mesh.get_free_boundaries(mesh)
 
+        # This is the first plotter added to the system, so the index is 0
         plotter.lower_limit.returnPressed.connect(lambda: self.update_colourbar_limits(new_system, index=0))
         plotter.upper_limit.returnPressed.connect(lambda: self.update_colourbar_limits(new_system, index=0))
 
@@ -173,6 +174,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         new_system.add_mesh_kws.append(add_mesh_kws)
         new_system.free_boundaries.append(free_boundaries)
 
+        # TODO: draw active scalars rather than bipolar_egm
         self.draw_map(
             mesh=new_system.meshes[0],
             plotter=new_system.plotters[0],
@@ -183,25 +185,27 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.addDockWidget(Qt.LeftDockWidgetArea, dock)
         self.systems.append(new_system)
         self._system_counter += 1
-        self._main_system = new_system.name
-        self.update_dock_border_colours()
+        self._active_system = new_system.name
+        self.add_border_to_active_plotters()
 
-    def update_dock_border_colours(self):
+    def add_border_to_active_plotters(self):
 
-        # TODO: Making the background red fails when the docks are tabified.
-        #       Look into why adding a border around the plotter doesn't work.
         for system in self.systems:
-            if system.name == self._main_system:
-                for dock in system.docks:
-                    dock.setStyleSheet(
-                        'CustomDockWidget {background-color: red};'
-                        'BackgroundPlotter {border: 2px solid red};'
-                    )
+            if system.name == self._active_system:
+                for plotter in system.plotters:
+                    plotter.renderer.add_border(color="red", width=5)
             else:
-                for dock in system.docks:
-                    dock.setStyleSheet('CustomDockWidget {background-color: None}')
+                for plotter in system.plotters:
+                    plotter.renderer.add_border(color=None, width=5)
 
     def update_colourbar_limits(self, system, index):
+        """Update colourbar limits for a given plotter.
+
+        Args:
+            system (System): system containing the plotter whose colourbar
+                limits will be changed
+            index (int): index of plotter to modify
+        """
 
         if not system.plotters[index].lower_limit.text().strip():
             pass
@@ -211,7 +215,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         lower_limit = float(system.plotters[index].lower_limit.text())
         upper_limit = float(system.plotters[index].upper_limit.text())
         system.add_mesh_kws[index]["clim"] = [lower_limit, upper_limit]
-
+        print(system, system.add_mesh_kws[index]['clim'])
         self.draw_map(
             system.meshes[index],
             system.plotters[index],
