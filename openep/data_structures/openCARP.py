@@ -42,6 +42,9 @@ class CARPData:
     points: np.ndarray
     indices: np.ndarray
 
+    # TODO: the openEP Case object should be simplified, and then used for both clinical and
+    # openCARP data files.
+
     def __attrs_post_init__(self):
 
         self.electric = None
@@ -83,7 +86,9 @@ class CARPData:
         # determine the bipolar neibhours
         names = np.arange(len(unipolar)).astype(str)
         bipolar, pair_indices = self.bipolar_from_unipolar(unipolar)
-        
+
+        # Create an Electric object so that CARPData object can also be passed to most of the
+        # openep.case.case_routines, which are designed of openEP Case objects
         bipolar_egm = Electrogram(
             egm=bipolar,
             points=self.points,
@@ -118,6 +123,8 @@ class CARPData:
             annotations=annotations,
         )
 
+        # We will need to original info if we later want to update bipolar egms/pairs
+        # based on a different window of interest
         self._unipolar = unipolar
         self._unipolar_pairs = pair_indices
 
