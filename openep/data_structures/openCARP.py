@@ -22,6 +22,9 @@ from attr import attrs
 import pyvista
 import numpy as np
 
+from .._exceptions import NoDataError
+from .electric import Electric, Electrogram, Annotations
+
 __all__ = []
 
 
@@ -38,16 +41,85 @@ class CARPData:
 
     points: np.ndarray
     indices: np.ndarray
-    unipolar_egm: np.ndarray = None
 
     def __attrs_post_init__(self):
 
-        self.bipolar_egm = self.bipolar_from_unipolar()
-        self.bipolar_voltage = np.ptp(self.bipolar_egm, axis=1)
-        self.unipolar_voltage = np.ptp(self.unipolar_egm, axis=1)
+        self.electric = None
 
     def __repr__(self):
-        return f"openCARP mesh with {len(self.unipolar_egm)} points."
+        return f"openCARP mesh with {len(self.points)} points."
+
+    def add_data(self, data_type: str, data_file: str):
+        """Add data files to the CARPData.
+
+        Args:
+            data_type (str): data type to be added. Must be one of:
+                'unipolar'.
+            data_file (str): Name of the .dat file containing the data to load.
+        """
+
+        supported_types = {
+            'unipolar egm',
+        }
+        if data_type not in supported_types:
+            raise ValueError("Unsupported data type: ", data_type)
+
+        func = getattr(self, f"_add_{'_'.join(data_type.split())}_data")
+        func(data_file)
+
+    def _add_unipolar_egm_data(self, data_file):
+
+        unipolar = np.loadtxt(data_file)
+
+        if len(unipolar) != len(self.points):
+            raise ValueError(
+                "The number of points in the data file is ", len(unipolar),
+                " but the number of points in the mesh is ", len(self.points), " ."
+            )
+
+        if self.electric is not None:
+            raise NotImplementedError("Adding multiple data files is not yet supported.")
+
+        # determine the bipolar neibhours
+        names = np.arange(len(unipolar)).astype(str)
+        bipolar, pair_indices = self.bipolar_from_unipolar(unipolar)
+        
+        bipolar_egm = Electrogram(
+            egm=bipolar,
+            points=self.points,
+            voltage=np.ptp(bipolar, axis=1),
+            names=names,
+        )
+
+        unipolar_egm = Electrogram(
+            egm=unipolar[pair_indices],
+            points=self.points[pair_indices],
+            voltage=np.ptp(unipolar[pair_indices], axis=1),
+            names=np.asarray(['_'.join(pair) for pair in names[pair_indices]])
+        )
+
+        woi = np.zeros((len(names), 2), dtype=int)
+        woi[:, 1] = unipolar.shape[1]
+        annotations = Annotations(
+            window_of_interest=woi,
+            local_activation_time=None,  # TODO: calculate local activation times
+            reference_activation_time=np.zeros_like(woi[:, 0], dtype=int)
+        )
+
+        self.electric = Electric(
+            names=names,
+            internal_names=names,
+            bipolar_egm=bipolar_egm,
+            unipolar_egm=unipolar_egm,
+            reference_egm=None,
+            ecg=None,
+            impedance=None,
+            surface=None,
+            annotations=annotations,
+        )
+
+        self._unipolar = unipolar
+        self._unipolar_pairs = pair_indices
 
     def create_mesh(
         self,
@@ -76,26 +148,31 @@ class CARPData:
 
         return mesh
 
-    def bipolar_from_unipolar(self):
+    def bipolar_from_unipolar(self, unipolar):
         """
         Calculate bipolar electrograms from unipolar electrograms for each point on the mesh.
 
+        Args:
+            unipolar (np.ndarray): Unipolar electrograms
+
         Returns
-            all_bipolar_egm (np.ndarray): Bipolar electrograms
+            bipolar (np.ndarray): Bipolar electrograms
         """
 
-        all_bipolar_egm = np.full_like(self.unipolar_egm, fill_value=np.NaN)
+        bipolar = np.full_like(unipolar, fill_value=np.NaN)
+        pair_indices = np.full((len(unipolar), 2), fill_value=0, dtype=int)
 
-        for index, egm in enumerate(self.unipolar_egm):
+        for index, index_unipolar in enumerate(unipolar):
 
             connected_vertices = self._find_connected_vertices(self.indices, index)
-            bipolar_egm = self._bipolar_from_unipolar(
-                egm=egm,
-                neighbour_egms=self.unipolar_egm[connected_vertices],
+            index_bipolar, pair_index = self._bipolar_from_unipolar(
+                unipolar=index_unipolar,
+                neighbours=unipolar[connected_vertices],
             )
-            all_bipolar_egm[index] = bipolar_egm
+            bipolar[index] = index_bipolar
+            pair_indices[index] = [index, pair_index]
 
-        return all_bipolar_egm
+        return bipolar, pair_indices
 
     def _find_connected_vertices(self, faces, index):
         """
@@ -113,19 +190,19 @@ class CARPData:
 
         return connected_vertices[connected_vertices != index]
 
-    def _bipolar_from_unipolar(self, egm, neighbour_egms):
+    def _bipolar_from_unipolar(self, unipolar, neighbours):
         """
         Calculate the bipolar electrogram of a given point from a series of unipolar electrograms.
 
         Args:
-            egm (np.ndarray): unipolar electrogram at a given point
-            neighbour_egms (np.narray): unipolar electrograms at all points
+            unipolar (np.ndarray): unipolar electrogram at a given point
+            neighbours (np.narray): unipolar electrograms at all points
                 neighbouring the given point
         """
 
-        difference = neighbour_egms - egm
+        difference = neighbours - unipolar
         voltage = np.ptp(difference, axis=1)
         pair_index = np.argmax(voltage)
         bipolar_electrogram = difference[pair_index]
 
-        return bipolar_electrogram
+        return bipolar_electrogram, pair_index

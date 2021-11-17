@@ -27,6 +27,7 @@ from attr import attrs
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
+import pyvista
 import numpy as np
 
 import openep
@@ -215,7 +216,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         lower_limit = float(system.plotters[index].lower_limit.text())
         upper_limit = float(system.plotters[index].upper_limit.text())
         system.add_mesh_kws[index]["clim"] = [lower_limit, upper_limit]
-        print(system, system.add_mesh_kws[index]['clim'])
+
         self.draw_map(
             system.meshes[index],
             system.plotters[index],
