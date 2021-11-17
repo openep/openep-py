@@ -38,11 +38,11 @@ def create_plotter():
         toolbar=False,
         editor=False,
         menu_bar=False,
-        title="Voltage",
+        title=None,
         border=False,
         update_app_icon=False,
     )
-    plotter.background_color = 'white'
+    plotter.background_color = '#d8dcd6'
     plotter.setMinimumSize(QtCore.QSize(50, 50))
 
     return plotter

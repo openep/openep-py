@@ -184,6 +184,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         add_view_for_system_action = QtWidgets.QAction(points, self)
         add_view_for_system_action.triggered.connect(lambda: self.add_view(new_system))
         self.add_view_menu.addAction(add_view_for_system_action)
+        
 
     def _add_data_to_openCARP(self, system):
         """
@@ -312,18 +313,6 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 plotter=plotter,
         )
 
-def main():
-
-    # Create an instance of Qapplication
-    app = QtWidgets.QApplication(sys.argv)
-    app.setWindowIcon(QtGui.QIcon(openep.view.images.LOGO))
-
-    # Create an instance of GUI
-    window = OpenEpGUI()
-    window.showMaximized()
-
-    sys.exit(app.exec_())
-
 
 @attrs(auto_attribs=True, auto_detect=True)
 class System:
@@ -359,9 +348,9 @@ class System:
         surface.
         """
 
-        dock  = openep.view.custom_widgets.CustomDockWidget(f"{self.name}: Voltage")
+        dock  = openep.view.custom_widgets.CustomDockWidget(f"{self.name}: Bipolar voltage")
+        dock_main = QtWidgets.QMainWindow()
         plotter = openep.view.plotters.create_plotter()
-
         plotter_layout = QtWidgets.QVBoxLayout(plotter)
 
         # Widgets for setting the colourbar limits
@@ -387,8 +376,24 @@ class System:
         colour_bar_layout.addRow("Colourbar limits:", colour_bar_selections)
         plotter_layout.addLayout(colour_bar_layout)
 
+        # Create a menubar for this dock
+        # From here we can control e.g. the scalar values projected onto the surface
+        dock_main_menubar = dock_main.menuBar()
+        dock_main_menubar.setNativeMenuBar(False)
+        field_menu = dock_main_menubar.addMenu("Field")
+        field_group = QtWidgets.QActionGroup(dock_main)
+        bipolar_action = QtWidgets.QAction("Bipolar voltage", dock_main)
+        unipolar_action = QtWidgets.QAction("Unipolar voltage", dock_main)
+        bipolar_action.setChecked(True)
+        unipolar_action.setChecked(False)
+        field_group.addAction(bipolar_action)
+        field_group.addAction(unipolar_action)
+        field_menu.addAction(bipolar_action)
+        field_menu.addAction(unipolar_action)
+
         # Set widget
-        dock.setWidget(plotter)
+        dock_main.setCentralWidget(plotter)
+        dock.setWidget(dock_main)
         dock.setAllowedAreas(Qt.AllDockWidgetAreas)
 
         plotter.lower_limit = lower_limit
@@ -413,3 +418,20 @@ class System:
                 "above_label": " ",
             }
         }
+
+
+def main():
+
+    # Create an instance of Qapplication
+    app = QtWidgets.QApplication(sys.argv)
+    app.setWindowIcon(QtGui.QIcon(openep.view.images.LOGO))
+
+    # Create an instance of GUI
+    window = OpenEpGUI()
+    window.showMaximized()
+
+    sys.exit(app.exec_())
+
+
+if __name__ == '__main__':
+    main()
