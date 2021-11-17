@@ -100,7 +100,16 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         load_openCARP_action.triggered.connect(self._load_openCARP)
         load_menu.addAction(load_openCARP_action)
 
+        # The below will be used for adding data to openCARP datasets
+        self.add_data_menu = QtWidgets.QMenu("Add data to", self)
+
         file_menu.addMenu(load_menu)
+        file_menu.addMenu(self.add_data_menu)
+
+        view_menu = self.menubar.addMenu("View")
+        self.add_view_menu = QtWidgets.QMenu("Add view for", self)
+        view_menu.addMenu(self.add_view_menu)
+        view_menu.addSeparator()
 
     def _load_case(self):
         pass
@@ -112,13 +121,13 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         dialogue.setWindowTitle('Load a set of openCARP files')
         dialogue.setDirectory(QtCore.QDir.currentPath())
         dialogue.setFileMode(QtWidgets.QFileDialog.ExistingFiles)
-        dialogue.setNameFilter("openCARP files (*.pts *.elem *.dat)")
+        dialogue.setNameFilter("openCARP files (*.pts *.elem)")
 
         error = QtWidgets.QMessageBox()
         error.setIcon(QtWidgets.QMessageBox.Critical)
         error.setText("File selection error")
         error.setInformativeText(
-            "Please select a single set of openCARP files (one each of *.pts, *.elem, *.dat)."
+            "Please select a single set of openCARP files (one each of *.pts, *.elem)."
         )
         error.setWindowTitle("Error")
 
@@ -127,18 +136,18 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             filenames = dialogue.selectedFiles()
             extensions = [pathlib.Path(f).suffix for f in filenames]
 
-            if len(filenames) != 3:
+            if len(filenames) != 2:
                 error.exec_()
-            elif (".pts" not in extensions) or (".elem" not in extensions) or (".dat" not in extensions):
+            elif (".pts" not in extensions) or (".elem" not in extensions):
                 error.exec_()
+                return
 
             self._initialise_openCARP(
                 points=filenames[extensions.index(".pts")],
                 indices=filenames[extensions.index(".elem")],
-                data=filenames[extensions.index(".dat")],
             )
 
-    def _initialise_openCARP(self, points, indices, data):
+    def _initialise_openCARP(self, points, indices):
         """
         Initialise data from an openCARP simulation.
         """
@@ -148,7 +157,6 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             points=points,
             indices=indices,
         )
-        carp.add_data('unipolar egm', data)
 
         new_system = System(
             name=self._system_counter,
@@ -157,37 +165,75 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             data=carp,
         )
 
-        # TODO: Creation of new dock etc. for a given system should be put into a separate function.
-        #       This will allow us to create new docks etc. for a system that already exists.
-        #       e.g. add a `Add View` menu, can select the system from the list for which we want a
-        #       new view (i.e. a new dock widgets and associated plotter etc.)
-        dock, plotter = new_system.create_dock()
-        mesh = carp.create_mesh()
-        add_mesh_kws = new_system._create_default_kws()
-        free_boundaries = openep.mesh.get_free_boundaries(mesh)
-
-        # This is the first plotter added to the system, so the index is 0
-        plotter.lower_limit.returnPressed.connect(lambda: self.update_colourbar_limits(new_system, index=0))
-        plotter.upper_limit.returnPressed.connect(lambda: self.update_colourbar_limits(new_system, index=0))
-
-        new_system.docks.append(dock)
-        new_system.plotters.append(plotter)
-        new_system.meshes.append(mesh)
-        new_system.add_mesh_kws.append(add_mesh_kws)
-        new_system.free_boundaries.append(free_boundaries)
-
-        # TODO: draw active scalars rather than bipolar_egm
-        self.draw_map(
-            mesh=new_system.meshes[0],
-            plotter=new_system.plotters[0],
-            data=new_system.data.electric.bipolar_egm.voltage,
-            add_mesh_kws=new_system.add_mesh_kws[0],
-        )
-
-        self.addDockWidget(Qt.LeftDockWidgetArea, dock)
         self.systems.append(new_system)
         self._system_counter += 1
         self._active_system = new_system.name
+
+        add_data_to_system_menu = QtWidgets.QMenu(points, self)
+        add_unipolar_action = QtWidgets.QAction("Unipolar electrograms", self)
+        add_unipolar_action.triggered.connect(lambda: self._add_data_to_openCARP(new_system))
+        add_data_to_system_menu.addAction(add_unipolar_action)
+        self.add_data_menu.addMenu(add_data_to_system_menu)
+
+        add_view_for_system_action = QtWidgets.QAction(points, self)
+        add_view_for_system_action.triggered.connect(lambda: self._add_view(new_system))
+        self.add_view_menu.addAction(add_view_for_system_action)
+
+    def _add_data_to_openCARP(self, system):
+        """Add data into an CARPData object."""
+
+        dialogue = QtWidgets.QFileDialog()
+        dialogue.setWindowTitle('Add an openCARP data file')
+        dialogue.setDirectory(QtCore.QDir.currentPath())
+        dialogue.setFileMode(QtWidgets.QFileDialog.ExistingFile)
+        dialogue.setNameFilter("openCARP data file (*.dat)")
+
+        if dialogue.exec_():
+
+            filename = dialogue.selectedFiles()[0]
+            system.data.add_data('unipolar egm', filename)
+            if len(system.plotters) == 0:
+                self._add_view(system)
+
+    def _add_view(self, system):
+        """Create a new CustomDockWidget for the given system."""
+
+        if system.data.electric is None:
+            error = QtWidgets.QMessageBox()
+            error.setIcon(QtWidgets.QMessageBox.Critical)
+            error.setText("No Data Error")
+            error.setInformativeText(
+                "Please load data into the system before creating a new view.\n"
+                "File > Add data to" 
+            )
+            error.setWindowTitle("Error")
+            error.exec_()
+            return
+
+        dock, plotter = system.create_dock()
+        mesh = system.data.create_mesh()
+        add_mesh_kws = system._create_default_kws()
+        free_boundaries = openep.mesh.get_free_boundaries(mesh)
+
+        index = len(system.plotters)
+        plotter.lower_limit.returnPressed.connect(lambda: self.update_colourbar_limits(system, index=index))
+        plotter.upper_limit.returnPressed.connect(lambda: self.update_colourbar_limits(system, index=index))
+
+        system.docks.append(dock)
+        system.plotters.append(plotter)
+        system.meshes.append(mesh)
+        system.add_mesh_kws.append(add_mesh_kws)
+        system.free_boundaries.append(free_boundaries)
+
+        # TODO: draw active scalars rather than bipolar_egm
+        self.draw_map(
+            mesh=system.meshes[index],
+            plotter=system.plotters[index],
+            data=system.data.electric.bipolar_egm.voltage,
+            add_mesh_kws=system.add_mesh_kws[index],
+        )
+
+        self.addDockWidget(Qt.LeftDockWidgetArea, dock)
         self.add_border_to_active_plotters()
 
     def add_border_to_active_plotters(self):
