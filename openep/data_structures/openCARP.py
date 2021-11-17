@@ -101,6 +101,8 @@ class CARPData:
         """
         Find all points connected to a given point by a single edge.
 
+        Adapted from: https://github.com/pyvista/pyvista-support/issues/96#issuecomment-571864471
+
         Args:
             faces (np.ndarray): faces of a mesh
             index (int): index of point for which we want to find the neighbouring points
