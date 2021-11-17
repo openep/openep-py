@@ -143,11 +143,12 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         Initialise data from an openCARP simulation.
         """
 
+        # TODO: allow user to first load points and indices then later add more data
         carp = openep.load_openCARP(
             points=points,
             indices=indices,
-            unipolar_egm=data,
         )
+        carp.add_data('unipolar egm', data)
 
         new_system = System(
             name=self._system_counter,
@@ -179,7 +180,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.draw_map(
             mesh=new_system.meshes[0],
             plotter=new_system.plotters[0],
-            data=new_system.data.bipolar_egm,
+            data=new_system.data.electric.bipolar_egm.voltage,
             add_mesh_kws=new_system.add_mesh_kws[0],
         )
 
@@ -217,10 +218,11 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         upper_limit = float(system.plotters[index].upper_limit.text())
         system.add_mesh_kws[index]["clim"] = [lower_limit, upper_limit]
 
+        # TODO: draw the active scalars rather than bipolar voltage
         self.draw_map(
             system.meshes[index],
             system.plotters[index],
-            system.data.bipolar_egm,
+            system.data.electric.bipolar_egm.voltage,
             system.add_mesh_kws[index],
             system.free_boundaries[index],
         )
@@ -287,7 +289,7 @@ class System:
         self.add_mesh_kws = []
 
     def __repr__(self):
-        return f"{self.type} dataset {len(self.data.unipolar_egm)} mapping sites."
+        return f"{self.type} dataset {len(self.data.points)} mapping sites."
 
     def create_dock(self):
         """Create a new dockable pyvista-qt plotter for rendering 3D maps.
