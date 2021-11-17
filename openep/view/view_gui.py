@@ -43,32 +43,18 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         super().__init__()
 
-        self._init_data()
+        self._init_systems()
         self._init_ui()
         self._add_menu_bar()
 
         self.setDockOptions(self.GroupedDragging | self.AllowTabbedDocks | self.AllowNestedDocks)
         self.setTabPosition(Qt.AllDockWidgetAreas, QtWidgets.QTabWidget.North)
 
-    def _init_data(self):
-        """
-        Set default values for variables that can later be set by the user.
-        """
+    def _init_systems(self):
+        """Containers and variables for keeping track of the systems loaded into the GUI."""
 
-        # Initially, display first electrogram only
-        self.egm_points = np.array([0], dtype=int)
-
-        # initial bipolar voltage colourbar limits (for when new windows are opened)
-        self._initial_colourbar_limits = (0, 2)
-
-        # We need a list of all cases currently loaded
-        # Once a case is loaded, we should keep track of:
-        # * it's name (defaults to monotonically increasing integers)
-        # * it's folder
-        # * it's type (OpenEP, openCARP)
-        # * it's data - either a Case or CARPData object
-        # * a list of it's dock widgets (one plotter per dock)
-        # i.e. {'name': str, 'folder': str, 'type': str, 'data': Union[Case, CARPData], 'docks': list[DockWidget]}
+        # We need to keep track of all cases currently loaded (both OpenEP and openCARP)
+        # Each system will keep track of its own docks/plotters/meshes
         self.systems = []
         self._system_counter = 0
 
@@ -86,7 +72,14 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.setWindowTitle("OpenEP: The open-source solution for electrophysiology data analysis")
 
     def _add_menu_bar(self):
-        """Add a menu bar to the GUI."""
+        """
+        Add a menu bar to the GUI.
+
+        The file menu has options for loading either an OpenEP dataset or an openCARP one, as well as
+        loading auxillary data into an existing openCARP system.
+
+        The view menu has options for creating a new 3D-viewer for an existing system.
+        """
 
         self.menubar = self.menuBar()
         file_menu = self.menubar.addMenu("File")
@@ -106,16 +99,23 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         file_menu.addMenu(load_menu)
         file_menu.addMenu(self.add_data_menu)
 
+        # The below will be used for creating a new 3D viewer for a given system
         view_menu = self.menubar.addMenu("View")
         self.add_view_menu = QtWidgets.QMenu("Add view for", self)
         view_menu.addMenu(self.add_view_menu)
         view_menu.addSeparator()
 
     def _load_case(self):
+        """Not yet implemented"""
         pass
 
     def _load_openCARP(self):
-        """Load a set of openCARP files."""
+        """
+        Load a set of openCARP files.
+
+        Requires that both a *.pts and *.elem file are selected (and no other file).
+        Auxillary added can later be by going to 'File > Add data to'.
+        """
 
         dialogue = QtWidgets.QFileDialog()
         dialogue.setWindowTitle('Load a set of openCARP files')
@@ -150,9 +150,14 @@ class OpenEpGUI(QtWidgets.QMainWindow):
     def _initialise_openCARP(self, points, indices):
         """
         Initialise data from an openCARP simulation.
+
+        A new system is created. If no other systems exist, this system is made the active
+        system.
+
+        Options for adding auxillary data to the system and opening a new 3D-viewer are added
+        to the 'File > Add data to' and the 'View > Add view for' menus, respectively.
         """
 
-        # TODO: allow user to first load points and indices then later add more data
         carp = openep.load_openCARP(
             points=points,
             indices=indices,
@@ -169,6 +174,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self._system_counter += 1
         self._active_system = new_system.name
 
+        # We need to dynamically add options for loading data/creating 3D viewers to the menu
         add_data_to_system_menu = QtWidgets.QMenu(points, self)
         add_unipolar_action = QtWidgets.QAction("Unipolar electrograms", self)
         add_unipolar_action.triggered.connect(lambda: self._add_data_to_openCARP(new_system))
@@ -176,11 +182,15 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.add_data_menu.addMenu(add_data_to_system_menu)
 
         add_view_for_system_action = QtWidgets.QAction(points, self)
-        add_view_for_system_action.triggered.connect(lambda: self._add_view(new_system))
+        add_view_for_system_action.triggered.connect(lambda: self.add_view(new_system))
         self.add_view_menu.addAction(add_view_for_system_action)
 
     def _add_data_to_openCARP(self, system):
-        """Add data into an CARPData object."""
+        """
+        Add data into an CARPData object.
+
+        If there are no plotters for this system, a new 3D viewer will automatically be created.
+        """
 
         dialogue = QtWidgets.QFileDialog()
         dialogue.setWindowTitle('Add an openCARP data file')
@@ -193,10 +203,14 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             filename = dialogue.selectedFiles()[0]
             system.data.add_data('unipolar egm', filename)
             if len(system.plotters) == 0:
-                self._add_view(system)
+                self.add_view(system)
 
-    def _add_view(self, system):
-        """Create a new CustomDockWidget for the given system."""
+    def add_view(self, system):
+        """
+        Create a new CustomDockWidget for the given system (i.e. open a new 3D viewer).
+
+        By default, the bipolar voltage is drawn.
+        """
 
         if system.data.electric is None:
             error = QtWidgets.QMessageBox()
@@ -204,7 +218,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             error.setText("No Data Error")
             error.setInformativeText(
                 "Please load data into the system before creating a new view.\n"
-                "File > Add data to" 
+                "File > Add data to"
             )
             error.setWindowTitle("Error")
             error.exec_()
@@ -237,6 +251,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.add_border_to_active_plotters()
 
     def add_border_to_active_plotters(self):
+        """Give all plotters of the active system a red border and all other plotters no border."""
 
         for system in self.systems:
             if system.name == self._active_system:
@@ -398,16 +413,3 @@ class System:
                 "above_label": " ",
             }
         }
-
-# Will we always have unipolar voltages form openCARP?
-# We need a way to optionally take, unipolar, bipolar, local activation time,
-# conduction velocity, etc.
-# These can be taken as optional arguments to CARPData. Do not automatically generate the bipolar data.
-# Instead, allow the user to call CARPData.bipolar_from_unipolar()
-# Then we need a way to calculate e.g. local activation times, conduction velocity
-
-# We also need a way to load data into openCARP systems from the GUI. Perhaps from the menu
-# File > Add data > (select system) > (select data type, e.g. unipolar) > open file dialogue
-
-# How can we allow other simulation formats? e.g. CHASTE
-
