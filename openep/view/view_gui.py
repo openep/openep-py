@@ -44,6 +44,9 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self._init_systems()
         self._init_ui()
         self._add_menu_bar()
+        self._create_egm_canvas_dock()
+        self._add_dock_widgets()
+        self._disable_dock_widgets()
 
         self.setDockOptions(self.GroupedDragging | self.AllowTabbedDocks | self.AllowNestedDocks)
         self.setTabPosition(Qt.AllDockWidgetAreas, QtWidgets.QTabWidget.North)
@@ -103,6 +106,102 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.add_view_menu = QtWidgets.QMenu("Add view for", self)
         view_menu.addMenu(self.add_view_menu)
         view_menu.addSeparator()
+
+    def _create_egm_canvas_dock(self):
+        """
+        Create a dockable widget for plotting interactive electrograms with matplotlib.
+
+        The user can select which points the electrograms will be plotted for, as well
+        as the type(s) of electrograms to plot: reference, bipolar, unipolar A,
+        unipolar B.
+
+        The user can also change the window of interest with a RangeSlider,
+        and setting the window of interest with a push button will re-interpolate
+        the electrogram data onto the surface (for OpenEP datasets) or re-calculate
+        voltages directly from electrograms (for openCARP datasets).
+        """
+        self.egm_dock = openep.view.custom_widgets.CustomDockWidget("Electrograms")
+        self.egm_canvas, self.egm_figure, self.egm_axis = openep.view.canvases.create_canvas()
+        egm_layout = QtWidgets.QVBoxLayout(self.egm_canvas)
+        egm_selection_layout = QtWidgets.QHBoxLayout()
+        egm_type_layout = QtWidgets.QHBoxLayout()
+
+        # Add widgets for manually selecting electrograms from point indices
+        egm_selection_text = QtWidgets.QLabel("Select EGMs (indices of points):")
+        egm_selection_text.setMinimumWidth(220)
+        egm_selection_text.setMaximumWidth(300)
+        egm_selection_text.setStyleSheet('border: 0px; background-color: #d8dcd6;')
+        egm_selection_layout.addWidget(egm_selection_text)
+
+        self.egm_selection = QtWidgets.QLineEdit()
+        self.egm_selection.setMinimumWidth(100)
+        self.egm_selection.setMaximumWidth(300)
+        self.egm_selection.setText("0")
+        self.egm_selection.setPlaceholderText("indices")
+        self.egm_selection.returnPressed.connect(self.update_electrograms)
+        egm_selection_layout.addWidget(self.egm_selection)
+
+        egm_selection_layout.addStretch()
+        egm_layout.addLayout(egm_selection_layout)
+
+        # Add radio buttons to select bipolar, unipolar (A/B), and reference electrograms
+        self.egm_reference_checkbox, self.egm_bipolar_checkbox, self.egm_unipolar_A_checkbox, self.egm_unipolar_B_checkbox = \
+            openep.view.canvases.add_egm_type_widgets(
+                canvas=self.egm_canvas,
+            )
+
+        checkbox_group = QtWidgets.QButtonGroup()
+        for box in [self.egm_reference_checkbox, self.egm_bipolar_checkbox,
+                    self.egm_unipolar_A_checkbox, self.egm_unipolar_B_checkbox]:
+
+            box.stateChanged.connect(self.plot_electrograms)
+            checkbox_group.addButton(box)
+            egm_type_layout.addWidget(box)
+
+        egm_type_layout.addStretch()
+        egm_layout.addLayout(egm_type_layout)
+        egm_layout.addStretch()
+
+        # Create toolbar for saving, zooming etc.
+        toolbar = openep.view.canvases.add_toolbar(
+            canvas=self.egm_canvas,
+            parent=self.egm_dock,
+        )
+        egm_layout.addWidget(toolbar)
+
+        # Create a placeholder widget to hold our canvas, toolbar, and selection widgets
+        egm_canvas_main = QtWidgets.QMainWindow()
+        egm_canvas_main.setCentralWidget(self.egm_canvas)
+
+        # The dock is set to have bold font (so the title stands out)
+        # But all other widgets should have normal weighted font
+        main_font = QtGui.QFont()
+        main_font.setBold(False)
+        egm_canvas_main.setFont(main_font)
+
+        self.egm_dock.setWidget(egm_canvas_main)
+
+    def _add_dock_widgets(self):
+        """
+        Add dockable widgets to the main window.
+
+        The two BackgroundPlotters are tabified, as are the two MPL canvases.
+        """
+
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.egm_dock)
+
+        for dock in [self.egm_dock]:
+            dock.setAllowedAreas(Qt.AllDockWidgetAreas)
+
+    def _disable_dock_widgets(self):
+        """
+        Ignore all key presses in the dock widgets.
+
+        This is required if there is no file loaded, otherwise
+        the GUI will crash.
+        """
+
+        self.egm_dock.setEnabled(False)
 
     def _load_case(self):
         """Not yet implemented"""
@@ -248,10 +347,10 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         )
 
         self.addDockWidget(Qt.LeftDockWidgetArea, dock)
-        self.add_border_to_active_plotters()
+        self.highlight_menubars_of_active_plotters()
 
-    def add_border_to_active_plotters(self):
-        """Give all plotters of the active system a red border and all other plotters no border."""
+    def highlight_menubars_of_active_plotters(self):
+        """Make the menubars of all docks in the active system blue."""
 
         for system in self.systems:
             if system.name == self._active_system:
@@ -329,6 +428,11 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 plotter=plotter,
             )
 
+    def update_electrograms(self):
+        pass
+
+    def plot_electrograms(self):
+        pass
 
 @attrs(auto_attribs=True, auto_detect=True)
 class System:
