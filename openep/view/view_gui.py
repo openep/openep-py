@@ -45,11 +45,9 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self._init_ui()
         self._add_menu_bar()
         self._create_egm_canvas_dock()
+        self._create_analysis_canvas_dock()
         self._add_dock_widgets()
         self._disable_dock_widgets()
-
-        self.setDockOptions(self.GroupedDragging | self.AllowTabbedDocks | self.AllowNestedDocks)
-        self.setTabPosition(Qt.AllDockWidgetAreas, QtWidgets.QTabWidget.North)
 
     def _init_systems(self):
         """Containers and variables for keeping track of the systems loaded into the GUI."""
@@ -180,6 +178,42 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         self.egm_dock.setWidget(egm_canvas_main)
 
+    def _create_analysis_canvas_dock(self):
+        pass
+
+        """
+        Create a dockable widget for other matplotlib plots.
+
+        For example, plotting a histogram of the surface area occupied by
+        a range of bipolar voltages.
+        """
+
+        self.analysis_dock = openep.view.custom_widgets.CustomDockWidget("Analysis")
+        self.analysis_canvas, self.analysis_figure, self.analysis_axis = openep.view.canvases.create_canvas()
+        analysis_layout = QtWidgets.QVBoxLayout(self.analysis_canvas)
+
+        analysis_layout.addStretch()
+
+        # Create toolbar for saving, zooming etc.
+        toolbar = openep.view.canvases.add_toolbar(
+            canvas=self.analysis_canvas,
+            parent=self.analysis_dock,
+            keep_actions=['Save'],
+        )
+        analysis_layout.addWidget(toolbar)
+
+        # Create a placeholder widget to hold our canvas, toolbar, and selection widgets
+        analysis_canvas_main = QtWidgets.QMainWindow()
+        analysis_canvas_main.setCentralWidget(self.analysis_canvas)
+
+        # The dock is set to have bold font (so the title stands out)
+        # But all other widgets should have normal weighted font
+        main_font = QtGui.QFont()
+        main_font.setBold(False)
+        analysis_canvas_main.setFont(main_font)
+
+        self.analysis_dock.setWidget(analysis_canvas_main)
+
     def _add_dock_widgets(self):
         """
         Add dockable widgets to the main window.
@@ -188,9 +222,13 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         """
 
         self.addDockWidget(Qt.LeftDockWidgetArea, self.egm_dock)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.analysis_dock)
 
-        for dock in [self.egm_dock]:
+        for dock in [self.egm_dock, self.analysis_dock]:
             dock.setAllowedAreas(Qt.AllDockWidgetAreas)
+
+        self.setDockOptions(self.GroupedDragging | self.AllowTabbedDocks | self.AllowNestedDocks)
+        self.setTabPosition(Qt.AllDockWidgetAreas, QtWidgets.QTabWidget.North)
 
     def _disable_dock_widgets(self):
         """
@@ -201,6 +239,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         """
 
         self.egm_dock.setEnabled(False)
+        self.analysis_dock.setEnabled(False)
 
     def _load_case(self):
         """Not yet implemented"""
@@ -436,6 +475,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
     def plot_electrograms(self):
         pass
+
 
 @attrs(auto_attribs=True, auto_detect=True)
 class System:
