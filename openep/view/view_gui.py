@@ -274,6 +274,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
             if len(filenames) != 2:
                 error.exec_()
+                return
             elif (".pts" not in extensions) or (".elem" not in extensions):
                 error.exec_()
                 return
@@ -379,17 +380,140 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         system.add_mesh_kws.append(add_mesh_kws)
         system.free_boundaries.append(free_boundaries)
 
-        # TODO: draw active scalars rather than bipolar_egm
-        self.draw_map(
-            mesh=system.meshes[index],
-            plotter=system.plotters[index],
-            data=system.data.electric.bipolar_egm.voltage,
-            add_mesh_kws=system.add_mesh_kws[index],
-            free_boundaries=system.free_boundaries[index],
+        # we should always (for now) have bipolar voltages
+        plotter.bipolar_action.triggered.connect(
+            lambda: self.change_active_scalars(system, index=index, scalars='bipolar')
         )
+        if plotter.unipolar_action is not None:
+            plotter.unipolar_action.triggered.connect(
+                lambda: self.change_active_scalars(system, index=index, scalars='unipolar')
+            )
+
+        dock.setWindowTitle(plotter.title)
+        self.draw_map(
+            mesh=mesh,
+            plotter=plotter,
+            data=plotter.active_scalars,
+            add_mesh_kws=add_mesh_kws,
+            free_boundaries=free_boundaries,
+        )
+
+        if system is self._active_system:
+            self.update_available_electrograms()
 
         self.addDockWidget(Qt.LeftDockWidgetArea, dock)
         self.highlight_menubars_of_active_plotters()
+
+    def update_colourbar_limits(self, system, index):
+        """Update colourbar limits for a given plotter.
+
+        Args:
+            system (System): system containing the plotter whose colourbar
+                limits will be changed
+            index (int): index of plotter to modify
+        """
+
+        if not system.plotters[index].lower_limit.text().strip():
+            return
+        elif not system.plotters[index].upper_limit.text().strip():
+            return
+
+        lower_limit = float(system.plotters[index].lower_limit.text())
+        upper_limit = float(system.plotters[index].upper_limit.text())
+        system.add_mesh_kws[index]["clim"] = [lower_limit, upper_limit]
+
+        self.draw_map(
+            system.meshes[index],
+            system.plotters[index],
+            system.plotters[index].active_scalars,
+            system.add_mesh_kws[index],
+            system.free_boundaries[index],
+        )
+
+    def change_active_scalars(self, system, index, scalars):
+        """Update the scalar values that are being projected onto the mesh."""
+
+        if system.type == "openCARP":
+            self._change_openCARP_active_scalars(system, index, scalars)
+
+        system.docks[index].setWindowTitle(system.plotters[index].title)
+        self.draw_map(
+            system.meshes[index],
+            system.plotters[index],
+            system.plotters[index].active_scalars,
+            system.add_mesh_kws[index],
+            system.free_boundaries[index],
+        )
+
+    def _change_openCARP_active_scalars(self, system, index, scalars):
+        """Update the scalar values that are being projected onto the mesh for an openCARP dataset."""
+
+        if scalars == 'bipolar':
+            system.plotters[index].active_scalars = system.data.electric.bipolar_egm.voltage
+            system.plotters[index].title = f"{system.name}: Bipolar voltage"
+        elif scalars == 'unipolar':
+            system.plotters[index].active_scalars = system.data.electric.unipolar_egm.voltage
+            system.plotters[index].title = f"{system.name}: Unipolar voltage"
+
+    def draw_map(self, mesh, plotter, data, add_mesh_kws, free_boundaries=None):
+        """
+        Project scalar values onto the surface of the mesh.
+
+        Also draw the free boundaries (anatomical structures) as black lines.
+        """
+
+        plotter = openep.draw.draw_map(
+            mesh=mesh,
+            field=data,
+            plotter=plotter,
+            free_boundaries=False,
+            add_mesh_kws=add_mesh_kws,
+        )
+
+        if free_boundaries is not None:
+            plotter = openep.draw.draw_free_boundaries(
+                free_boundaries,
+                colour="black",
+                width=5,
+                plotter=plotter,
+            )
+
+    def update_available_electrograms(self):
+        """Update the electrom types that can be plotted."""
+
+        electric = self._active_system.data.electric
+
+        has_electrograms = False
+        if electric.reference_egm is not None and electric.reference_egm.egm is not None:
+            has_electrograms = True
+            self.egm_reference_checkbox.setEnabled(True)
+        else:
+            self.egm_reference_checkbox.setEnabled(False)
+
+        if electric.bipolar_egm is not None and electric.bipolar_egm.egm is not None:
+            has_electrograms = True
+            self.egm_bipolar_checkbox.setEnabled(True)
+        else:
+            self.egm_bipolar_checkbox.setEnabled(False)
+
+        if electric.unipolar_egm is not None and electric.unipolar_egm.egm is not None:
+            has_electrograms = True
+            self.egm_unipolar_A_checkbox.setEnabled(True)
+            self.egm_unipolar_B_checkbox.setEnabled(True)
+        else:
+            self.egm_unipolar_A_checkbox.setEnabled(False)
+            self.egm_unipolar_B_checkbox.setEnabled(False)
+
+        if has_electrograms:
+            self.egm_dock.setEnabled(True)
+        else:
+            self.egm_dock.setEnabled(False)
+
+    def update_electrograms(self):
+        pass
+
+    def plot_electrograms(self):
+        pass
 
     def highlight_menubars_of_active_plotters(self):
         """Make the menubars of all docks in the active system blue."""
@@ -419,62 +543,6 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                         "border: None;"
                         "}"
                     )
-
-    def update_colourbar_limits(self, system, index):
-        """Update colourbar limits for a given plotter.
-
-        Args:
-            system (System): system containing the plotter whose colourbar
-                limits will be changed
-            index (int): index of plotter to modify
-        """
-
-        if not system.plotters[index].lower_limit.text().strip():
-            pass
-        elif not system.plotters[index].upper_limit.text().strip():
-            pass
-
-        lower_limit = float(system.plotters[index].lower_limit.text())
-        upper_limit = float(system.plotters[index].upper_limit.text())
-        system.add_mesh_kws[index]["clim"] = [lower_limit, upper_limit]
-
-        # TODO: draw the active scalars rather than bipolar voltage
-        self.draw_map(
-            system.meshes[index],
-            system.plotters[index],
-            system.data.electric.bipolar_egm.voltage,
-            system.add_mesh_kws[index],
-            system.free_boundaries[index],
-        )
-
-    def draw_map(self, mesh, plotter, data, add_mesh_kws, free_boundaries=None):
-        """
-        Project scalar values onto the surface of the mesh.
-
-        Also draw the free boundaries (anatomical structures) as black lines.
-        """
-
-        plotter = openep.draw.draw_map(
-            mesh=mesh,
-            field=data,
-            plotter=plotter,
-            free_boundaries=False,
-            add_mesh_kws=add_mesh_kws,
-        )
-
-        if free_boundaries is not None:
-            plotter = openep.draw.draw_free_boundaries(
-                free_boundaries,
-                colour="black",
-                width=5,
-                plotter=plotter,
-            )
-
-    def update_electrograms(self):
-        pass
-
-    def plot_electrograms(self):
-        pass
 
 
 @attrs(auto_attribs=True, auto_detect=True)
@@ -510,6 +578,9 @@ class System:
         This can be used for projecting scalar properties onto the 3D
         surface.
         """
+
+        if self.data is None or self.data.electric is None:
+            return
 
         dock = openep.view.custom_widgets.CustomDockWidget(f"{self.name}: Bipolar voltage")
         dock.main = QtWidgets.QMainWindow()
@@ -556,14 +627,26 @@ class System:
 
         field_menu = dock.main.menubar.addMenu("Field")
         field_group = QtWidgets.QActionGroup(dock.main)
-        bipolar_action = QtWidgets.QAction("Bipolar voltage", dock.main)
-        unipolar_action = QtWidgets.QAction("Unipolar voltage", dock.main)
-        bipolar_action.setChecked(True)
-        unipolar_action.setChecked(False)
-        field_group.addAction(bipolar_action)
-        field_group.addAction(unipolar_action)
-        field_menu.addAction(bipolar_action)
-        field_menu.addAction(unipolar_action)
+
+        if self.data.electric.bipolar_egm is not None and self.data.electric.bipolar_egm.voltage is not None:
+            plotter.bipolar_action = QtWidgets.QAction("Bipolar voltage", dock.main)
+            plotter.bipolar_action.setChecked(True)
+            field_group.addAction(plotter.bipolar_action)
+            field_menu.addAction(plotter.bipolar_action)
+            plotter.active_scalars = self.data.electric.bipolar_egm.voltage
+            plotter.title = f"{self.name}: Bipolar voltage"
+        else:
+            plotter.bipolar_action = None
+
+        if self.data.electric.unipolar_egm is not None and self.data.electric.unipolar_egm.voltage is not None:
+            plotter.unipolar_action = QtWidgets.QAction("Unipolar voltage", dock.main)
+            plotter.unipolar_action.setChecked(True)
+            field_group.addAction(plotter.unipolar_action)
+            field_menu.addAction(plotter.unipolar_action)
+            plotter.active_scalars = self.data.electric.unipolar_egm.voltage
+            plotter.title = f"{self.name}: Unipolar voltage"
+        else:
+            plotter.unipolar_action = None
 
         # Set widget
         dock.main.setCentralWidget(plotter)
