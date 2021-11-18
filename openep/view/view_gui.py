@@ -27,7 +27,6 @@ from attr import attrs
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
-from matplotlib.pyplot import figure
 import numpy as np
 
 import openep
