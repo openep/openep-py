@@ -27,6 +27,7 @@ from attr import attrs
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
+import numpy as np
 
 import openep
 import openep.view.custom_widgets
@@ -510,10 +511,154 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             self.egm_dock.setEnabled(False)
 
     def update_electrograms(self):
-        pass
+        """
+        Extract electrograms at specified indices and re-plot.
+
+        The points are specified by the user and set via use of the
+        self.egm_select (QLineEdit) and button_egm_select (QPushButton) widgets.
+        """
+
+        # Get data for new set of points
+        egm_text = self.egm_selection.text()
+        splitter = ',' if ',' in egm_text else ' '
+        self.egm_points = np.asarray(egm_text.split(splitter), dtype=int)
+        
+        self.extract_electrograms()
+        self.plot_electrograms()
+
+    def extract_electrograms(self):
+
+        system = self._active_system
+
+        if self.egm_reference_checkbox.isEnabled():
+            self.egm_reference_traces, self.egm_names = openep.case.get_electrograms_at_points(
+                system.data,
+                within_woi=False,
+                buffer=0,
+                indices=self.egm_points,
+                egm_type="reference",
+                return_names=True,
+                return_lat=False,
+            )
+            self.egm_times = np.arange(self.egm_reference_traces.shape[1])
+
+        if self.egm_bipolar_checkbox.isEnabled():
+            self.egm_bipolar_traces, self.egm_names = openep.case.get_electrograms_at_points(
+                system.data,
+                within_woi=False,
+                buffer=0,
+                indices=self.egm_points,
+                egm_type="bipolar",
+                return_names=False,
+                return_lat=False,
+            )
+            self.egm_times = np.arange(self.egm_bipolar_traces.shape[1])
+
+        if self.egm_unipolar_A_checkbox.isEnabled():
+            unipolar_traces, self.egm_names = openep.case.get_electrograms_at_points(
+                system.data,
+                within_woi=False,
+                buffer=0,
+                indices=self.egm_points,
+                egm_type="unipolar",
+                return_names=False,
+                return_lat=False,
+            )
+            self.egm_unipolar_A_traces = unipolar_traces[:, :, 0]
+            self.egm_unipolar_B_traces = unipolar_traces[:, :, 1]
+            self.egm_times = np.arange(self.egm_unipolar_A_traces.shape[1])
 
     def plot_electrograms(self):
-        pass
+        """
+        Plot electrograms for the currently-selected set of points.
+
+        Electrograms must first have been extracted using update_electrograms.
+        Here we will plot the reference, bipolar, unipolar A, unipolar B
+        electrograms for each point.
+        """
+
+        # Set up axis for new plots
+        ylim = self.egm_axis.get_ylim()
+        xlim = self.egm_axis.get_xlim()
+
+        self.egm_axis.cla()
+        self.egm_axis.set_yticklabels([])
+        self.egm_axis.set_ylim(ylim)
+        self.egm_axis.set_xlim(xlim)
+
+        # Reference voltage
+        if self.egm_reference_checkbox.isEnabled() and self.egm_reference_checkbox.isChecked():
+
+            _, self.egm_axis.axes = openep.draw.plot_electrograms(
+                self.egm_times,
+                self.egm_reference_traces,
+                axis=self.egm_axis.axes,
+                colour="xkcd:scarlet",
+                y_separation=2,
+            )
+
+        # Bipolar voltage
+        if self.egm_bipolar_checkbox.isEnabled() and self.egm_bipolar_checkbox.isChecked():
+
+            _, self.egm_axis.axes = openep.draw.plot_electrograms(
+                self.egm_times,
+                self.egm_bipolar_traces,
+                axis=self.egm_axis.axes,
+                colour="xkcd:cerulean",
+                y_separation=2,
+            )
+
+        # Unipolar A voltage
+        if self.egm_unipolar_A_checkbox.isEnabled() and self.egm_unipolar_A_checkbox.isChecked():
+
+            _, self.egm_axis.axes = openep.draw.plot_electrograms(
+                self.egm_times,
+                self.egm_unipolar_A_traces,
+                axis=self.egm_axis.axes,
+                colour="xkcd:tree green",
+                y_start=1,
+                y_separation=2,
+            )
+
+        # Unipolar B voltage
+        if self.egm_unipolar_B_checkbox.isEnabled() and self.egm_unipolar_B_checkbox.isChecked():
+
+            _, self.egm_axis.axes = openep.draw.plot_electrograms(
+                self.egm_times,
+                self.egm_unipolar_B_traces,
+                axis=self.egm_axis.axes,
+                colour="xkcd:pumpkin",
+                y_start=1,
+                y_separation=2,
+            )
+
+        # Add labels if necessary
+        yticks = []
+        yticklabels = []
+        separations = np.arange(self.egm_points.size) * 2
+
+        if (
+            (self.egm_reference_checkbox.isEnabled() and self.egm_reference_checkbox.isChecked()) or \
+            (self.egm_bipolar_checkbox.isEnabled() and self.egm_bipolar_checkbox.isChecked())
+        ):
+            yticks.extend(separations)
+            yticklabels.extend(self.egm_names)
+
+        # Unipolar A and B are shifted above the bipolar and reference electrograms for clarity
+        if (
+            (self.egm_unipolar_A_checkbox.isEnabled() and self.egm_unipolar_A_checkbox.isChecked()) or \
+            (self.egm_unipolar_B_checkbox.isEnabled() and self.egm_unipolar_B_checkbox.isChecked())
+        ):
+            yticks.extend(separations + 1)
+            yticklabels.extend(self.egm_names)
+
+        self.egm_axis.set_yticks(yticks)
+        self.egm_axis.set_yticklabels(yticklabels)
+
+        # draw vertical lines at the window of interest
+        self.initialise_woi_slider_limits()
+
+        self.egm_canvas.draw()
 
     def highlight_menubars_of_active_plotters(self):
         """Make the menubars of all docks in the active system blue."""
