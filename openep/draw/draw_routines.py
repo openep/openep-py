@@ -117,11 +117,17 @@ def draw_map(
 
     # Create default settings for the plot
     default_scalar_bar_args = dict(
-        interactive=True,
+        interactive=False,
+        color="#363737",  # set the colour of the text
+        title_font_size=12,
+        label_font_size=11,
         n_labels=2,
-        label_font_size=30,
         below_label=" ",
         above_label=" ",
+        vertical=False,
+        width=0.3,
+        height=0.05,
+        position_x=0.025,
     )
     if add_mesh_kws is not None and "scalar_bar_args" in add_mesh_kws:
         default_scalar_bar_args = {**default_scalar_bar_args, **add_mesh_kws["scalar_bar_args"]}
@@ -136,11 +142,11 @@ def draw_map(
         "above_color": "magenta",
         "below_color": "brown",
         "nan_color": "gray",
-        "scalar_bar_args": default_scalar_bar_args,
     }
 
     # combine the default and user-given kwargs
     default_add_mesh_kws = default_add_mesh_kws if add_mesh_kws is None else {**default_add_mesh_kws, **add_mesh_kws}
+    default_add_mesh_kws["scalar_bar_args"] = default_scalar_bar_args
 
     plotter.add_mesh(
         mesh=mesh,

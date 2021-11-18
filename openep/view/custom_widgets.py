@@ -21,7 +21,7 @@
 Custom Qt Widgets for the OpenEP-Py GUI.
 """
 
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets, QtGui
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
 
@@ -33,11 +33,20 @@ class CustomDockWidget(QtWidgets.QDockWidget):
     """
 
     def __init__(self, title: str):
+
         super().__init__(title)
-        self.setTitleBarWidget(QtWidgets.QWidget())
+        self._init_title()
         self.dockLocationChanged.connect(self.on_dockLocationChanged)
 
+    def _init_title(self):        
+
+        self.setTitleBarWidget(QtWidgets.QWidget())
+        title_font = QtGui.QFont()
+        title_font.setBold(True)
+        self.setFont(title_font)
+
     def on_dockLocationChanged(self):
+
         main: QtWidgets.QMainWindow = self.parent()
         all_dock_widgets = main.findChildren(QtWidgets.QDockWidget)
 

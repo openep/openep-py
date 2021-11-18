@@ -27,8 +27,6 @@ from attr import attrs
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
-import pyvista
-import numpy as np
 
 import openep
 import openep.view.custom_widgets
@@ -69,6 +67,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         Lots of the layout is handled automatically by QtWidgets.QMainWindow.
         """
 
+        self.setMinimumSize(800, 600)
         self.setWindowTitle("OpenEP: The open-source solution for electrophysiology data analysis")
 
     def _add_menu_bar(self):
@@ -174,7 +173,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self._system_counter += 1
         self._active_system = new_system.name
 
-        # We need to dynamically add options for loading data/creating 3D viewers to the menu
+        # We need to dynamically add options for loading data/creating 3D viewers to the main menubar
         add_data_to_system_menu = QtWidgets.QMenu(points, self)
         add_unipolar_action = QtWidgets.QAction("Unipolar electrograms", self)
         add_unipolar_action.triggered.connect(lambda: self._add_data_to_openCARP(new_system))
@@ -184,7 +183,6 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         add_view_for_system_action = QtWidgets.QAction(points, self)
         add_view_for_system_action.triggered.connect(lambda: self.add_view(new_system))
         self.add_view_menu.addAction(add_view_for_system_action)
-        
 
     def _add_data_to_openCARP(self, system):
         """
@@ -246,6 +244,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             plotter=system.plotters[index],
             data=system.data.electric.bipolar_egm.voltage,
             add_mesh_kws=system.add_mesh_kws[index],
+            free_boundaries=system.free_boundaries[index],
         )
 
         self.addDockWidget(Qt.LeftDockWidgetArea, dock)
@@ -256,11 +255,29 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         for system in self.systems:
             if system.name == self._active_system:
-                for plotter in system.plotters:
-                    plotter.renderer.add_border(color="red", width=5)
+                for dock in system.docks:
+                    dock.main.menubar.setStyleSheet(
+                        "QMenuBar{"
+                        "background-color: #5a86ad;"  # xkcd:dusty blue
+                        "color: black;"
+                        "border: None;"
+                        "}"
+                    )
+                # The below can be used to put a red border around the plotter (but not the entire window)
+                # for plotter in system.plotters:
+                #     plotter.renderer.add_border(color="red", width=5)
             else:
-                for plotter in system.plotters:
-                    plotter.renderer.add_border(color=None, width=5)
+                # The below can be used to remove the red border around the plotter
+                # for plotter in system.plotters:
+                #     plotter.renderer.add_border(color=None, width=5)
+                for dock in system.docks:
+                    dock.main.menubar.setStyleSheet(
+                        "QMenuBar{"
+                        "background-color: #d8dcd6;"
+                        "color: black;"
+                        "border: None;"
+                        "}"
+                    )
 
     def update_colourbar_limits(self, system, index):
         """Update colourbar limits for a given plotter.
@@ -289,7 +306,6 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             system.free_boundaries[index],
         )
 
-
     def draw_map(self, mesh, plotter, data, add_mesh_kws, free_boundaries=None):
         """
         Project scalar values onto the surface of the mesh.
@@ -311,7 +327,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 colour="black",
                 width=5,
                 plotter=plotter,
-        )
+            )
 
 
 @attrs(auto_attribs=True, auto_detect=True)
@@ -348,42 +364,53 @@ class System:
         surface.
         """
 
-        dock  = openep.view.custom_widgets.CustomDockWidget(f"{self.name}: Bipolar voltage")
-        dock_main = QtWidgets.QMainWindow()
+        dock = openep.view.custom_widgets.CustomDockWidget(f"{self.name}: Bipolar voltage")
+        dock.main = QtWidgets.QMainWindow()
         plotter = openep.view.plotters.create_plotter()
-        plotter_layout = QtWidgets.QVBoxLayout(plotter)
 
-        # Widgets for setting the colourbar limits
-        colour_bar_layout = QtWidgets.QFormLayout()
-        colour_bar_layout.setFormAlignment(QtCore.Qt.AlignLeft) 
-        colour_bar_selections = QtWidgets.QHBoxLayout()
+        # The dock is set to have bold font (so the title stands out)
+        # But all other widgets should have normal weighted font
+        main_font = QtGui.QFont()
+        main_font.setBold(False)
+        dock.main.setFont(main_font)
+
+        # TODO: We're currently using line edits to set colourbar limits - look into RangeSlider
+        plotter_layout = QtWidgets.QVBoxLayout(plotter)
+        colour_bar_layout = QtWidgets.QHBoxLayout()
+
+        colour_bar_text = QtWidgets.QLabel("Colourbar limits:")
+        colour_bar_text.setMinimumWidth(100)
+        colour_bar_text.setMaximumWidth(200)
+        colour_bar_text.setStyleSheet('border: 0px; background-color: #d8dcd6;')
+        colour_bar_layout.addWidget(colour_bar_text)
 
         lower_limit = QtWidgets.QLineEdit()
-        lower_limit.setMinimumWidth(50)
+        lower_limit.setFixedWidth(40)
         lower_limit.setText("0")
         lower_limit.setPlaceholderText("lower")
         lower_limit.setValidator(QtGui.QIntValidator(bottom=0.0))
-        colour_bar_selections.addWidget(lower_limit)
+        colour_bar_layout.addWidget(lower_limit)
 
         upper_limit = QtWidgets.QLineEdit()
-        upper_limit.setMinimumWidth(50)
+        upper_limit.setFixedWidth(40)
         upper_limit.setText("5")
         upper_limit.setPlaceholderText("upper")
         lower_limit.setValidator(QtGui.QIntValidator(bottom=0.0))
-        colour_bar_selections.addWidget(upper_limit)
+        colour_bar_layout.addWidget(upper_limit)
 
-        # Add layouts
-        colour_bar_layout.addRow("Colourbar limits:", colour_bar_selections)
+        colour_bar_layout.addStretch()
         plotter_layout.addLayout(colour_bar_layout)
+        plotter_layout.addStretch()
 
         # Create a menubar for this dock
         # From here we can control e.g. the scalar values projected onto the surface
-        dock_main_menubar = dock_main.menuBar()
-        dock_main_menubar.setNativeMenuBar(False)
-        field_menu = dock_main_menubar.addMenu("Field")
-        field_group = QtWidgets.QActionGroup(dock_main)
-        bipolar_action = QtWidgets.QAction("Bipolar voltage", dock_main)
-        unipolar_action = QtWidgets.QAction("Unipolar voltage", dock_main)
+        dock.main.menubar = dock.main.menuBar()
+        dock.main.menubar.setNativeMenuBar(False)
+
+        field_menu = dock.main.menubar.addMenu("Field")
+        field_group = QtWidgets.QActionGroup(dock.main)
+        bipolar_action = QtWidgets.QAction("Bipolar voltage", dock.main)
+        unipolar_action = QtWidgets.QAction("Unipolar voltage", dock.main)
         bipolar_action.setChecked(True)
         unipolar_action.setChecked(False)
         field_group.addAction(bipolar_action)
@@ -392,8 +419,8 @@ class System:
         field_menu.addAction(unipolar_action)
 
         # Set widget
-        dock_main.setCentralWidget(plotter)
-        dock.setWidget(dock_main)
+        dock.main.setCentralWidget(plotter)
+        dock.setWidget(dock.main)
         dock.setAllowedAreas(Qt.AllDockWidgetAreas)
 
         plotter.lower_limit = lower_limit
@@ -406,16 +433,6 @@ class System:
             "clim": [0, 5],
             "scalar_bar_args": {
                 "title": "Voltage (mV)",
-                "title_font_size": 8,
-                "label_font_size": 8,
-                "color": "#363737",
-                "vertical": False,
-                "width": 0.4,
-                "height": 0.04,
-                "position_x": 0.025,
-                "interactive": False,
-                "below_label": " ",
-                "above_label": " ",
             }
         }
 
