@@ -27,6 +27,7 @@ from attr import attrs
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
+from matplotlib.pyplot import figure
 import numpy as np
 
 import openep
@@ -400,7 +401,31 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         )
 
         if system is self._active_system:
-            self.update_available_electrograms()
+            self.check_for_available_electrograms()
+
+            if self.has_electrograms:
+
+                self.egm_axis.axis('on')  # make sure we can see the axes now
+                self.egm_axis.set_xlim(self.egm_times[0]-100, self.egm_times[-1]+100)
+                self.egm_axis.set_ylim(-1, 13)
+
+                # We can't create the slider earlier because we need to know the min and max egm times
+                self.egm_slider = openep.view.canvases.add_woi_range_slider(
+                    figure=self.egm_figure,
+                    axis=[0.1535, 0.05, 0.7185, 0.01],  # location of the RangeSlider on the figure
+                    valmin=self.egm_times[0],
+                    valmax=self.egm_times[-1],
+                )
+                self.initialise_woi_slider_limits()
+                self.egm_slider.on_changed(self.update_woi_slider_limits)
+
+                self.set_woi_button = openep.view.canvases.add_woi_set_button(
+                    figure=self.egm_figure,
+                    axis=[0.782, 0.02, 0.09, 0.025],
+                )
+                self.set_woi_button.on_clicked(self.update_fields_and_draw)
+
+                self.update_electrograms()
 
         self.addDockWidget(Qt.LeftDockWidgetArea, dock)
         self.highlight_menubars_of_active_plotters()
@@ -456,6 +481,72 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             system.plotters[index].active_scalars = system.data.electric.unipolar_egm.voltage
             system.plotters[index].title = f"{system.name}: Unipolar voltage"
 
+        system.plotters[index].active_scalars_sel = scalars
+
+    def update_fields_and_draw(self, event):
+        """
+        If the active system is an OpenEP case:
+        Interpolate EGM data onto the surface and draw a map if necessary.
+
+        Or, if the active system is an openCARP simulation:
+        Recalculate the bipolar and unipolar voltages using the new window of interest.
+
+        The event argument is ignored. It is there because when
+        self.set_woi_button.on_clicked (mpl.widgets.Button) is pressed,
+        matplotlib passes an event to the called function (i.e. this one).
+        """
+
+        system = self._active_system
+        if system.type == "OpenEP":
+            self.interpolate_openEP_fields()
+        elif system.type == "openCARP":
+            self.recalculate_openCARP_fields()
+
+        n_plotters = len(system.plotters)
+        for index in range(n_plotters):
+            self.change_active_scalars(system, index=index, scalars=system.plotters[index].active_scalars_sel)
+
+    def interpolate_openEP_fields(self):
+        """
+        Interpolate EGM data onto the surface.
+
+        We use a buffer of zero as the window of interest if determined by the user,
+        via self.slider (mpl.widgets.RangeSlider) and self.set_woi_button (mpl.widgets.Button).
+        """
+
+        system = self._active_system
+        case = system.data
+        bipolar_voltage = openep.case.interpolate_voltage_onto_surface(
+            case,
+            max_distance=None,
+            buffer=0,
+        )
+        unipolar_voltage = openep.case.interpolate_voltage_onto_surface(
+            case,
+            max_distance=None,
+            buffer=0,
+            bipolar=False,
+        )
+
+        system.interpolated_fields = {
+            "bipolar_voltage": bipolar_voltage,
+            "unipolar_voltage": unipolar_voltage,
+        }
+
+    def recalculate_openCARP_fields(self):
+        """Recalculate the scalar values that are being projected onto the mesh for an openCARP dataset."""
+
+        carp = self._active_system.data
+
+        if self.egm_unipolar_A_checkbox.isEnabled():
+            carp.electric.unipolar_egm.voltage = openep.case.calculate_voltage_from_electrograms(
+                carp, buffer=0, bipolar=False,
+            )  # TODO: why does this work? What is the shape of this voltage array?
+        if self.egm_bipolar_checkbox.isEnabled():
+            carp.electric.bipolar_egm.voltage = openep.case.calculate_voltage_from_electrograms(
+                carp, buffer=0, bipolar=True,
+            )
+
     def draw_map(self, mesh, plotter, data, add_mesh_kws, free_boundaries=None):
         """
         Project scalar values onto the surface of the mesh.
@@ -479,33 +570,36 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 plotter=plotter,
             )
 
-    def update_available_electrograms(self):
+    def check_for_available_electrograms(self):
         """Update the electrom types that can be plotted."""
 
         electric = self._active_system.data.electric
 
-        has_electrograms = False
+        self.has_electrograms = False
         if electric.reference_egm is not None and electric.reference_egm.egm is not None:
-            has_electrograms = True
+            self.has_electrograms = True
             self.egm_reference_checkbox.setEnabled(True)
+            self.egm_times = np.arange(electric.reference_egm.egm.shape[1])
         else:
             self.egm_reference_checkbox.setEnabled(False)
 
         if electric.bipolar_egm is not None and electric.bipolar_egm.egm is not None:
-            has_electrograms = True
+            self.has_electrograms = True
             self.egm_bipolar_checkbox.setEnabled(True)
+            self.egm_times = np.arange(electric.bipolar_egm.egm.shape[1])
         else:
             self.egm_bipolar_checkbox.setEnabled(False)
 
         if electric.unipolar_egm is not None and electric.unipolar_egm.egm is not None:
-            has_electrograms = True
+            self.has_electrograms = True
             self.egm_unipolar_A_checkbox.setEnabled(True)
             self.egm_unipolar_B_checkbox.setEnabled(True)
+            self.egm_times = np.arange(electric.unipolar_egm.egm.shape[1])
         else:
             self.egm_unipolar_A_checkbox.setEnabled(False)
             self.egm_unipolar_B_checkbox.setEnabled(False)
 
-        if has_electrograms:
+        if self.has_electrograms:
             self.egm_dock.setEnabled(True)
         else:
             self.egm_dock.setEnabled(False)
@@ -521,8 +615,8 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         # Get data for new set of points
         egm_text = self.egm_selection.text()
         splitter = ',' if ',' in egm_text else ' '
-        self.egm_points = np.asarray(egm_text.split(splitter), dtype=int)
-        
+        self._active_system.egm_points = np.asarray(egm_text.split(splitter), dtype=int)
+
         self.extract_electrograms()
         self.plot_electrograms()
 
@@ -535,38 +629,35 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 system.data,
                 within_woi=False,
                 buffer=0,
-                indices=self.egm_points,
+                indices=system.egm_points,
                 egm_type="reference",
                 return_names=True,
                 return_lat=False,
             )
-            self.egm_times = np.arange(self.egm_reference_traces.shape[1])
 
         if self.egm_bipolar_checkbox.isEnabled():
             self.egm_bipolar_traces, self.egm_names = openep.case.get_electrograms_at_points(
                 system.data,
                 within_woi=False,
                 buffer=0,
-                indices=self.egm_points,
+                indices=system.egm_points,
                 egm_type="bipolar",
-                return_names=False,
+                return_names=True,
                 return_lat=False,
             )
-            self.egm_times = np.arange(self.egm_bipolar_traces.shape[1])
 
         if self.egm_unipolar_A_checkbox.isEnabled():
             unipolar_traces, self.egm_names = openep.case.get_electrograms_at_points(
                 system.data,
                 within_woi=False,
                 buffer=0,
-                indices=self.egm_points,
+                indices=system.egm_points,
                 egm_type="unipolar",
-                return_names=False,
+                return_names=True,
                 return_lat=False,
             )
             self.egm_unipolar_A_traces = unipolar_traces[:, :, 0]
             self.egm_unipolar_B_traces = unipolar_traces[:, :, 1]
-            self.egm_times = np.arange(self.egm_unipolar_A_traces.shape[1])
 
     def plot_electrograms(self):
         """
@@ -635,10 +726,10 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         # Add labels if necessary
         yticks = []
         yticklabels = []
-        separations = np.arange(self.egm_points.size) * 2
+        separations = np.arange(self._active_system.egm_points.size) * 2
 
         if (
-            (self.egm_reference_checkbox.isEnabled() and self.egm_reference_checkbox.isChecked()) or \
+            (self.egm_reference_checkbox.isEnabled() and self.egm_reference_checkbox.isChecked()) or
             (self.egm_bipolar_checkbox.isEnabled() and self.egm_bipolar_checkbox.isChecked())
         ):
             yticks.extend(separations)
@@ -646,7 +737,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         # Unipolar A and B are shifted above the bipolar and reference electrograms for clarity
         if (
-            (self.egm_unipolar_A_checkbox.isEnabled() and self.egm_unipolar_A_checkbox.isChecked()) or \
+            (self.egm_unipolar_A_checkbox.isEnabled() and self.egm_unipolar_A_checkbox.isChecked()) or
             (self.egm_unipolar_B_checkbox.isEnabled() and self.egm_unipolar_B_checkbox.isChecked())
         ):
             yticks.extend(separations + 1)
@@ -659,6 +750,51 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.initialise_woi_slider_limits()
 
         self.egm_canvas.draw()
+
+    def initialise_woi_slider_limits(self):
+        """Set the limits to be the window of interest."""
+
+        annotations = self._active_system.data.electric.annotations
+
+        start_woi, stop_woi = annotations.window_of_interest[0]
+        start_woi += annotations.reference_activation_time[0]
+        stop_woi += annotations.reference_activation_time[0]
+
+        self.egm_slider.set_val([start_woi, stop_woi])
+
+        self.egm_slider_lower_limit = self.egm_axis.axvline(
+            start_woi,
+            color="grey",
+            linestyle='--',
+            linewidth=0.8,
+            alpha=0.6,
+        )
+
+        self.egm_slider_upper_limit = self.egm_axis.axvline(
+            stop_woi,
+            color="grey",
+            linestyle='--',
+            linewidth=0.8,
+            alpha=0.6,
+        )
+
+    def update_woi_slider_limits(self, val):
+        """
+        Take the min and max values from the RangeSlider widget.
+        Use this to set the window of interest and to change the x location
+        of the two axvlines drawn on the EGM canvas.
+        """
+
+        annotations = self._active_system.data.electric.annotations
+
+        # from https://matplotlib.org/devdocs/gallery/widgets/range_slider.html
+        start_woi, stop_woi = val
+        self.egm_slider_lower_limit.set_xdata([start_woi, start_woi])
+        self.egm_slider_upper_limit.set_xdata([stop_woi, stop_woi])
+
+        reference_annotation = annotations.reference_activation_time[0]
+        annotations.window_of_interest[:, 0] = start_woi - reference_annotation
+        annotations.window_of_interest[:, 1] = stop_woi - reference_annotation
 
     def highlight_menubars_of_active_plotters(self):
         """Make the menubars of all docks in the active system blue."""
@@ -773,6 +909,9 @@ class System:
         field_menu = dock.main.menubar.addMenu("Field")
         field_group = QtWidgets.QActionGroup(dock.main)
 
+        # TODO: This currently only works for openCARP datasets
+        #       For OpenEP datasets, we will need to interpolate the voltages onto the surface, and use the
+        #       interpolated voltages.
         if self.data.electric.bipolar_egm is not None and self.data.electric.bipolar_egm.voltage is not None:
             plotter.bipolar_action = QtWidgets.QAction("Bipolar voltage", dock.main)
             plotter.bipolar_action.setChecked(True)
@@ -780,6 +919,7 @@ class System:
             field_menu.addAction(plotter.bipolar_action)
             plotter.active_scalars = self.data.electric.bipolar_egm.voltage
             plotter.title = f"{self.name}: Bipolar voltage"
+            plotter.active_scalars_sel = 'bipolar'
         else:
             plotter.bipolar_action = None
 
@@ -788,8 +928,9 @@ class System:
             plotter.unipolar_action.setChecked(True)
             field_group.addAction(plotter.unipolar_action)
             field_menu.addAction(plotter.unipolar_action)
-            plotter.active_scalars = self.data.electric.unipolar_egm.voltage
+            plotter.active_scalars = self.data.electric.unipolar_egm.voltage[:, 0],
             plotter.title = f"{self.name}: Unipolar voltage"
+            plotter.active_scalars_sel = 'unipolar'
         else:
             plotter.unipolar_action = None
 
