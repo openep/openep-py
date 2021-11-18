@@ -22,7 +22,6 @@ from attr import attrs
 import pyvista
 import numpy as np
 
-from .._exceptions import NoDataError
 from .electric import Electric, Electrogram, Annotations
 
 __all__ = []
