@@ -48,6 +48,9 @@ class CARPData:
     def __attrs_post_init__(self):
 
         self.electric = None
+        self._unipolar = None
+        self._unipolar_pairs = None
+        self._bipolar = None
 
     def __repr__(self):
         return f"openCARP mesh with {len(self.points)} points."
