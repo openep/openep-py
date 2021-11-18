@@ -208,7 +208,10 @@ def get_electrograms_at_points(
         raise ValueError(f"egm_type {egm_type} is not recognised.")
 
     names = case.electric.internal_names
-    local_activation_time = case.electric.annotations.local_activation_time
+    if case.electric.annotations.local_activation_time is not None:
+        local_activation_time = case.electric.annotations.local_activation_time
+    else:
+        local_activation_time = np.full_like(names, fill_value=np.NaN)
 
     # Filter by selected indices
     if indices is not None:
