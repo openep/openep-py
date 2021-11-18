@@ -56,11 +56,11 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         # We need to keep track of all cases currently loaded (both OpenEP and openCARP)
         # Each system will keep track of its own docks/plotters/meshes
-        self.systems = []
-        self._system_counter = 0
+        self.systems = {}
+        self._system_counter = 0  # we need a unique ID for each new system (IDs of deleted systems should not be reused)
 
         # We will use this to determine which egms to plot
-        # All windows belonging to the main case will be given red borders
+        # All windows belonging to the main case have their menubars coloured blue
         self._active_system = None
 
     def _init_ui(self):
@@ -120,6 +120,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         the electrogram data onto the surface (for OpenEP datasets) or re-calculate
         voltages directly from electrograms (for openCARP datasets).
         """
+
         self.egm_dock = openep.view.custom_widgets.CustomDockWidget("Electrograms")
         self.egm_canvas, self.egm_figure, self.egm_axis = openep.view.canvases.create_canvas()
         egm_layout = QtWidgets.QVBoxLayout(self.egm_canvas)
@@ -150,12 +151,10 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 canvas=self.egm_canvas,
             )
 
-        checkbox_group = QtWidgets.QButtonGroup()
         for box in [self.egm_reference_checkbox, self.egm_bipolar_checkbox,
                     self.egm_unipolar_A_checkbox, self.egm_unipolar_B_checkbox]:
 
             box.stateChanged.connect(self.plot_electrograms)
-            checkbox_group.addButton(box)
             egm_type_layout.addWidget(box)
 
         egm_type_layout.addStretch()
@@ -268,9 +267,13 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             data=carp,
         )
 
-        self.systems.append(new_system)
+        # we need a unique key for each system
+        while self._system_counter in self.systems:
+            self._system_counter += 1
+
+        self.systems[self._system_counter] = (new_system)
         self._system_counter += 1
-        self._active_system = new_system.name
+        self._active_system = new_system if self._active_system is None else self._active_system
 
         # We need to dynamically add options for loading data/creating 3D viewers to the main menubar
         add_data_to_system_menu = QtWidgets.QMenu(points, self)
@@ -352,8 +355,8 @@ class OpenEpGUI(QtWidgets.QMainWindow):
     def highlight_menubars_of_active_plotters(self):
         """Make the menubars of all docks in the active system blue."""
 
-        for system in self.systems:
-            if system.name == self._active_system:
+        for system_name, system in self.systems.items():
+            if system_name == self._active_system.name:
                 for dock in system.docks:
                     dock.main.menubar.setStyleSheet(
                         "QMenuBar{"
@@ -372,7 +375,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
                 for dock in system.docks:
                     dock.main.menubar.setStyleSheet(
                         "QMenuBar{"
-                        "background-color: #d8dcd6;"
+                        "background-color: #95a3a6;"  # xkcd:cool grey
                         "color: black;"
                         "border: None;"
                         "}"
