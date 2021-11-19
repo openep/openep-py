@@ -254,30 +254,42 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         # Now we need to dislpay data about each system
         system_main_widget = QtWidgets.QWidget()
-        system_main_layout = QtWidgets.QVBoxLayout(system_main_widget)
+        system_main_layout = QtWidgets.QGridLayout(system_main_widget)
 
         # The four integers correspond to: fromRow, fromColumn, rowSpan, columnSpan
         # If the final two integers are left off, the spans are taken to be 1
-        row_layout = QtWidgets.QHBoxLayout()
-
         heading_font = QtGui.QFont()
         heading_font.setBold(True)
 
+        # TODO: Extract this into a function
+        #       Call the function to create this layout each time a new system/data is added
+        #       After creating the headings, iterative over the systems and add a row for each
+        #       system. The first should be QLineEdit (for renaming), second and first should be
+        #       QLabels, and the fourth a QRadioButtonGroup for selecting the active system.
+        heading_bar = QtWidgets.QWidget()
+        heading_bar_layout = QtWidgets.QHBoxLayout()
+        total_width = 0
         for heading_name, width in zip(
             ['Name', 'Directory', 'Type', 'Active'],
             [2, 8, 1, 1],
         ):
             heading = QtWidgets.QLabel(heading_name)
             heading.setFont(heading_font)
-            row_layout.addWidget(heading, width)
+            heading.setFrameShape(QtWidgets.QFrame.NoFrame)
+            heading.setLineWidth(0)
+            heading_bar_layout.addWidget(heading, width)
+            total_width += width
 
-        system_main_layout.addLayout(row_layout)
-        system_main_layout.addStretch()
-        
+        heading_bar.setLayout(heading_bar_layout)
+        heading_bar.setStyleSheet('background-color: #95a3a6;')
+        system_main_layout.addWidget(heading_bar, 0, 0, total_width, 1)
+
+        # After adding all the rows we need to make sure they are at the top of the layout
+        system_main_layout.setRowStretch(system_main_layout.rowCount(), 1)
+
         # Setting nested layouts
         system_main.setCentralWidget(system_main_widget)
         self.system_dock.setWidget(system_main)
-
 
     def _add_dock_widgets(self):
         """
