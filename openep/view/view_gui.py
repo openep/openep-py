@@ -47,6 +47,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self._add_menu_bar()
         self._create_egm_canvas_dock()
         self._create_analysis_canvas_dock()
+        self._create_system_manager_dock()
         self._add_dock_widgets()
         self._disable_dock_widgets()
 
@@ -186,8 +187,6 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.egm_dock.setWidget(egm_canvas_main)
 
     def _create_analysis_canvas_dock(self):
-        pass
-
         """
         Create a dockable widget for other matplotlib plots.
 
@@ -226,6 +225,41 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         self.analysis_dock.setWidget(analysis_canvas_main)
 
+    def _create_system_manager_dock(self):
+        """Create a dockable widget that for managing systems loaded into the GUI."""
+
+        self.system_dock = openep.view.custom_widgets.CustomDockWidget("Systems")
+        system_main = QtWidgets.QMainWindow()
+        system_main_widget = QtWidgets.QWidget()
+        system_main_layout = QtWidgets.QVBoxLayout()
+
+        system_main.setStyleSheet('border: 0px; background-color: #d8dcd6;')
+
+        # The dock is set to have bold font (so the title stands out)
+        # But all other widgets should have normal weighted font
+        main_font = QtGui.QFont()
+        main_font.setBold(False)
+        system_main.setFont(main_font)
+
+        # For loading new systems, deleting systems, adding a view of existing systems
+        # Adding data to systems, exporting system to a different format
+        menubar = system_main.menuBar()
+        menubar.setNativeMenuBar(False)
+        menubar.setStyleSheet(
+            "QMenuBar{"
+            "background-color: #95a3a6;"  # xkcd:cool grey
+            "color: black;"
+            "border: None;"
+            "}"
+        )
+
+        file_menu = menubar.addMenu("File")
+
+        # Setting nested layouts
+        system_main.setCentralWidget(system_main_widget)
+        self.system_dock.setWidget(system_main)
+
+
     def _add_dock_widgets(self):
         """
         Add dockable widgets to the main window.
@@ -234,7 +268,10 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         """
 
         self.addDockWidget(Qt.LeftDockWidgetArea, self.egm_dock)
+
         self.addDockWidget(Qt.RightDockWidgetArea, self.analysis_dock)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.system_dock)
+        self.tabifyDockWidget(self.analysis_dock, self.system_dock)
 
         for dock in [self.egm_dock, self.analysis_dock]:
             dock.setAllowedAreas(Qt.AllDockWidgetAreas)
