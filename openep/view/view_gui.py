@@ -207,11 +207,16 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             parent=self.analysis_dock,
             keep_actions=['Save'],
         )
-        analysis_layout.addWidget(toolbar)
+
+        # Create a placeholder widget to hold our toolbar and canvas.
+        canvas_widget = openep.view.canvases.create_canvas_widget(
+            canvas=self.analysis_canvas,
+            toolbar=toolbar,
+        )
 
         # Create a placeholder widget to hold our canvas, toolbar, and selection widgets
         analysis_canvas_main = QtWidgets.QMainWindow()
-        analysis_canvas_main.setCentralWidget(self.analysis_canvas)
+        analysis_canvas_main.setCentralWidget(canvas_widget)
 
         # The dock is set to have bold font (so the title stands out)
         # But all other widgets should have normal weighted font
