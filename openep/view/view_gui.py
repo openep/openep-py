@@ -130,12 +130,13 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         egm_selection_text = QtWidgets.QLabel("Select EGMs (indices of points):")
         egm_selection_text.setMinimumWidth(220)
         egm_selection_text.setMaximumWidth(300)
-        egm_selection_text.setStyleSheet('border: 0px; background-color: #d8dcd6;')
+        egm_selection_text.setStyleSheet('border: 0px; background-color: white;')
         egm_selection_layout.addWidget(egm_selection_text)
 
         self.egm_selection = QtWidgets.QLineEdit()
         self.egm_selection.setMinimumWidth(100)
         self.egm_selection.setMaximumWidth(300)
+        self.egm_selection.setStyleSheet('border: 1px solid #d8dcd6; background-color: white;')
         self.egm_selection.setText("0")
         self.egm_selection.setPlaceholderText("indices")
         self.egm_selection.returnPressed.connect(self.update_electrograms)
@@ -165,11 +166,16 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             canvas=self.egm_canvas,
             parent=self.egm_dock,
         )
-        egm_layout.addWidget(toolbar)
+
+        # Create a placeholder widget to hold our toolbar and canvas.
+        canvas_widget = openep.view.canvases.create_canvas_widget(
+            canvas=self.egm_canvas,
+            toolbar=toolbar,
+        )
 
         # Create a placeholder widget to hold our canvas, toolbar, and selection widgets
         egm_canvas_main = QtWidgets.QMainWindow()
-        egm_canvas_main.setCentralWidget(self.egm_canvas)
+        egm_canvas_main.setCentralWidget(canvas_widget)
 
         # The dock is set to have bold font (so the title stands out)
         # But all other widgets should have normal weighted font
