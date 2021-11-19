@@ -230,11 +230,8 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         self.system_dock = openep.view.custom_widgets.CustomDockWidget("Systems")
         system_main = QtWidgets.QMainWindow()
-        system_main_widget = QtWidgets.QWidget()
-        system_main_layout = QtWidgets.QVBoxLayout()
-
         system_main.setStyleSheet('border: 0px; background-color: #d8dcd6;')
-
+        
         # The dock is set to have bold font (so the title stands out)
         # But all other widgets should have normal weighted font
         main_font = QtGui.QFont()
@@ -255,6 +252,28 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         file_menu = menubar.addMenu("File")
 
+        # Now we need to dislpay data about each system
+        system_main_widget = QtWidgets.QWidget()
+        system_main_layout = QtWidgets.QVBoxLayout(system_main_widget)
+
+        # The four integers correspond to: fromRow, fromColumn, rowSpan, columnSpan
+        # If the final two integers are left off, the spans are taken to be 1
+        row_layout = QtWidgets.QHBoxLayout()
+
+        heading_font = QtGui.QFont()
+        heading_font.setBold(True)
+
+        for heading_name, width in zip(
+            ['Name', 'Directory', 'Type', 'Active'],
+            [2, 8, 1, 1],
+        ):
+            heading = QtWidgets.QLabel(heading_name)
+            heading.setFont(heading_font)
+            row_layout.addWidget(heading, width)
+
+        system_main_layout.addLayout(row_layout)
+        system_main_layout.addStretch()
+        
         # Setting nested layouts
         system_main.setCentralWidget(system_main_widget)
         self.system_dock.setWidget(system_main)
@@ -910,7 +929,7 @@ class System:
         if self.data is None or self.data.electric is None:
             return
 
-        dock = openep.view.custom_widgets.CustomDockWidget(f"{self.name}: Bipolar voltage")
+        dock = openep.view.custom_widgets.CustomDockWidget()
         dock.main = QtWidgets.QMainWindow()
         plotter = openep.view.plotters.create_plotter()
 
