@@ -702,6 +702,9 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         carp = self._active_system.data
 
+        # TODO: If bipolar voltages are calculated from unipolar electrograms, the bipolar electrograms
+        #       should first be reproducted using carp.bipolar_from_unipolar(electrograms[:, woi])
+
         if self.egm_unipolar_A_checkbox.isEnabled():
             carp.electric.unipolar_egm.voltage = openep.case.calculate_voltage_from_electrograms(
                 carp, buffer=0, bipolar=False,
