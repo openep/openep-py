@@ -384,8 +384,59 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.analysis_dock.setEnabled(False)
 
     def _load_case(self):
-        """Not yet implemented"""
-        pass
+        """
+        Load an OpenEP case.
+
+        Currently, only MATLAB files are supported.
+        """
+
+        dialogue = QtWidgets.QFileDialog()
+        dialogue.setWindowTitle('Load an OpenEP file')
+        dialogue.setDirectory(QtCore.QDir.currentPath())
+        dialogue.setFileMode(QtWidgets.QFileDialog.ExistingFile)
+        dialogue.setNameFilter("MATLAB file (*.mat)")
+
+        if dialogue.exec_():
+            filename = dialogue.selectedFiles()[0]
+            self._initialise_case(filename)
+
+
+    def _initialise_case(self, filename):
+        """Initialise data from an OpenEP case object.
+
+        Create separate meshes for the two BackgroundPlotters.
+        Interpolate data ready to be plotted.
+        """
+
+        case = openep.load_case(filename)
+
+        new_system = System(
+            name=self._system_counter,
+            folder=pathlib.Path(filename).parent.resolve(),
+            type="OpenEP",
+            data=case,
+        )
+
+        # we need a unique key for each system
+        while self._system_counter in self.systems:
+            self._system_counter += 1
+
+        self.systems[self._system_counter] = (new_system)
+        self._system_counter += 1
+        self._active_system = new_system if self._active_system is None else self._active_system
+        
+        self._update_system_manager_table(new_system)
+
+        # We need to dynamically add options for creating 3D viewers to the main menubar
+        add_view_for_system_action = QtWidgets.QAction(filename, self)
+        add_view_for_system_action.triggered.connect(lambda: self.add_view(new_system))
+        self.system_main.add_view_menu.addAction(add_view_for_system_action)
+
+        # Setting the default selected electrograms
+        new_system.egm_points = np.asarray([0], dtype=int)
+
+        self.interpolate_openEP_fields()
+        self.add_view(new_system)
 
     def _load_openCARP(self):
         """
@@ -470,6 +521,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         add_view_for_system_action.triggered.connect(lambda: self.add_view(new_system))
         self.system_main.add_view_menu.addAction(add_view_for_system_action)
 
+        # Setting the default selected electrograms
         new_system.egm_points = np.asarray([0], dtype=int)
 
     def _add_data_to_openCARP(self, system):
@@ -526,10 +578,10 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         system.add_mesh_kws.append(add_mesh_kws)
         system.free_boundaries.append(free_boundaries)
 
-        # we should always (for now) have bipolar voltages
-        plotter.bipolar_action.triggered.connect(
-            lambda: self.change_active_scalars(system, index=index, scalars='bipolar')
-        )
+        if plotter.bipolar_action is not None:
+            plotter.bipolar_action.triggered.connect(
+                lambda: self.change_active_scalars(system, index=index, scalars='bipolar')
+            )
         if plotter.unipolar_action is not None:
             plotter.unipolar_action.triggered.connect(
                 lambda: self.change_active_scalars(system, index=index, scalars='unipolar')
@@ -615,7 +667,10 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         if system.type == "openCARP":
             self._change_openCARP_active_scalars(system, index, scalars)
+        elif system.type == "OpenEP":
+            self._change_OpenEP_active_scalars(system, index, scalars)
 
+        system.plotters[index].active_scalars_sel = scalars
         system.docks[index].setWindowTitle(system.plotters[index].title)
         self.draw_map(
             system.meshes[index],
@@ -636,6 +691,22 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             system.plotters[index].title = f"{system.name}: Unipolar voltage"
 
         system.plotters[index].active_scalars_sel = scalars
+
+    def _change_OpenEP_active_scalars(self, system, index, scalars):
+        """Update the scalar values that are being projected onto the mesh for an OpenEP dataset."""
+
+        if scalars == 'bipolar':
+            system.plotters[index].active_scalars = system.data.interpolated_values['bipolar_voltage']
+            system.plotters[index].title = f"{system.name}: Bipolar voltage"
+        elif scalars == 'unipolar':
+            system.plotters[index].active_scalars = system.data.interpolated_values['unipolar_voltage']
+            system.plotters[index].title = f"{system.name}: Unipolar voltage"
+        elif scalars == 'clinical bipolar':
+            system.plotters[index].active_scalars = system.data.fields.bipolar_voltage
+            system.plotters[index].title = f"{system.name}: Clinical bipolar voltage"
+        elif scalars == 'clinical lat':
+            system.plotters[index].active_scalars = system.data.fields.local_activation_time
+            system.plotters[index].title = f"{system.name}: Clinical LAT"
 
     def update_fields_and_draw(self, event):
         """
@@ -668,6 +739,8 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         via self.slider (mpl.widgets.RangeSlider) and self.set_woi_button (mpl.widgets.Button).
         """
 
+        # TODO: check that when we change these values then the active scalars are also changed if necessary
+        #       May need to call self._change_active_scalars
         system = self._active_system
         case = system.data
         bipolar_voltage = openep.case.interpolate_voltage_onto_surface(
@@ -682,7 +755,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             bipolar=False,
         )
 
-        system.interpolated_fields = {
+        system.data.interpolated_fields = {
             "bipolar_voltage": bipolar_voltage,
             "unipolar_voltage": unipolar_voltage,
         }
@@ -1105,6 +1178,28 @@ class System:
         # TODO: This currently only works for openCARP datasets
         #       For OpenEP datasets, we will need to interpolate the voltages onto the surface, and use the
         #       interpolated voltages.
+        if self.type == "openCARP":
+            self._add_bipolar_action_for_openCARP(dock, plotter, field_group, field_menu)
+            self._add_unipolar_action_for_openCARP(dock, plotter, field_group, field_menu)
+            self.clinical_bipolar_action = None
+        elif self.type == "OpenEP":
+            self._add_bipolar_action_for_OpenEP(dock, plotter, field_group, field_menu)
+            self._add_unipolar_action_for_OpenEP(dock, plotter, field_group, field_menu)
+            self._add_clinical_bipolar_action_for_OpenEP(dock, plotter, field_group, field_menu)
+
+        # Set widget
+        dock.main.setCentralWidget(plotter)
+        dock.setWidget(dock.main)
+        dock.setAllowedAreas(Qt.AllDockWidgetAreas)
+
+        plotter.lower_limit = lower_limit
+        plotter.upper_limit = upper_limit
+
+        return dock, plotter
+
+    def _add_bipolar_action_for_openCARP(self, dock, plotter, field_group, field_menu):
+        """If we have bipolar voltages, add an option to project these values onto the surface."""
+
         if self.data.electric.bipolar_egm is not None and self.data.electric.bipolar_egm.voltage is not None:
             plotter.bipolar_action = QtWidgets.QAction("Bipolar voltage", dock.main)
             plotter.bipolar_action.setChecked(True)
@@ -1115,6 +1210,9 @@ class System:
             plotter.active_scalars_sel = 'bipolar'
         else:
             plotter.bipolar_action = None
+
+    def _add_unipolar_action_for_openCARP(self, dock, plotter, field_group, field_menu):
+        """If we have unipolar voltages, add an option to project these values onto the surface."""
 
         if self.data.electric.unipolar_egm is not None and self.data.electric.unipolar_egm.voltage is not None:
             plotter.unipolar_action = QtWidgets.QAction("Unipolar voltage", dock.main)
@@ -1127,15 +1225,49 @@ class System:
         else:
             plotter.unipolar_action = None
 
-        # Set widget
-        dock.main.setCentralWidget(plotter)
-        dock.setWidget(dock.main)
-        dock.setAllowedAreas(Qt.AllDockWidgetAreas)
+    def _add_bipolar_action_for_OpenEP(self, dock, plotter, field_group, field_menu):
+        """If we have bipolar electrograms, add an option to interpolate these values onto the surface."""
 
-        plotter.lower_limit = lower_limit
-        plotter.upper_limit = upper_limit
+        # TODO: we must interpolate these values after returning to the calling function
+        #       i.e. we must interpolate before we can make these the active scalars
+        if self.data.electric.bipolar_egm is not None:
+            plotter.bipolar_action = QtWidgets.QAction("Bipolar voltage", dock.main)
+            plotter.bipolar_action.setChecked(True)
+            field_group.addAction(plotter.bipolar_action)
+            field_menu.addAction(plotter.bipolar_action)
+            plotter.active_scalars = None
+            plotter.title = f"{self.name}: Bipolar voltage"
+            plotter.active_scalars_sel = 'bipolar'
+        else:
+            plotter.bipolar_action = None
 
-        return dock, plotter
+    def _add_unipolar_action_for_OpenEP(self, dock, plotter, field_group, field_menu):
+        """If we have unipolar electrograms, add an option to interpolate these values onto the surface."""
+
+        if self.data.electric.unipolar_egm is not None:
+            plotter.unipolar_action = QtWidgets.QAction("Unipolar voltage", dock.main)
+            plotter.unipolar_action.setChecked(True)
+            field_group.addAction(plotter.unipolar_action)
+            field_menu.addAction(plotter.unipolar_action)
+            plotter.active_scalars = None
+            plotter.title = f"{self.name}: Unipolar voltage"
+            plotter.active_scalars_sel = 'unipolar'
+        else:
+            plotter.unipolar_action = None
+
+    def _add_clinical_bipolar_action_for_OpenEP(self, dock, plotter, field_group, field_menu):
+        """If we have clinical bipolar electrograms, add an option to project these values onto the surface."""
+
+        if self.data.fields.bipolar_voltage is not None:
+            plotter.clinical_bipolar_action = QtWidgets.QAction("Clinical bipolar voltage", dock.main)
+            plotter.clinical_bipolar_action.setChecked(True)
+            field_group.addAction(plotter.clinical_bipolar_action)
+            field_menu.addAction(plotter.clinical_bipolar_action)
+            plotter.active_scalars = self.data.fields.bipolar_voltage
+            plotter.title = f"{self.name}: Clinical bipolar voltage"
+            plotter.active_scalars_sel = 'clinical bipolar'
+        else:
+            plotter.clinical_bipolar_action = None
 
     def _create_default_kws(self):
         return {
