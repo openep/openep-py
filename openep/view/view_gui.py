@@ -228,10 +228,6 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         )
         self.system_main_layout.addItem(self.system_main.vertical_stretch)
 
-        #button = QtWidgets.QPushButton()
-        #self._button_styleSheet = button.styleSheet()
-        #active.setStyleSheet(self._button_styleSheet)
-
     def _create_egm_canvas_dock(self):
         """
         Create a dockable widget for plotting interactive electrograms with matplotlib.
