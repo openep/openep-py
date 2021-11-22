@@ -44,10 +44,11 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         self._init_systems()
         self._init_ui()
-        self._add_menu_bar()
+        self._create_system_manager_dock()
+        self._create_system_manager_menubar()
+        self._create_system_manager_table()
         self._create_egm_canvas_dock()
         self._create_analysis_canvas_dock()
-        self._create_system_manager_dock()
         self._add_dock_widgets()
         self._disable_dock_widgets()
 
@@ -73,9 +74,22 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.setMinimumSize(800, 600)
         self.setWindowTitle("OpenEP: The open-source solution for electrophysiology data analysis")
 
-    def _add_menu_bar(self):
+    def _create_system_manager_dock(self):
+        """Create a dockable widget that for managing systems loaded into the GUI."""
+
+        self.system_dock = openep.view.custom_widgets.CustomDockWidget("Systems")
+        self.system_main = QtWidgets.QMainWindow()
+        self.system_main.setStyleSheet('QMainWindow {border: 0px; background-color: #d8dcd6;}')
+        
+        # The dock is set to have bold font (so the title stands out)
+        # But all other widgets should have normal weighted font
+        main_font = QtGui.QFont()
+        main_font.setBold(False)
+        self.system_main.setFont(main_font)
+
+    def _create_system_manager_menubar(self):
         """
-        Add a menu bar to the GUI.
+        Add a menu bar to the 'System' window of the GUI.
 
         The file menu has options for loading either an OpenEP dataset or an openCARP one, as well as
         loading auxillary data into an existing openCARP system.
@@ -83,29 +97,144 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         The view menu has options for creating a new 3D-viewer for an existing system.
         """
 
-        self.menubar = self.menuBar()
-        file_menu = self.menubar.addMenu("File")
-        self.menubar.setNativeMenuBar(True)
+        # For loading new systems, deleting systems, adding a view of existing systems
+        # Adding data to systems, exporting system to a different format
+        self.system_main.menubar = self.system_main.menuBar()
+        self.system_main.menubar.setNativeMenuBar(False)
+        self.system_main.menubar.setStyleSheet(
+            "QMenuBar{"
+            "background-color: #95a3a6;"  # xkcd:cool grey
+            "color: black;"
+            "border: None;"
+            "}"
+        )
 
-        load_menu = QtWidgets.QMenu("Load", self)
-        load_case_action = QtWidgets.QAction("OpenEP", self)
+        file_menu = self.system_main.menubar.addMenu("File")
+
+        load_menu = QtWidgets.QMenu("Load", self.system_main)
+        load_case_action = QtWidgets.QAction("OpenEP", self.system_main)
         load_case_action.triggered.connect(self._load_case)
         load_menu.addAction(load_case_action)
-        load_openCARP_action = QtWidgets.QAction("openCARP", self)
+        load_openCARP_action = QtWidgets.QAction("openCARP", self.system_main)
         load_openCARP_action.triggered.connect(self._load_openCARP)
         load_menu.addAction(load_openCARP_action)
 
         # The below will be used for adding data to openCARP datasets
-        self.add_data_menu = QtWidgets.QMenu("Add data to", self)
+        self.system_main.add_data_menu = QtWidgets.QMenu("Add data to", self.system_main)
 
         file_menu.addMenu(load_menu)
-        file_menu.addMenu(self.add_data_menu)
+        file_menu.addMenu(self.system_main.add_data_menu)
 
         # The below will be used for creating a new 3D viewer for a given system
-        view_menu = self.menubar.addMenu("View")
-        self.add_view_menu = QtWidgets.QMenu("Add view for", self)
-        view_menu.addMenu(self.add_view_menu)
+        view_menu = self.system_main.menubar.addMenu("View")
+        self.system_main.add_view_menu = QtWidgets.QMenu("Add view for", self.system_main)
+        view_menu.addMenu(self.system_main.add_view_menu)
         view_menu.addSeparator()
+
+    def _create_system_manager_table(self):
+        """
+        Create a widget that will display information about each system loaded, and
+        allow selection of an active system.
+        """
+
+        system_main_widget = QtWidgets.QWidget()
+        self.system_main_layout = QtWidgets.QGridLayout(system_main_widget)
+
+        heading_font = QtGui.QFont()
+        heading_font.setBold(True)
+
+        # TODO: Extract this into a function
+        #       Call the function to create this layout each time a new system/data is added
+        #       After creating the headings, iterative over the systems and add a row for each
+        #       system. The first should be QLineEdit (for renaming), second and first should be
+        #       QLabels, and the fourth a QRadioButtonGroup for selecting the active system.
+        heading_bar = QtWidgets.QWidget()
+        heading_bar_layout = QtWidgets.QHBoxLayout()
+        total_width = 0
+        for heading_name, width in zip(
+            ['Name', 'Directory', 'Type', 'Active'],
+            [2, 8, 1, 1],
+        ):
+            heading = QtWidgets.QLabel(heading_name)
+            heading.setFont(heading_font)
+            heading.setFrameShape(QtWidgets.QFrame.NoFrame)
+            heading.setLineWidth(0)
+            heading_bar_layout.addWidget(heading, width)
+            total_width += width
+
+        heading_bar.setLayout(heading_bar_layout)
+        heading_bar.setStyleSheet('QWidget {background-color: #95a3a6;}')
+        self.system_main_layout.addWidget(heading_bar, 0, 0, total_width, 1)
+
+        self._active_system_button_group = QtWidgets.QButtonGroup()
+
+        # After adding all the rows we need to make sure they are at the top of the layout
+        #self.system_main_layout.setRowStretch(self.system_main_layout.rowCount(), 1)
+        self.system_main.vertical_stretch = QtWidgets.QSpacerItem(
+            0, 0,
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding,
+        )
+        self.system_main_layout.addItem(self.system_main.vertical_stretch)
+
+        # Setting nested layouts
+        self.system_main.setCentralWidget(system_main_widget)
+        self.system_dock.setWidget(self.system_main)
+
+    def _update_system_manager_table(self, system):
+        """Update the System manager table when a new system is loaded.
+
+        We need to remove the vertical spacer, add a new row in the system table,
+        then put the vertical spacer back.
+
+        We also need to add the system to the 'File > Add data to' submenu and the
+        'View > Add view for' submenu.
+        """
+
+        self.system_main_layout.removeItem(self.system_main.vertical_stretch)
+
+        # Add information for the current system
+        system_row = QtWidgets.QWidget()
+        system_layout = QtWidgets.QHBoxLayout()
+
+        # The widths of the widgets are the same as those used in self._create_system_manager_table
+        name_width, directory_width, data_type_width, active_width = [2, 8, 1, 1]
+        total_width = 12
+
+        name = QtWidgets.QLineEdit()
+        name.setText(str(system.name))
+        name.setPlaceholderText("system name")
+        system_layout.addWidget(name, name_width)
+
+        directory = QtWidgets.QLabel()
+        directory.setText(str(system.folder))
+        system_layout.addWidget(directory, directory_width)
+
+        data_type = QtWidgets.QLabel()
+        data_type.setText(system.type)
+        system_layout.addWidget(data_type, data_type_width)
+
+        active = QtWidgets.QRadioButton()
+        self._active_system_button_group.addButton(active)
+        is_active = True if self._active_system.name == system.name else False
+        active.setChecked(is_active)
+        active.clicked.connect(lambda: self.change_active_system(system))
+        system_layout.addWidget(active, active_width)
+
+        system_row.setLayout(system_layout)
+        system_row.setStyleSheet('background-color: white;')
+        row_number = len(self.systems) * 10
+        self.system_main_layout.addWidget(system_row, row_number, 0, total_width, 1)
+
+        # Make sure the vertical spacing is correct again
+        self.system_main.vertical_stretch = QtWidgets.QSpacerItem(
+            0, 0,
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding,
+        )
+        self.system_main_layout.addItem(self.system_main.vertical_stretch)
+
+        #button = QtWidgets.QPushButton()
+        #self._button_styleSheet = button.styleSheet()
+        #active.setStyleSheet(self._button_styleSheet)
 
     def _create_egm_canvas_dock(self):
         """
@@ -225,72 +354,6 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         self.analysis_dock.setWidget(analysis_canvas_main)
 
-    def _create_system_manager_dock(self):
-        """Create a dockable widget that for managing systems loaded into the GUI."""
-
-        self.system_dock = openep.view.custom_widgets.CustomDockWidget("Systems")
-        system_main = QtWidgets.QMainWindow()
-        system_main.setStyleSheet('border: 0px; background-color: #d8dcd6;')
-        
-        # The dock is set to have bold font (so the title stands out)
-        # But all other widgets should have normal weighted font
-        main_font = QtGui.QFont()
-        main_font.setBold(False)
-        system_main.setFont(main_font)
-
-        # For loading new systems, deleting systems, adding a view of existing systems
-        # Adding data to systems, exporting system to a different format
-        menubar = system_main.menuBar()
-        menubar.setNativeMenuBar(False)
-        menubar.setStyleSheet(
-            "QMenuBar{"
-            "background-color: #95a3a6;"  # xkcd:cool grey
-            "color: black;"
-            "border: None;"
-            "}"
-        )
-
-        file_menu = menubar.addMenu("File")
-
-        # Now we need to dislpay data about each system
-        system_main_widget = QtWidgets.QWidget()
-        system_main_layout = QtWidgets.QGridLayout(system_main_widget)
-
-        # The four integers correspond to: fromRow, fromColumn, rowSpan, columnSpan
-        # If the final two integers are left off, the spans are taken to be 1
-        heading_font = QtGui.QFont()
-        heading_font.setBold(True)
-
-        # TODO: Extract this into a function
-        #       Call the function to create this layout each time a new system/data is added
-        #       After creating the headings, iterative over the systems and add a row for each
-        #       system. The first should be QLineEdit (for renaming), second and first should be
-        #       QLabels, and the fourth a QRadioButtonGroup for selecting the active system.
-        heading_bar = QtWidgets.QWidget()
-        heading_bar_layout = QtWidgets.QHBoxLayout()
-        total_width = 0
-        for heading_name, width in zip(
-            ['Name', 'Directory', 'Type', 'Active'],
-            [2, 8, 1, 1],
-        ):
-            heading = QtWidgets.QLabel(heading_name)
-            heading.setFont(heading_font)
-            heading.setFrameShape(QtWidgets.QFrame.NoFrame)
-            heading.setLineWidth(0)
-            heading_bar_layout.addWidget(heading, width)
-            total_width += width
-
-        heading_bar.setLayout(heading_bar_layout)
-        heading_bar.setStyleSheet('background-color: #95a3a6;')
-        system_main_layout.addWidget(heading_bar, 0, 0, total_width, 1)
-
-        # After adding all the rows we need to make sure they are at the top of the layout
-        system_main_layout.setRowStretch(system_main_layout.rowCount(), 1)
-
-        # Setting nested layouts
-        system_main.setCentralWidget(system_main_widget)
-        self.system_dock.setWidget(system_main)
-
     def _add_dock_widgets(self):
         """
         Add dockable widgets to the main window.
@@ -394,17 +457,19 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.systems[self._system_counter] = (new_system)
         self._system_counter += 1
         self._active_system = new_system if self._active_system is None else self._active_system
+        
+        self._update_system_manager_table(new_system)
 
         # We need to dynamically add options for loading data/creating 3D viewers to the main menubar
         add_data_to_system_menu = QtWidgets.QMenu(points, self)
         add_unipolar_action = QtWidgets.QAction("Unipolar electrograms", self)
         add_unipolar_action.triggered.connect(lambda: self._add_data_to_openCARP(new_system))
         add_data_to_system_menu.addAction(add_unipolar_action)
-        self.add_data_menu.addMenu(add_data_to_system_menu)
+        self.system_main.add_data_menu.addMenu(add_data_to_system_menu)
 
         add_view_for_system_action = QtWidgets.QAction(points, self)
         add_view_for_system_action.triggered.connect(lambda: self.add_view(new_system))
-        self.add_view_menu.addAction(add_view_for_system_action)
+        self.system_main.add_view_menu.addAction(add_view_for_system_action)
 
     def _add_data_to_openCARP(self, system):
         """
@@ -534,6 +599,17 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             system.free_boundaries[index],
         )
 
+    def change_active_system(self, system):
+        """Updated selected active system"""
+
+        self._active_system = system
+
+        self.highlight_menubars_of_active_plotters()
+
+        self.check_for_available_electrograms()
+        if self.has_electrograms:
+            self.update_electrograms()
+
     def change_active_scalars(self, system, index, scalars):
         """Update the scalar values that are being projected onto the mesh."""
 
@@ -650,6 +726,10 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
     def check_for_available_electrograms(self):
         """Update the electrom types that can be plotted."""
+
+        if self._active_system.data.electric is None:
+            self.has_electrograms = False
+            return
 
         electric = self._active_system.data.electric
 
@@ -941,7 +1021,7 @@ class System:
         if self.data is None or self.data.electric is None:
             return
 
-        dock = openep.view.custom_widgets.CustomDockWidget()
+        dock = openep.view.custom_widgets.CustomDockWidget("Temporary title") # this will be changed
         dock.main = QtWidgets.QMainWindow()
         plotter = openep.view.plotters.create_plotter()
 
@@ -958,7 +1038,7 @@ class System:
         colour_bar_text = QtWidgets.QLabel("Colourbar limits:")
         colour_bar_text.setMinimumWidth(100)
         colour_bar_text.setMaximumWidth(200)
-        colour_bar_text.setStyleSheet('border: 0px; background-color: #d8dcd6;')
+        colour_bar_text.setStyleSheet('QLabel {border: 0px; background-color: #d8dcd6;}')
         colour_bar_layout.addWidget(colour_bar_text)
 
         lower_limit = QtWidgets.QLineEdit()
