@@ -642,7 +642,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             system.plotters[index].active_scalars = system.data.electric.bipolar_egm.voltage
             system.plotters[index].title = f"{system.name}: Bipolar voltage"
         elif scalars == 'unipolar':
-            system.plotters[index].active_scalars = system.data.electric.unipolar_egm.voltage
+            system.plotters[index].active_scalars = system.data.electric.unipolar_egm.voltage[:, 0]
             system.plotters[index].title = f"{system.name}: Unipolar voltage"
 
         system.plotters[index].active_scalars_sel = scalars
@@ -705,7 +705,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         if self.egm_unipolar_A_checkbox.isEnabled():
             carp.electric.unipolar_egm.voltage = openep.case.calculate_voltage_from_electrograms(
                 carp, buffer=0, bipolar=False,
-            )  # TODO: why does this work? What is the shape of this voltage array?
+            )
         if self.egm_bipolar_checkbox.isEnabled():
             carp.electric.bipolar_egm.voltage = openep.case.calculate_voltage_from_electrograms(
                 carp, buffer=0, bipolar=True,
