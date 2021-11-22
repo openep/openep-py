@@ -145,11 +145,6 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         heading_font = QtGui.QFont()
         heading_font.setBold(True)
 
-        # TODO: Extract this into a function
-        #       Call the function to create this layout each time a new system/data is added
-        #       After creating the headings, iterative over the systems and add a row for each
-        #       system. The first should be QLineEdit (for renaming), second and first should be
-        #       QLabels, and the fourth a QRadioButtonGroup for selecting the active system.
         heading_bar = QtWidgets.QWidget()
         heading_bar_layout = QtWidgets.QHBoxLayout()
         total_width = 0
@@ -171,7 +166,6 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self._active_system_button_group = QtWidgets.QButtonGroup()
 
         # After adding all the rows we need to make sure they are at the top of the layout
-        #self.system_main_layout.setRowStretch(self.system_main_layout.rowCount(), 1)
         self.system_main.vertical_stretch = QtWidgets.QSpacerItem(
             0, 0,
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding,
