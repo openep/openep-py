@@ -64,6 +64,8 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         # All windows belonging to the main case have their menubars coloured blue
         self._active_system = None
 
+        self.egm_slider = None
+
     def _init_ui(self):
         """
         Initialise the GUI.
@@ -269,7 +271,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.egm_selection.setStyleSheet('border: 1px solid #d8dcd6; background-color: white;')
         self.egm_selection.setText("0")
         self.egm_selection.setPlaceholderText("indices")
-        self.egm_selection.returnPressed.connect(self.update_electrograms)
+        self.egm_selection.returnPressed.connect(self.update_electrograms_from_text)
         egm_selection_layout.addWidget(self.egm_selection)
 
         egm_selection_layout.addStretch()
@@ -290,6 +292,13 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         egm_type_layout.addStretch()
         egm_layout.addLayout(egm_type_layout)
         egm_layout.addStretch()
+
+        # Button for setting the window of interes
+        self.set_woi_button = openep.view.canvases.add_woi_set_button(
+            figure=self.egm_figure,
+            axis=[0.782, 0.02, 0.09, 0.025],
+        )
+        self.set_woi_button.on_clicked(self.update_fields_and_draw)
 
         # Create toolbar for saving, zooming etc.
         toolbar = openep.view.canvases.add_toolbar(
@@ -471,6 +480,8 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         add_view_for_system_action.triggered.connect(lambda: self.add_view(new_system))
         self.system_main.add_view_menu.addAction(add_view_for_system_action)
 
+        new_system.egm_points = np.asarray([0], dtype=int)
+
     def _add_data_to_openCARP(self, system):
         """
         Add data into an CARPData object.
@@ -543,32 +554,9 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             free_boundaries=free_boundaries,
         )
 
-        if system is self._active_system:
-            self.check_for_available_electrograms()
-
-            if self.has_electrograms:
-
-                self.egm_axis.axis('on')  # make sure we can see the axes now
-                self.egm_axis.set_xlim(self.egm_times[0]-100, self.egm_times[-1]+100)
-                self.egm_axis.set_ylim(-1, 13)
-
-                # We can't create the slider earlier because we need to know the min and max egm times
-                self.egm_slider = openep.view.canvases.add_woi_range_slider(
-                    figure=self.egm_figure,
-                    axis=[0.1535, 0.05, 0.7185, 0.01],  # location of the RangeSlider on the figure
-                    valmin=self.egm_times[0],
-                    valmax=self.egm_times[-1],
-                )
-                self.initialise_woi_slider_limits()
-                self.egm_slider.on_changed(self.update_woi_slider_limits)
-
-                self.set_woi_button = openep.view.canvases.add_woi_set_button(
-                    figure=self.egm_figure,
-                    axis=[0.782, 0.02, 0.09, 0.025],
-                )
-                self.set_woi_button.on_clicked(self.update_fields_and_draw)
-
-                self.update_electrograms()
+        # If this is the first 3d viewer added for this system, we need to update the egms etc.
+        if (system.name == self._active_system.name) and len(system.plotters)==1:
+            self.change_active_system(system)
 
         self.addDockWidget(Qt.LeftDockWidgetArea, dock)
         self.highlight_menubars_of_active_plotters()
@@ -600,16 +588,38 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         )
 
     def change_active_system(self, system):
-        """Updated selected active system"""
+        """
+        Update selected active system.
+        
+        Make the menubars blue for all 3d viewers of the active system.
+        If the active system has electrograms, plot these in the electrogram viewer.
+        Change the window of interest range slider in the electrogram viewer to reflect
+        those of the active system.
+        """
 
         self._active_system = system
 
         self.highlight_menubars_of_active_plotters()
 
+        self.remove_woi_slider()
         self.check_for_available_electrograms()
         if self.has_electrograms:
-            self.update_electrograms()
+        
+            self.egm_axis.axis('on')  # make sure we can see the axes now
+            self.egm_axis.set_xlim(self.egm_times[0]-100, self.egm_times[-1]+100)
+            self.egm_axis.set_ylim(-1, 13)
 
+            # We can't create the slider earlier because we need to know the min and max egm times
+            self.create_woi_slider()
+            self.initialise_woi_slider_limits()
+            self.egm_slider.on_changed(self.update_woi_slider_limits)
+            self.update_electrograms_from_stored()
+
+        else:
+            self.egm_axis.cla()
+            self.egm_axis.axis('off')
+            self.egm_canvas.draw()
+            
     def change_active_scalars(self, system, index, scalars):
         """Update the scalar values that are being projected onto the mesh."""
 
@@ -729,6 +739,11 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         if self._active_system.data.electric is None:
             self.has_electrograms = False
+            self.egm_dock.setEnabled(False)
+            self.egm_reference_checkbox.setEnabled(False)
+            self.egm_bipolar_checkbox.setEnabled(False)
+            self.egm_unipolar_A_checkbox.setEnabled(False)
+            self.egm_unipolar_B_checkbox.setEnabled(False)
             return
 
         electric = self._active_system.data.electric
@@ -762,7 +777,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         else:
             self.egm_dock.setEnabled(False)
 
-    def update_electrograms(self):
+    def update_electrograms_from_text(self):
         """
         Extract electrograms at specified indices and re-plot.
 
@@ -774,6 +789,16 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         egm_text = self.egm_selection.text()
         splitter = ',' if ',' in egm_text else ' '
         self._active_system.egm_points = np.asarray(egm_text.split(splitter), dtype=int)
+
+        self.extract_electrograms()
+        self.plot_electrograms()
+
+    def update_electrograms_from_stored(self):
+
+        # Retrieve data for the stored set of points
+        egm_points = self._active_system.egm_points
+        egm_text = " ".join(egm_points.astype(str))
+        self.egm_selection.setText(egm_text)
 
         self.extract_electrograms()
         self.plot_electrograms()
@@ -908,6 +933,23 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.initialise_woi_slider_limits()
 
         self.egm_canvas.draw()
+
+    def create_woi_slider(self):
+        """Add a window of interest range slider to the electrogram canvas"""
+
+        self.egm_slider = openep.view.canvases.add_woi_range_slider(
+            figure=self.egm_figure,
+            axis=[0.1535, 0.05, 0.7185, 0.01],  # location of the RangeSlider on the figure
+            valmin=self.egm_times[0],
+            valmax=self.egm_times[-1],
+        )
+
+    def remove_woi_slider(self):
+        """Remove the window of interest range slider from the electrogram canvas"""
+
+        if self.egm_slider is not None:
+            self.egm_slider.ax.remove()
+            self.egm_slider = None
 
     def initialise_woi_slider_limits(self):
         """Set the limits to be the window of interest."""
