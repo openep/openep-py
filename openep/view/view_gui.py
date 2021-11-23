@@ -743,8 +743,6 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         via self.slider (mpl.widgets.RangeSlider) and self.set_woi_button (mpl.widgets.Button).
         """
 
-        # TODO: check that when we change these values then the active scalars are also changed if necessary
-        #       May need to call self._change_active_scalars
         system = self._active_system if system is None else system
         case = system.data
 
@@ -1196,9 +1194,6 @@ class System:
         field_menu = dock.main.menubar.addMenu("Field")
         field_group = QtWidgets.QActionGroup(dock.main)
 
-        # TODO: This currently only works for openCARP datasets
-        #       For OpenEP datasets, we will need to interpolate the voltages onto the surface, and use the
-        #       interpolated voltages.
         if self.type == "openCARP":
             self._add_bipolar_action_for_openCARP(dock, plotter, field_group, field_menu)
             self._add_unipolar_action_for_openCARP(dock, plotter, field_group, field_menu)
@@ -1249,8 +1244,6 @@ class System:
     def _add_bipolar_action_for_OpenEP(self, dock, plotter, field_group, field_menu):
         """If we have bipolar electrograms, add an option to interpolate these values onto the surface."""
 
-        # TODO: we must interpolate these values after returning to the calling function
-        #       i.e. we must interpolate before we can make these the active scalars
         if self.data.electric.bipolar_egm is not None:
             plotter.bipolar_action = QtWidgets.QAction("Bipolar voltage", dock.main)
             plotter.bipolar_action.setChecked(True)
