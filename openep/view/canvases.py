@@ -47,19 +47,28 @@ def create_canvas():
     return canvas, figure, axis
 
 
-def add_egm_select(canvas):
-    """Add widgets for selecting which electrograms to plot."""
+def create_egm_selection_layout():
+    """Create a layout with widgets for selecting which electrograms to plot."""
 
-    egm_select = QtWidgets.QLineEdit("EGMs", canvas)
-    egm_select.setStyleSheet("background-color: white; border: 1px solid lightGray;")
-    egm_select.setGeometry(250, 0, 150, 40)
-    egm_select.setText(str(0))  # By default, plot the first electrogram only
+    egm_selection_layout = QtWidgets.QHBoxLayout()
 
-    button_egm_select = QtWidgets.QPushButton("Select EGMs (indices of points)", canvas)
-    button_egm_select.setStyleSheet("background-color: lightGray")
-    button_egm_select.setGeometry(0, 0, 240, 40)
+    egm_selection_text = QtWidgets.QLabel("Select EGMs (indices of points):")
+    egm_selection_text.setMinimumWidth(220)
+    egm_selection_text.setMaximumWidth(300)
+    egm_selection_text.setStyleSheet('border: 0px; background-color: white;')
 
-    return egm_select, button_egm_select
+    egm_selection = QtWidgets.QLineEdit()
+    egm_selection.setMinimumWidth(100)
+    egm_selection.setMaximumWidth(300)
+    egm_selection.setStyleSheet('border: 1px solid #d8dcd6; background-color: white;')
+    egm_selection.setText("0")
+    egm_selection.setPlaceholderText("indices")
+
+    egm_selection_layout.addWidget(egm_selection_text)
+    egm_selection_layout.addWidget(egm_selection)
+    egm_selection_layout.addStretch()
+
+    return egm_selection_layout, egm_selection
 
 
 def add_egm_type_widgets(canvas):
