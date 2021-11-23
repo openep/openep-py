@@ -71,26 +71,33 @@ def create_egm_selection_layout():
     return egm_selection_layout, egm_selection
 
 
-def add_egm_type_widgets(canvas):
-    """Add widgets for selecting which type(s) of electrograms to plot."""
+def create_egm_type_layout():
+    """Create a layout with widgets for selecting which type(s) of electrograms to plot."""
 
-    reference_checkbox = QtWidgets.QCheckBox("Reference", canvas)
+    reference_checkbox = QtWidgets.QCheckBox("Reference")
     reference_checkbox.setStyleSheet("color: #be0119; background-color: white;")  # xkcd:scarlet
     reference_checkbox.setChecked(False)
 
-    bipolar_checkbox = QtWidgets.QCheckBox("Bipolar", canvas)
+    bipolar_checkbox = QtWidgets.QCheckBox("Bipolar")
     bipolar_checkbox.setStyleSheet("color: #0485d1; background-color: white;")  # xkcd:cerulean
     bipolar_checkbox.setChecked(True)
 
-    unipolar_A_checkbox = QtWidgets.QCheckBox("Unipolar: A", canvas)
+    unipolar_A_checkbox = QtWidgets.QCheckBox("Unipolar: A")
     unipolar_A_checkbox.setStyleSheet("color: #2a7e19; background-color: white;")  # xkcd:tree green
     unipolar_A_checkbox.setChecked(True)
 
-    unipolar_B_checkbox = QtWidgets.QCheckBox("Unipolar: B", canvas)
+    unipolar_B_checkbox = QtWidgets.QCheckBox("Unipolar: B")
     unipolar_B_checkbox.setStyleSheet("color: #fb7d07; background-color: white;")  # xkcd:pumpkin
     unipolar_B_checkbox.setChecked(True)
 
-    return reference_checkbox, bipolar_checkbox, unipolar_A_checkbox, unipolar_B_checkbox
+    egm_type_layout = QtWidgets.QHBoxLayout()
+    egm_type_layout.addWidget(reference_checkbox)
+    egm_type_layout.addWidget(bipolar_checkbox)
+    egm_type_layout.addWidget(unipolar_A_checkbox)
+    egm_type_layout.addWidget(unipolar_B_checkbox)
+    egm_type_layout.addStretch()
+
+    return egm_type_layout, reference_checkbox, bipolar_checkbox, unipolar_A_checkbox, unipolar_B_checkbox
 
 
 def add_toolbar(canvas, parent, keep_actions=None):
