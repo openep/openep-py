@@ -36,7 +36,7 @@ import openep.view.canvases
 import openep.view.images
 
 
-class OpenEpGUI(QtWidgets.QMainWindow):
+class OpenEPGUI(QtWidgets.QMainWindow):
 
     def __init__(self):
 
@@ -271,26 +271,11 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.egm_dock = openep.view.custom_widgets.CustomDockWidget("Electrograms")
         self.egm_canvas, self.egm_figure, self.egm_axis = openep.view.canvases.create_canvas()
         egm_layout = QtWidgets.QVBoxLayout(self.egm_canvas)
-        egm_selection_layout = QtWidgets.QHBoxLayout()
         egm_type_layout = QtWidgets.QHBoxLayout()
 
         # Add widgets for manually selecting electrograms from point indices
-        egm_selection_text = QtWidgets.QLabel("Select EGMs (indices of points):")
-        egm_selection_text.setMinimumWidth(220)
-        egm_selection_text.setMaximumWidth(300)
-        egm_selection_text.setStyleSheet('border: 0px; background-color: white;')
-        egm_selection_layout.addWidget(egm_selection_text)
-
-        self.egm_selection = QtWidgets.QLineEdit()
-        self.egm_selection.setMinimumWidth(100)
-        self.egm_selection.setMaximumWidth(300)
-        self.egm_selection.setStyleSheet('border: 1px solid #d8dcd6; background-color: white;')
-        self.egm_selection.setText("0")
-        self.egm_selection.setPlaceholderText("indices")
+        egm_selection_layout, self.egm_selection = openep.view.canvases.create_egm_selection_layout()
         self.egm_selection.returnPressed.connect(self.update_electrograms_from_text)
-        egm_selection_layout.addWidget(self.egm_selection)
-
-        egm_selection_layout.addStretch()
         egm_layout.addLayout(egm_selection_layout)
 
         # Add radio buttons to select bipolar, unipolar (A/B), and reference electrograms
@@ -309,7 +294,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         egm_layout.addLayout(egm_type_layout)
         egm_layout.addStretch()
 
-        # Button for setting the window of interes
+        # Button for setting the window of interest
         self.set_woi_button = openep.view.canvases.add_woi_set_button(
             figure=self.egm_figure,
             axis=[0.782, 0.02, 0.09, 0.025],
@@ -392,7 +377,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.system_dock)
         self.tabifyDockWidget(self.analysis_dock, self.system_dock)
 
-        for dock in [self.egm_dock, self.analysis_dock]:
+        for dock in [self.egm_dock, self.analysis_dock, self.system_dock]:
             dock.setAllowedAreas(Qt.AllDockWidgetAreas)
 
         self.setDockOptions(self.GroupedDragging | self.AllowTabbedDocks | self.AllowNestedDocks)
@@ -1322,7 +1307,7 @@ def main():
     app.setWindowIcon(QtGui.QIcon(openep.view.images.LOGO))
 
     # Create an instance of GUI
-    window = OpenEpGUI()
+    window = OpenEPGUI()
     window.showMaximized()
 
     sys.exit(app.exec_())
