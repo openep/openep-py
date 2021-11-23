@@ -1202,7 +1202,7 @@ class System:
         if self.type == "openCARP":
             self._add_bipolar_action_for_openCARP(dock, plotter, field_group, field_menu)
             self._add_unipolar_action_for_openCARP(dock, plotter, field_group, field_menu)
-            self.clinical_bipolar_action = None
+            plotter.clinical_bipolar_action = None
         elif self.type == "OpenEP":
             self._add_bipolar_action_for_OpenEP(dock, plotter, field_group, field_menu)
             self._add_unipolar_action_for_OpenEP(dock, plotter, field_group, field_menu)
