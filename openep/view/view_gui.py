@@ -33,6 +33,7 @@ import openep
 import openep.view.custom_widgets
 import openep.view.canvases
 import openep.view.images
+import openep.view.system_manager_ui
 import openep.view.system_manager
 
 
@@ -142,41 +143,21 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         system_main_widget = QtWidgets.QWidget()
         self.system_main_layout = QtWidgets.QGridLayout(system_main_widget)
 
-        heading_font = QtGui.QFont()
-        heading_font.setBold(True)
+        # add a row containing heading labels to the grid 
+        openep.view.system_manager_ui.add_heading_bar(layout=self.system_main_layout)
 
-        heading_bar = QtWidgets.QWidget()
-        heading_bar_layout = QtWidgets.QHBoxLayout()
-        total_width = 0
-        for heading_name, width in zip(
-            ['Name', 'Directory', 'Type', 'Active'],
-            [2, 8, 1, 1],
-        ):
-            heading = QtWidgets.QLabel(heading_name)
-            heading.setFont(heading_font)
-            heading.setFrameShape(QtWidgets.QFrame.NoFrame)
-            heading.setLineWidth(0)
-            heading_bar_layout.addWidget(heading, width)
-            total_width += width
-
-        heading_bar.setLayout(heading_bar_layout)
-        heading_bar.setStyleSheet('QWidget {background-color: #95a3a6;}')
-        self.system_main_layout.addWidget(heading_bar, 0, 0, total_width, 1)
-
+        # we need a method for selecting the active system
         self._active_system_button_group = QtWidgets.QButtonGroup()
 
         # After adding all the rows we need to make sure they are at the top of the layout
-        self.system_main.vertical_stretch = QtWidgets.QSpacerItem(
-            0, 0,
-            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding,
-        )
+        self.system_main.vertical_stretch = openep.view.system_manager_ui.create_vertical_stretch()
         self.system_main_layout.addItem(self.system_main.vertical_stretch)
 
         # Setting nested layouts
         self.system_main.setCentralWidget(system_main_widget)
         self.system_dock.setWidget(self.system_main)
 
-    def _update_system_manager_table(self, system):
+    def update_system_manager_table(self, system):
         """Update the System manager table when a new system is loaded.
 
         We need to remove the vertical spacer, add a new row in the system table,
@@ -188,51 +169,35 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         self.system_main_layout.removeItem(self.system_main.vertical_stretch)
 
-        # Add information for the current system
-        system_row = QtWidgets.QWidget()
-        system_layout = QtWidgets.QHBoxLayout()
-
-        # The widths of the widgets are the same as those used in self._create_system_manager_table
-        name_width, directory_width, data_type_width, active_width = [2, 8, 1, 1]
-        total_width = 12
-
-        system.name_widget = QtWidgets.QLineEdit()
-        system.name_widget.setText(str(system.name))
-        system.name_widget.setPlaceholderText("system name")
-        system.name_widget.returnPressed.connect(lambda: self.update_system_name(system))
-        system_layout.addWidget(system.name_widget, name_width)
-
-        directory = QtWidgets.QLabel()
-        directory.setText(str(system.folder))
-        system_layout.addWidget(directory, directory_width)
-
-        data_type = QtWidgets.QLabel()
-        data_type.setText(system.type)
-        system_layout.addWidget(data_type, data_type_width)
-
-        active = QtWidgets.QRadioButton()
-        self._active_system_button_group.addButton(active)
-        is_active = True if self._active_system.name == system.name else False
-        active.setChecked(is_active)
-        active.clicked.connect(lambda: self.change_active_system(system))
-        system_layout.addWidget(active, active_width)
-
-        system_row.setLayout(system_layout)
-        system_row.setStyleSheet('background-color: white;')
+        # Not sure why * 10 works. But if not multiplied by at least 10, there is vertical overlap between rows
         row_number = len(self.systems) * 10
-        self.system_main_layout.addWidget(system_row, row_number, 0, total_width, 1)
+
+        system.name_widget, *_, active_widget = openep.view.system_manager_ui.create_widgets_for_system_row(
+            layout=self.system_main_layout,
+            name=str(system.name),
+            directory=str(system.folder),
+            data_type=system.type,
+            is_active=True if self._active_system.name == system.name else False,
+            row_number=row_number,
+            )
+
+        system.name_widget.returnPressed.connect(lambda: self.update_system_name(system))
+        active_widget.clicked.connect(lambda: self.change_active_system(system))
+        self._active_system_button_group.addButton(active_widget)
 
         # Make sure the vertical spacing is correct again
-        self.system_main.vertical_stretch = QtWidgets.QSpacerItem(
-            0, 0,
-            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding,
-        )
+        self.system_main.vertical_stretch = openep.view.system_manager_ui.create_vertical_stretch()
         self.system_main_layout.addItem(self.system_main.vertical_stretch)
 
     def update_system_name(self, system):
-        """Change the name of a system"""
+        """
+        Change the name of a system.
+
+        We also need to change the window title of its dock widgets.
+        """
 
         new_name = system.name_widget.text()
+
         if new_name not in self.systems:
             self.systems[new_name] = self.systems.pop(system.name)
             self.systems[new_name].name = new_name
@@ -432,7 +397,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self._system_counter += 1
         self._active_system = new_system if self._active_system is None else self._active_system
         
-        self._update_system_manager_table(new_system)
+        self.update_system_manager_table(new_system)
 
         # We need to dynamically add options for creating 3D viewers to the main menubar
         add_view_for_system_action = QtWidgets.QAction(filename, self)
@@ -515,7 +480,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self._system_counter += 1
         self._active_system = new_system if self._active_system is None else self._active_system
 
-        self._update_system_manager_table(new_system)
+        self.update_system_manager_table(new_system)
 
         # We need to dynamically add options for loading data/creating 3D viewers to the main menubar
         add_data_to_system_menu = QtWidgets.QMenu(points, self)
