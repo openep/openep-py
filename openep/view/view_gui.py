@@ -196,10 +196,11 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         name_width, directory_width, data_type_width, active_width = [2, 8, 1, 1]
         total_width = 12
 
-        name = QtWidgets.QLineEdit()
-        name.setText(str(system.name))
-        name.setPlaceholderText("system name")
-        system_layout.addWidget(name, name_width)
+        system.name_widget = QtWidgets.QLineEdit()
+        system.name_widget.setText(str(system.name))
+        system.name_widget.setPlaceholderText("system name")
+        system.name_widget.returnPressed.connect(lambda: self.update_system_name(system))
+        system_layout.addWidget(system.name_widget, name_width)
 
         directory = QtWidgets.QLabel()
         directory.setText(str(system.folder))
@@ -227,6 +228,31 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding,
         )
         self.system_main_layout.addItem(self.system_main.vertical_stretch)
+
+    def update_system_name(self, system):
+        """Change the name of a system"""
+
+        new_name = system.name_widget.text()
+        if new_name not in self.systems:
+            self.systems[new_name] = self.systems.pop(system.name)
+            self.systems[new_name].name = new_name
+            for dock, plotter in zip(system.docks, system.plotters):
+                suffix = plotter.title.split(":")[1]
+                title = f"{new_name}: {suffix}"
+                plotter.title = title
+                dock.setWindowTitle(title)
+        else:
+
+            system.name_widget.setText(system.name)
+
+            error = QtWidgets.QMessageBox()
+            error.setIcon(QtWidgets.QMessageBox.Critical)
+            error.setText("Name Error")
+            error.setInformativeText(
+                "System names must be unique."
+            )
+            error.setWindowTitle("Error")
+            error.exec_()
 
     def _create_egm_canvas_dock(self):
         """
@@ -411,7 +437,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         case = openep.load_case(filename)
 
         new_system = System(
-            name=self._system_counter,
+            name=str(self._system_counter),
             folder=pathlib.Path(filename).parent.resolve(),
             type="OpenEP",
             data=case,
@@ -421,7 +447,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         while self._system_counter in self.systems:
             self._system_counter += 1
 
-        self.systems[self._system_counter] = (new_system)
+        self.systems[new_system.name] = new_system
         self._system_counter += 1
         self._active_system = new_system if self._active_system is None else self._active_system
         
@@ -493,21 +519,21 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             indices=indices,
         )
 
+        # we need a unique key for each system
+        while str(self._system_counter) in self.systems:
+            self._system_counter += 1
+
         new_system = System(
-            name=self._system_counter,
+            name=str(self._system_counter),
             folder=pathlib.Path(points).parent.resolve(),
             type="openCARP",
             data=carp,
         )
 
-        # we need a unique key for each system
-        while self._system_counter in self.systems:
-            self._system_counter += 1
-
-        self.systems[self._system_counter] = (new_system)
+        self.systems[new_system.name] = new_system
         self._system_counter += 1
         self._active_system = new_system if self._active_system is None else self._active_system
-        
+
         self._update_system_manager_table(new_system)
 
         # We need to dynamically add options for loading data/creating 3D viewers to the main menubar
