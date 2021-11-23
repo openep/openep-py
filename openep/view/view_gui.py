@@ -271,7 +271,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.egm_dock = openep.view.custom_widgets.CustomDockWidget("Electrograms")
         self.egm_canvas, self.egm_figure, self.egm_axis = openep.view.canvases.create_canvas()
         egm_layout = QtWidgets.QVBoxLayout(self.egm_canvas)
-        egm_type_layout = QtWidgets.QHBoxLayout()
 
         # Add widgets for manually selecting electrograms from point indices
         egm_selection_layout, self.egm_selection = openep.view.canvases.create_egm_selection_layout()
@@ -279,18 +278,14 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         egm_layout.addLayout(egm_selection_layout)
 
         # Add radio buttons to select bipolar, unipolar (A/B), and reference electrograms
-        self.egm_reference_checkbox, self.egm_bipolar_checkbox, self.egm_unipolar_A_checkbox, self.egm_unipolar_B_checkbox = \
-            openep.view.canvases.add_egm_type_widgets(
-                canvas=self.egm_canvas,
-            )
+        egm_type_layout, *checkboxes = openep.view.canvases.create_egm_type_layout()
 
-        for box in [self.egm_reference_checkbox, self.egm_bipolar_checkbox,
-                    self.egm_unipolar_A_checkbox, self.egm_unipolar_B_checkbox]:
-
+        for box in checkboxes:
             box.stateChanged.connect(self.plot_electrograms)
-            egm_type_layout.addWidget(box)
 
-        egm_type_layout.addStretch()
+        self.egm_reference_checkbox, self.egm_bipolar_checkbox, self.egm_unipolar_A_checkbox, self.egm_unipolar_B_checkbox = \
+            checkboxes
+        
         egm_layout.addLayout(egm_type_layout)
         egm_layout.addStretch()
 
@@ -314,6 +309,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         )
 
         # Create a placeholder widget to hold our canvas, toolbar, and selection widgets
+        # We're using a QMainWindow so we can easily add a menubar
         egm_canvas_main = QtWidgets.QMainWindow()
         egm_canvas_main.setCentralWidget(canvas_widget)
 
