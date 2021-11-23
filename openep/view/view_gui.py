@@ -435,7 +435,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         # Setting the default selected electrograms
         new_system.egm_points = np.asarray([0], dtype=int)
 
-        self.interpolate_openEP_fields()
+        self.interpolate_openEP_fields(system=new_system)
         self.add_view(new_system)
 
     def _load_openCARP(self):
@@ -586,6 +586,10 @@ class OpenEpGUI(QtWidgets.QMainWindow):
             plotter.unipolar_action.triggered.connect(
                 lambda: self.change_active_scalars(system, index=index, scalars='unipolar')
             )
+        if plotter.clinical_bipolar_action is not None:
+            plotter.clinical_bipolar_action.triggered.connect(
+                lambda: self.change_active_scalars(system, index=index, scalars='clinical bipolar')
+            )
 
         dock.setWindowTitle(plotter.title)
         self.draw_map(
@@ -696,10 +700,10 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         """Update the scalar values that are being projected onto the mesh for an OpenEP dataset."""
 
         if scalars == 'bipolar':
-            system.plotters[index].active_scalars = system.data.interpolated_values['bipolar_voltage']
+            system.plotters[index].active_scalars = system.data.interpolated_fields['bipolar_voltage']
             system.plotters[index].title = f"{system.name}: Bipolar voltage"
         elif scalars == 'unipolar':
-            system.plotters[index].active_scalars = system.data.interpolated_values['unipolar_voltage']
+            system.plotters[index].active_scalars = system.data.interpolated_fields['unipolar_voltage']
             system.plotters[index].title = f"{system.name}: Unipolar voltage"
         elif scalars == 'clinical bipolar':
             system.plotters[index].active_scalars = system.data.fields.bipolar_voltage
@@ -731,7 +735,7 @@ class OpenEpGUI(QtWidgets.QMainWindow):
         for index in range(n_plotters):
             self.change_active_scalars(system, index=index, scalars=system.plotters[index].active_scalars_sel)
 
-    def interpolate_openEP_fields(self):
+    def interpolate_openEP_fields(self, system=None):
         """
         Interpolate EGM data onto the surface.
 
@@ -741,19 +745,36 @@ class OpenEpGUI(QtWidgets.QMainWindow):
 
         # TODO: check that when we change these values then the active scalars are also changed if necessary
         #       May need to call self._change_active_scalars
-        system = self._active_system
+        system = self._active_system if system is None else system
         case = system.data
-        bipolar_voltage = openep.case.interpolate_voltage_onto_surface(
-            case,
-            max_distance=None,
-            buffer=0,
-        )
-        unipolar_voltage = openep.case.interpolate_voltage_onto_surface(
-            case,
-            max_distance=None,
-            buffer=0,
-            bipolar=False,
-        )
+
+        try:
+            bipolar_voltage = openep.case.interpolate_voltage_onto_surface(
+                case,
+                max_distance=None,
+                buffer=0,
+            )
+            unipolar_voltage = openep.case.interpolate_voltage_onto_surface(
+                case,
+                max_distance=None,
+                buffer=0,
+                bipolar=False,
+            )
+        except ValueError as e:
+
+            if str(e) != "cannot reshape array of size 0 into shape (0,newaxis)":
+                raise
+
+            error = QtWidgets.QMessageBox()
+            error.setIcon(QtWidgets.QMessageBox.Critical)
+            error.setText("Range Error")
+            error.setInformativeText(
+                "There are no mapping points within the selected window of interest.\n"
+                "Voltages from mapping points cannot be interpolated onto the surface."
+            )
+            error.setWindowTitle("Error")
+            error.exec_()
+            return
 
         system.data.interpolated_fields = {
             "bipolar_voltage": bipolar_voltage,
@@ -1264,7 +1285,7 @@ class System:
             field_group.addAction(plotter.clinical_bipolar_action)
             field_menu.addAction(plotter.clinical_bipolar_action)
             plotter.active_scalars = self.data.fields.bipolar_voltage
-            plotter.title = f"{self.name}: Clinical bipolar voltage"
+            plotter.title = f"{self.name}: clinical bipolar voltage"
             plotter.active_scalars_sel = 'clinical bipolar'
         else:
             plotter.clinical_bipolar_action = None
