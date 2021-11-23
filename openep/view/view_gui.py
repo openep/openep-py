@@ -1243,7 +1243,7 @@ class System:
         """If we have bipolar voltages, add an option to project these values onto the surface."""
 
         if self.data.electric.bipolar_egm is not None and self.data.electric.bipolar_egm.voltage is not None:
-            plotter.bipolar_action = QtWidgets.QAction("Bipolar voltage", dock.main)
+            plotter.bipolar_action = QtWidgets.QAction("Bipolar voltage", dock.main, checkable=True)
             plotter.bipolar_action.setChecked(True)
             field_group.addAction(plotter.bipolar_action)
             field_menu.addAction(plotter.bipolar_action)
@@ -1257,7 +1257,7 @@ class System:
         """If we have unipolar voltages, add an option to project these values onto the surface."""
 
         if self.data.electric.unipolar_egm is not None and self.data.electric.unipolar_egm.voltage is not None:
-            plotter.unipolar_action = QtWidgets.QAction("Unipolar voltage", dock.main)
+            plotter.unipolar_action = QtWidgets.QAction("Unipolar voltage", dock.main, checkable=True)
             plotter.unipolar_action.setChecked(True)
             field_group.addAction(plotter.unipolar_action)
             field_menu.addAction(plotter.unipolar_action)
@@ -1271,8 +1271,7 @@ class System:
         """If we have bipolar electrograms, add an option to interpolate these values onto the surface."""
 
         if self.data.electric.bipolar_egm is not None:
-            plotter.bipolar_action = QtWidgets.QAction("Bipolar voltage", dock.main)
-            plotter.bipolar_action.setChecked(True)
+            plotter.bipolar_action = QtWidgets.QAction("Bipolar voltage", dock.main, checkable=True)
             field_group.addAction(plotter.bipolar_action)
             field_menu.addAction(plotter.bipolar_action)
             plotter.active_scalars = None
@@ -1285,8 +1284,7 @@ class System:
         """If we have unipolar electrograms, add an option to interpolate these values onto the surface."""
 
         if self.data.electric.unipolar_egm is not None:
-            plotter.unipolar_action = QtWidgets.QAction("Unipolar voltage", dock.main)
-            plotter.unipolar_action.setChecked(True)
+            plotter.unipolar_action = QtWidgets.QAction("Unipolar voltage", dock.main, checkable=True)
             field_group.addAction(plotter.unipolar_action)
             field_menu.addAction(plotter.unipolar_action)
             plotter.active_scalars = None
@@ -1299,8 +1297,7 @@ class System:
         """If we have clinical bipolar electrograms, add an option to project these values onto the surface."""
 
         if self.data.fields.bipolar_voltage is not None:
-            plotter.clinical_bipolar_action = QtWidgets.QAction("Clinical bipolar voltage", dock.main)
-            plotter.clinical_bipolar_action.setChecked(True)
+            plotter.clinical_bipolar_action = QtWidgets.QAction("Clinical bipolar voltage", dock.main, checkable=True)
             field_group.addAction(plotter.clinical_bipolar_action)
             field_menu.addAction(plotter.clinical_bipolar_action)
             plotter.active_scalars = self.data.fields.bipolar_voltage
