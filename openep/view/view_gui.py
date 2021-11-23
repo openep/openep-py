@@ -31,9 +31,9 @@ import numpy as np
 
 import openep
 import openep.view.custom_widgets
-import openep.view.plotters
 import openep.view.canvases
 import openep.view.images
+import openep.view.system_manager
 
 
 class OpenEPGUI(QtWidgets.QMainWindow):
@@ -417,7 +417,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         case = openep.load_case(filename)
 
-        new_system = System(
+        new_system = openep.view.system_manager.System(
             name=str(self._system_counter),
             folder=pathlib.Path(filename).parent.resolve(),
             type="OpenEP",
@@ -504,7 +504,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         while str(self._system_counter) in self.systems:
             self._system_counter += 1
 
-        new_system = System(
+        new_system = openep.view.system_manager.System(
             name=str(self._system_counter),
             folder=pathlib.Path(points).parent.resolve(),
             type="openCARP",
@@ -607,7 +607,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             free_boundaries=free_boundaries,
         )
 
-        # If this is the first 3d viewer added for this system, we need to update the egms etc.
+        # If this is the first 3d viewer for the first system loaded, we need to update the egms etc.
         if (system.name == self._active_system.name) and len(system.plotters)==1:
             self.change_active_system(system)
 
@@ -1116,184 +1116,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                         "border: None;"
                         "}"
                     )
-
-
-@attrs(auto_attribs=True, auto_detect=True)
-class System:
-    """Class for storing data a single system (either an OpenEP or openCARP dataset).
-
-    Args:
-        name (str): Label for the system
-        folder (str): Directory containing the file(s) for the system
-        type (str): System type - either OpenEP or openCARP
-        data (Union[Case, CARPData]): Data for the system, including e.g. points and triangles
-            for creating a mesh.
-    """
-    name: str
-    folder: str
-    type: str
-    data: Union[openep.data_structures.case.Case, openep.data_structures.openCARP.CARPData]
-
-    def __attrs_post_init__(self):
-
-        self.docks = []
-        self.plotters = []
-        self.meshes = []
-        self.free_boundaries = []
-        self.add_mesh_kws = []
-
-    def __repr__(self):
-        return f"{self.type} dataset {len(self.data.points)} mapping sites."
-
-    def create_dock(self):
-        """Create a new dockable pyvista-qt plotter for rendering 3D maps.
-
-        This can be used for projecting scalar properties onto the 3D
-        surface.
-        """
-
-        if self.data is None or self.data.electric is None:
-            return
-
-        dock = openep.view.custom_widgets.CustomDockWidget("Temporary title") # this will be changed
-        dock.main = QtWidgets.QMainWindow()
-        plotter = openep.view.plotters.create_plotter()
-
-        # The dock is set to have bold font (so the title stands out)
-        # But all other widgets should have normal weighted font
-        main_font = QtGui.QFont()
-        main_font.setBold(False)
-        dock.main.setFont(main_font)
-
-        # TODO: We're currently using line edits to set colourbar limits - look into RangeSlider
-        plotter_layout = QtWidgets.QVBoxLayout(plotter)
-        colour_bar_layout = QtWidgets.QHBoxLayout()
-
-        colour_bar_text = QtWidgets.QLabel("Colourbar limits:")
-        colour_bar_text.setMinimumWidth(100)
-        colour_bar_text.setMaximumWidth(200)
-        colour_bar_text.setStyleSheet('QLabel {border: 0px; background-color: #d8dcd6;}')
-        colour_bar_layout.addWidget(colour_bar_text)
-
-        lower_limit = QtWidgets.QLineEdit()
-        lower_limit.setFixedWidth(40)
-        lower_limit.setText("0")
-        lower_limit.setPlaceholderText("lower")
-        lower_limit.setValidator(QtGui.QIntValidator(bottom=0.0))
-        colour_bar_layout.addWidget(lower_limit)
-
-        upper_limit = QtWidgets.QLineEdit()
-        upper_limit.setFixedWidth(40)
-        upper_limit.setText("5")
-        upper_limit.setPlaceholderText("upper")
-        lower_limit.setValidator(QtGui.QIntValidator(bottom=0.0))
-        colour_bar_layout.addWidget(upper_limit)
-
-        colour_bar_layout.addStretch()
-        plotter_layout.addLayout(colour_bar_layout)
-        plotter_layout.addStretch()
-
-        # Create a menubar for this dock
-        # From here we can control e.g. the scalar values projected onto the surface
-        dock.main.menubar = dock.main.menuBar()
-        dock.main.menubar.setNativeMenuBar(False)
-
-        field_menu = dock.main.menubar.addMenu("Field")
-        field_group = QtWidgets.QActionGroup(dock.main)
-
-        if self.type == "openCARP":
-            self._add_bipolar_action_for_openCARP(dock, plotter, field_group, field_menu)
-            self._add_unipolar_action_for_openCARP(dock, plotter, field_group, field_menu)
-            plotter.clinical_bipolar_action = None
-        elif self.type == "OpenEP":
-            self._add_bipolar_action_for_OpenEP(dock, plotter, field_group, field_menu)
-            self._add_unipolar_action_for_OpenEP(dock, plotter, field_group, field_menu)
-            self._add_clinical_bipolar_action_for_OpenEP(dock, plotter, field_group, field_menu)
-
-        # Set widget
-        dock.main.setCentralWidget(plotter)
-        dock.setWidget(dock.main)
-        dock.setAllowedAreas(Qt.AllDockWidgetAreas)
-
-        plotter.lower_limit = lower_limit
-        plotter.upper_limit = upper_limit
-
-        return dock, plotter
-
-    def _add_bipolar_action_for_openCARP(self, dock, plotter, field_group, field_menu):
-        """If we have bipolar voltages, add an option to project these values onto the surface."""
-
-        if self.data.electric.bipolar_egm is not None and self.data.electric.bipolar_egm.voltage is not None:
-            plotter.bipolar_action = QtWidgets.QAction("Bipolar voltage", dock.main, checkable=True)
-            plotter.bipolar_action.setChecked(True)
-            field_group.addAction(plotter.bipolar_action)
-            field_menu.addAction(plotter.bipolar_action)
-            plotter.active_scalars = self.data.electric.bipolar_egm.voltage
-            plotter.title = f"{self.name}: Bipolar voltage"
-            plotter.active_scalars_sel = 'bipolar'
-        else:
-            plotter.bipolar_action = None
-
-    def _add_unipolar_action_for_openCARP(self, dock, plotter, field_group, field_menu):
-        """If we have unipolar voltages, add an option to project these values onto the surface."""
-
-        if self.data.electric.unipolar_egm is not None and self.data.electric.unipolar_egm.voltage is not None:
-            plotter.unipolar_action = QtWidgets.QAction("Unipolar voltage", dock.main, checkable=True)
-            plotter.unipolar_action.setChecked(True)
-            field_group.addAction(plotter.unipolar_action)
-            field_menu.addAction(plotter.unipolar_action)
-            plotter.active_scalars = self.data.electric.unipolar_egm.voltage[:, 0],
-            plotter.title = f"{self.name}: Unipolar voltage"
-            plotter.active_scalars_sel = 'unipolar'
-        else:
-            plotter.unipolar_action = None
-
-    def _add_bipolar_action_for_OpenEP(self, dock, plotter, field_group, field_menu):
-        """If we have bipolar electrograms, add an option to interpolate these values onto the surface."""
-
-        if self.data.electric.bipolar_egm is not None:
-            plotter.bipolar_action = QtWidgets.QAction("Bipolar voltage", dock.main, checkable=True)
-            field_group.addAction(plotter.bipolar_action)
-            field_menu.addAction(plotter.bipolar_action)
-            plotter.active_scalars = None
-            plotter.title = f"{self.name}: Bipolar voltage"
-            plotter.active_scalars_sel = 'bipolar'
-        else:
-            plotter.bipolar_action = None
-
-    def _add_unipolar_action_for_OpenEP(self, dock, plotter, field_group, field_menu):
-        """If we have unipolar electrograms, add an option to interpolate these values onto the surface."""
-
-        if self.data.electric.unipolar_egm is not None:
-            plotter.unipolar_action = QtWidgets.QAction("Unipolar voltage", dock.main, checkable=True)
-            field_group.addAction(plotter.unipolar_action)
-            field_menu.addAction(plotter.unipolar_action)
-            plotter.active_scalars = None
-            plotter.title = f"{self.name}: Unipolar voltage"
-            plotter.active_scalars_sel = 'unipolar'
-        else:
-            plotter.unipolar_action = None
-
-    def _add_clinical_bipolar_action_for_OpenEP(self, dock, plotter, field_group, field_menu):
-        """If we have clinical bipolar electrograms, add an option to project these values onto the surface."""
-
-        if self.data.fields.bipolar_voltage is not None:
-            plotter.clinical_bipolar_action = QtWidgets.QAction("Clinical bipolar voltage", dock.main, checkable=True)
-            field_group.addAction(plotter.clinical_bipolar_action)
-            field_menu.addAction(plotter.clinical_bipolar_action)
-            plotter.active_scalars = self.data.fields.bipolar_voltage
-            plotter.title = f"{self.name}: clinical bipolar voltage"
-            plotter.active_scalars_sel = 'clinical bipolar'
-        else:
-            plotter.clinical_bipolar_action = None
-
-    def _create_default_kws(self):
-        return {
-            "clim": [0, 5],
-            "scalar_bar_args": {
-                "title": "Voltage (mV)",
-            }
-        }
 
 
 def main():
