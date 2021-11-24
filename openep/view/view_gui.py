@@ -846,7 +846,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         # Get data for new set of points
         egm_text = self.egm_selection.text()
-        selected_indices = self.egm_selection_filter(egm_text)
+        selected_indices = self.egm_selection_filter.findall(egm_text)
         self._active_system.egm_points = np.asarray(selected_indices, dtype=int)
 
         self.extract_electrograms()

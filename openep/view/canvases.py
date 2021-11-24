@@ -63,8 +63,6 @@ def create_egm_selection_layout():
     egm_selection.setStyleSheet('border: 1px solid #d8dcd6; background-color: white;')
     egm_selection.setText("0")
     egm_selection.setPlaceholderText("indices")
-    egm_selection.setValidator(QtGui.QIntValidator(bottom=0))
-
 
     egm_selection_layout.addWidget(egm_selection_text)
     egm_selection_layout.addWidget(egm_selection)
