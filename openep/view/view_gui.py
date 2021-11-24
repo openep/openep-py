@@ -22,6 +22,7 @@ A GUI for OpenEP-Py.
 """
 import sys
 import pathlib
+import re
 from typing import Union
 from attr import attrs
 
@@ -66,6 +67,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self._active_system = None
 
         self.egm_slider = None
+        self.egm_selection_filter = re.compile('\d')  # ignore all whitespace, special characters, and text
 
     def _init_ui(self):
         """
@@ -844,8 +846,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         # Get data for new set of points
         egm_text = self.egm_selection.text()
-        splitter = ',' if ',' in egm_text else ' '
-        self._active_system.egm_points = np.asarray(egm_text.split(splitter), dtype=int)
+        selected_indices = self.egm_selection_filter(egm_text)
+        self._active_system.egm_points = np.asarray(selected_indices, dtype=int)
 
         self.extract_electrograms()
         self.plot_electrograms()
