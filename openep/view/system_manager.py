@@ -68,7 +68,7 @@ class System:
         if self.data is None or self.data.electric is None:
             return
 
-        dock = openep.view.custom_widgets.CustomDockWidget("Temporary title") # this will be changed
+        dock = openep.view.custom_widgets.CustomDockWidget("Temporary title")  # this will be changed
         dock.main = QtWidgets.QMainWindow()
         plotter = openep.view.plotters.create_plotter()
         plotter_layout = QtWidgets.QVBoxLayout(plotter)
