@@ -23,8 +23,6 @@ A GUI for OpenEP-Py.
 import sys
 import pathlib
 import re
-from typing import Union
-from attr import attrs
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
@@ -67,7 +65,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self._active_system = None
 
         self.egm_slider = None
-        self.egm_selection_filter = re.compile('\d')  # ignore all whitespace, special characters, and text
+        self.egm_selection_filter = re.compile('\d')  # noqa: W605
 
     def _init_ui(self):
         """
@@ -85,7 +83,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.system_dock = openep.view.custom_widgets.CustomDockWidget("Systems")
         self.system_main = QtWidgets.QMainWindow()
         self.system_main.setStyleSheet('QMainWindow {border: 0px; background-color: #d8dcd6;}')
-        
+
         # The dock is set to have bold font (so the title stands out)
         # But all other widgets should have normal weighted font
         main_font = QtGui.QFont()
@@ -145,7 +143,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         system_main_widget = QtWidgets.QWidget()
         self.system_main_layout = QtWidgets.QGridLayout(system_main_widget)
 
-        # add a row containing heading labels to the grid 
+        # add a row containing heading labels to the grid
         openep.view.system_manager_ui.add_heading_bar(layout=self.system_main_layout)
 
         # we need a method for selecting the active system
@@ -252,7 +250,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         self.egm_reference_checkbox, self.egm_bipolar_checkbox, self.egm_unipolar_A_checkbox, self.egm_unipolar_B_checkbox = \
             checkboxes
-        
+
         egm_layout.addLayout(egm_type_layout)
         egm_layout.addStretch()
 
@@ -374,7 +372,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             filename = dialogue.selectedFiles()[0]
             self._initialise_case(filename)
 
-
     def _initialise_case(self, filename):
         """Initialise data from an OpenEP case object.
 
@@ -398,7 +395,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.systems[new_system.name] = new_system
         self._system_counter += 1
         self._active_system = new_system if self._active_system is None else self._active_system
-        
+
         self.update_system_manager_table(new_system)
 
         # We need to dynamically add options for creating 3D viewers to the main menubar
@@ -575,7 +572,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         )
 
         # If this is the first 3d viewer for the first system loaded, we need to update the egms etc.
-        if (system.name == self._active_system.name) and len(system.plotters)==1:
+        if (system.name == self._active_system.name) and (len(system.plotters) == 1):
             self.change_active_system(system)
 
         self.addDockWidget(Qt.LeftDockWidgetArea, dock)
@@ -610,7 +607,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     def change_active_system(self, system):
         """
         Update selected active system.
-        
+
         Make the menubars blue for all 3d viewers of the active system.
         If the active system has electrograms, plot these in the electrogram viewer.
         Change the window of interest range slider in the electrogram viewer to reflect
@@ -624,7 +621,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.remove_woi_slider()
         self.check_for_available_electrograms()
         if self.has_electrograms:
-        
+
             self.egm_axis.axis('on')  # make sure we can see the axes now
             self.egm_axis.set_xlim(self.egm_times[0]-100, self.egm_times[-1]+100)
             self.egm_axis.set_ylim(-1, 13)
@@ -639,7 +636,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             self.egm_axis.cla()
             self.egm_axis.axis('off')
             self.egm_canvas.draw()
-            
+
     def change_active_scalars(self, system, index, scalars):
         """Update the scalar values that are being projected onto the mesh."""
 

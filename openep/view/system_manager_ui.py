@@ -20,15 +20,7 @@
 """
 Functions for creating the system manager widget.
 """
-from typing import Union
-from attr import attrs
-
 from PyQt5 import QtGui, QtWidgets
-from PyQt5.QtCore import Qt
-
-import openep
-import openep.view.custom_widgets
-import openep.view.plotters
 
 
 def add_heading_bar(layout):
@@ -78,7 +70,7 @@ def create_widgets_for_system_row(
     data_type: str,
     is_active: str,
     row_number: int,
-    ):
+):
     """Create a QHBoxLayout containing widgets with info about a given system.
 
     The row is added to the layout in place. The created widgets are also returned.

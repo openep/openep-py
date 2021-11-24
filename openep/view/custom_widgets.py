@@ -38,7 +38,7 @@ class CustomDockWidget(QtWidgets.QDockWidget):
         self._init_title()
         self.dockLocationChanged.connect(self.on_dockLocationChanged)
 
-    def _init_title(self):        
+    def _init_title(self):
 
         self.setTitleBarWidget(QtWidgets.QWidget())
         title_font = QtGui.QFont()

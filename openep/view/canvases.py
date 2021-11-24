@@ -21,7 +21,7 @@
 Create and manipulate Matplotlib canvases.
 """
 
-from PyQt5 import QtGui, QtWidgets
+from PyQt5 import QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.widgets
 import matplotlib.pyplot as plt
