@@ -114,14 +114,14 @@ class System:
         lower_limit.setFixedWidth(40)
         lower_limit.setText("0")
         lower_limit.setPlaceholderText("lower")
-        lower_limit.setValidator(QtGui.QIntValidator(bottom=0.0))
+        lower_limit.setValidator(QtGui.QDoubleValidator(bottom=0.0))
         colour_bar_layout.addWidget(lower_limit)
 
         upper_limit = QtWidgets.QLineEdit()
         upper_limit.setFixedWidth(40)
         upper_limit.setText("5")
         upper_limit.setPlaceholderText("upper")
-        lower_limit.setValidator(QtGui.QIntValidator(bottom=0.0))
+        lower_limit.setValidator(QtGui.QDoubleValidator(bottom=0.01))
         colour_bar_layout.addWidget(upper_limit)
 
         colour_bar_layout.addStretch()
