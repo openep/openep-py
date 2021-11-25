@@ -65,7 +65,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self._active_system = None
 
         self.egm_slider = None
-        self.egm_selection_filter = re.compile('\d')  # noqa: W605
+        self.egm_selection_filter = re.compile('\d+')  # noqa: W605
 
     def _init_ui(self):
         """
