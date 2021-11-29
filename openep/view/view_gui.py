@@ -542,6 +542,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         index = len(system.plotters)
         plotter.lower_limit.returnPressed.connect(lambda: self.update_colourbar_limits(system, index=index))
         plotter.upper_limit.returnPressed.connect(lambda: self.update_colourbar_limits(system, index=index))
+        plotter.opacity.valueChanged.connect(lambda: self.update_opacity(system, index=index))
 
         system.docks.append(dock)
         system.plotters.append(plotter)
@@ -596,6 +597,28 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         upper_limit = float(system.plotters[index].upper_limit.text())
         system.add_mesh_kws[index]["clim"] = [lower_limit, upper_limit]
 
+        self.draw_map(
+            system.meshes[index],
+            system.plotters[index],
+            system.plotters[index].active_scalars,
+            system.add_mesh_kws[index],
+            system.free_boundaries[index],
+        )
+
+    def update_opacity(self, system, index):
+        """Update the opacity for a given ploter.
+
+        Args:
+            system (System): system containing the plotter whose opacity
+                will be changed
+            index (int): index of plotter to modify
+        """
+
+        plotter = system.plotters[index]
+        system.add_mesh_kws[index]['opacity'] = plotter.opacity.value()
+
+        # TODO: add a function that adds only the mesh actor, rather than redrawing
+        #       the entire scene every time.
         self.draw_map(
             system.meshes[index],
             system.plotters[index],
