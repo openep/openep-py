@@ -74,8 +74,10 @@ class System:
         plotter_layout = QtWidgets.QVBoxLayout(plotter)
 
         # TODO: We're currently using line edits to set colourbar limits - look into RangeSlider
-        colour_bar_layout, plotter.lower_limit, plotter.upper_limit = self._create_colourbar_layout()
-        plotter_layout.addLayout(colour_bar_layout)
+        plotter.colour_bar_layout, plotter.lower_limit, plotter.upper_limit = self._create_colourbar_layout()
+        plotter.opacity_layout, plotter.opacity = self._create_opacity_layout()
+        control_layout = self._create_control_layout(plotter=plotter)
+        plotter_layout.addLayout(control_layout)
         plotter_layout.addStretch()
 
         # The dock is set to have bold font (so the title stands out)
@@ -127,6 +129,39 @@ class System:
         colour_bar_layout.addStretch()
 
         return colour_bar_layout, lower_limit, upper_limit
+
+    def _create_opacity_layout(self):
+        """Create a layout with widgets for setting the opacity of the mesh."""
+
+        opacity_layout = QtWidgets.QHBoxLayout()
+        opacity_layout.addStretch
+
+        opacity_text = QtWidgets.QLabel("Opacity:")
+        opacity_text.setMinimumWidth(50)
+        opacity_text.setMaximumWidth(120)
+        opacity_text.setStyleSheet('QLabel {border: 0px; background-color: #d8dcd6;}')
+        opacity_layout.addWidget(opacity_text)
+
+        opacity_selector = QtWidgets.QDoubleSpinBox()
+        opacity_selector.setFixedWidth(60)
+        opacity_selector.setRange(0.0, 1.0)
+        opacity_selector.setSingleStep(0.05)
+        opacity_selector.setDecimals(2)
+        opacity_selector.setWrapping(False)
+        opacity_selector.setValue(1)
+        opacity_selector.textFromValue(1)
+        opacity_layout.addWidget(opacity_selector)
+
+        return opacity_layout, opacity_selector
+
+    def _create_control_layout(self, plotter):
+        """Add the colourbar and opacity layout to a single horizontal layout"""
+
+        control_layout = QtWidgets.QHBoxLayout()
+        control_layout.addLayout(plotter.colour_bar_layout)
+        control_layout.addLayout(plotter.opacity_layout)
+
+        return control_layout
 
     def _add_field_menu(self, dock, plotter):
         """Add a Field menu to the menubar. This is used for selecting the scalar field to project onto the surface."""
