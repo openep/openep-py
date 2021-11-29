@@ -617,15 +617,9 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         plotter = system.plotters[index]
         system.add_mesh_kws[index]['opacity'] = plotter.opacity.value()
 
-        # TODO: add a function that adds only the mesh actor, rather than redrawing
-        #       the entire scene every time.
-        self.draw_map(
-            system.meshes[index],
-            system.plotters[index],
-            system.plotters[index].active_scalars,
-            system.add_mesh_kws[index],
-            system.free_boundaries[index],
-        )
+        actor = plotter.renderer._actors['mesh']
+        actor_properties = actor.GetProperty()
+        actor_properties.SetOpacity(plotter.opacity.value())
 
     def change_active_system(self, system):
         """
