@@ -86,7 +86,12 @@ def draw_free_boundaries(
 
         points = free_boundaries.points[boundary[:, 0]]
         points = np.vstack([points, points[:1]])  # we need to close the loop
-        plotter.add_lines(points, color=colours[boundary_index], width=width)
+        plotter.add_lines(
+            points,
+            color=colours[boundary_index],
+            width=width,
+            name=f"free_boundary_{boundary_index:d}",
+        )
 
     return plotter
 
@@ -142,6 +147,8 @@ def draw_map(
         "above_color": "magenta",
         "below_color": "brown",
         "nan_color": "gray",
+        "name": "mesh",
+        "opacity": 1.0,
     }
 
     # combine the default and user-given kwargs
