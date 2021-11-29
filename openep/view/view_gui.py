@@ -662,6 +662,9 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         system.plotters[index].active_scalars_sel = scalars
         system.docks[index].setWindowTitle(system.plotters[index].title)
+
+        # TODO: use pyvista's mesh.point_data and mesh.set_active_scalars instead of
+        # redrawing the whole scene each time
         self.draw_map(
             system.meshes[index],
             system.plotters[index],
