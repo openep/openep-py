@@ -588,22 +588,20 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             index (int): index of plotter to modify
         """
 
-        if not system.plotters[index].lower_limit.text().strip():
+        plotter = system.plotters[index]
+
+        if not plotter.lower_limit.text().strip():
             return
-        elif not system.plotters[index].upper_limit.text().strip():
+        elif not plotter.upper_limit.text().strip():
             return
 
         lower_limit = float(system.plotters[index].lower_limit.text())
         upper_limit = float(system.plotters[index].upper_limit.text())
         system.add_mesh_kws[index]["clim"] = [lower_limit, upper_limit]
 
-        self.draw_map(
-            system.meshes[index],
-            system.plotters[index],
-            system.plotters[index].active_scalars,
-            system.add_mesh_kws[index],
-            system.free_boundaries[index],
-        )
+        actor = plotter.renderer._actors['mesh']
+        actor_mapper = actor.GetMapper()
+        actor_mapper.SetScalarRange((lower_limit, upper_limit))
 
     def update_opacity(self, system, index):
         """Update the opacity for a given ploter.
