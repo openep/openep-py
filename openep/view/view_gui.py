@@ -406,6 +406,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         # Setting the default selected electrograms
         new_system.egm_points = np.asarray([0], dtype=int)
 
+        new_system._determine_available_fields()
         self.interpolate_openEP_fields(system=new_system)
         self.add_view(new_system)
 
@@ -534,8 +535,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             error.exec_()
             return
 
-        dock, plotter = system.create_dock()
-        mesh = system.data.create_mesh()
+        dock, plotter, mesh = system.create_dock()
         add_mesh_kws = system._create_default_kws()
         free_boundaries = openep.mesh.get_free_boundaries(mesh)
 
@@ -550,24 +550,16 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         system.add_mesh_kws.append(add_mesh_kws)
         system.free_boundaries.append(free_boundaries)
 
-        if plotter.bipolar_action is not None:
-            plotter.bipolar_action.triggered.connect(
-                lambda: self.change_active_scalars(system, index=index, scalars='bipolar')
-            )
-        if plotter.unipolar_action is not None:
-            plotter.unipolar_action.triggered.connect(
-                lambda: self.change_active_scalars(system, index=index, scalars='unipolar')
-            )
-        if plotter.clinical_bipolar_action is not None:
-            plotter.clinical_bipolar_action.triggered.connect(
-                lambda: self.change_active_scalars(system, index=index, scalars='clinical bipolar')
+        for action_name, action in plotter.scalar_field_actions.items():
+            action.triggered.connect(
+                lambda: self.change_active_scalars(system, index=index, scalars=action_name)
             )
 
-        dock.setWindowTitle(plotter.title)
+        dock.setWindowTitle(f"{system.name}: {mesh.active_scalars_info.name}")
         self.draw_map(
             mesh=mesh,
             plotter=plotter,
-            data=plotter.active_scalars,
+            data=mesh.active_scalars_info.name,
             add_mesh_kws=add_mesh_kws,
             free_boundaries=free_boundaries,
         )
@@ -655,51 +647,11 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     def change_active_scalars(self, system, index, scalars):
         """Update the scalar values that are being projected onto the mesh."""
 
-        if system.type == "openCARP":
-            self._change_openCARP_active_scalars(system, index, scalars)
-        elif system.type == "OpenEP":
-            self._change_OpenEP_active_scalars(system, index, scalars)
+        dock = system.docks[index]
+        dock.setWindowTitle(f"{system.name}: {scalars}")
 
-        system.plotters[index].active_scalars_sel = scalars
-        system.docks[index].setWindowTitle(system.plotters[index].title)
-
-        # TODO: use pyvista's mesh.point_data and mesh.set_active_scalars instead of
-        # redrawing the whole scene each time
-        self.draw_map(
-            system.meshes[index],
-            system.plotters[index],
-            system.plotters[index].active_scalars,
-            system.add_mesh_kws[index],
-            system.free_boundaries[index],
-        )
-
-    def _change_openCARP_active_scalars(self, system, index, scalars):
-        """Update the scalar values that are being projected onto the mesh for an openCARP dataset."""
-
-        if scalars == 'bipolar':
-            system.plotters[index].active_scalars = system.data.electric.bipolar_egm.voltage
-            system.plotters[index].title = f"{system.name}: Bipolar voltage"
-        elif scalars == 'unipolar':
-            system.plotters[index].active_scalars = system.data.electric.unipolar_egm.voltage[:, 0]
-            system.plotters[index].title = f"{system.name}: Unipolar voltage"
-
-        system.plotters[index].active_scalars_sel = scalars
-
-    def _change_OpenEP_active_scalars(self, system, index, scalars):
-        """Update the scalar values that are being projected onto the mesh for an OpenEP dataset."""
-
-        if scalars == 'bipolar':
-            system.plotters[index].active_scalars = system.data.interpolated_fields['bipolar_voltage']
-            system.plotters[index].title = f"{system.name}: Bipolar voltage"
-        elif scalars == 'unipolar':
-            system.plotters[index].active_scalars = system.data.interpolated_fields['unipolar_voltage']
-            system.plotters[index].title = f"{system.name}: Unipolar voltage"
-        elif scalars == 'clinical bipolar':
-            system.plotters[index].active_scalars = system.data.fields.bipolar_voltage
-            system.plotters[index].title = f"{system.name}: Clinical bipolar voltage"
-        elif scalars == 'clinical lat':
-            system.plotters[index].active_scalars = system.data.fields.local_activation_time
-            system.plotters[index].title = f"{system.name}: Clinical LAT"
+        mesh = system.meshes[index]
+        mesh.set_active_scalars(name=scalars)
 
     def update_fields_and_draw(self, event):
         """
@@ -722,7 +674,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         n_plotters = len(system.plotters)
         for index in range(n_plotters):
-            self.change_active_scalars(system, index=index, scalars=system.plotters[index].active_scalars_sel)
+            self.change_active_scalars(system, index=index, scalars=system.meshes[index].active_scalars_info.name)
 
     def interpolate_openEP_fields(self, system=None):
         """
@@ -763,10 +715,9 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             error.exec_()
             return
 
-        system.data.interpolated_fields = {
-            "bipolar_voltage": bipolar_voltage,
-            "unipolar_voltage": unipolar_voltage,
-        }
+        # We index into the arrays so we modify the view
+        system.scalar_fields['Bipolar voltage'][:] = bipolar_voltage
+        system.scalar_fields['Unipolar voltage'][:] = unipolar_voltage
 
     def recalculate_openCARP_fields(self):
         """Recalculate the scalar values that are being projected onto the mesh for an openCARP dataset."""
@@ -777,11 +728,11 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         #       should first be reproducted using carp.bipolar_from_unipolar(electrograms[:, woi])
 
         if self.egm_unipolar_A_checkbox.isEnabled():
-            carp.electric.unipolar_egm.voltage = openep.case.calculate_voltage_from_electrograms(
+            carp.electric.unipolar_egm.voltage[:] = openep.case.calculate_voltage_from_electrograms(
                 carp, buffer=0, bipolar=False,
             )
         if self.egm_bipolar_checkbox.isEnabled():
-            carp.electric.bipolar_egm.voltage = openep.case.calculate_voltage_from_electrograms(
+            carp.electric.bipolar_egm.voltage[:] = openep.case.calculate_voltage_from_electrograms(
                 carp, buffer=0, bipolar=True,
             )
 
