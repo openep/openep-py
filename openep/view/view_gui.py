@@ -550,9 +550,36 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         system.add_mesh_kws.append(add_mesh_kws)
         system.free_boundaries.append(free_boundaries)
 
-        for action_name, action in plotter.scalar_field_actions.items():
-            action.triggered.connect(
-                lambda: self.change_active_scalars(system, index=index, scalars=action_name)
+        # We can't put this into a for loop.
+        # For some reason, when iterating over the items in plotter.scalar_field_actions,
+        # all actions are passed the key in the iteration for the scalars argument
+        if 'Bipolar voltage' in plotter.scalar_field_actions:
+            plotter.scalar_field_actions['Bipolar voltage'].triggered.connect(
+                lambda: self.change_active_scalars(system, index=index, scalars='Bipolar voltage')
+            )
+        if 'Unipolar voltage' in plotter.scalar_field_actions:
+            plotter.scalar_field_actions['Unipolar voltage'].triggered.connect(
+                lambda: self.change_active_scalars(system, index=index, scalars='Unipolar voltage')
+            )
+        if 'Clinical bipolar voltage' in plotter.scalar_field_actions:
+            plotter.scalar_field_actions['Clinical bipolar voltage'].triggered.connect(
+                lambda: self.change_active_scalars(system, index=index, scalars='Clinical bipolar voltage')
+            )
+        if 'Clinical unipolar voltage' in plotter.scalar_field_actions:
+            plotter.scalar_field_actions['Clinical unipolar voltage'].triggered.connect(
+                lambda: self.change_active_scalars(system, index=index, scalars='Clinical unipolar voltage')
+            )
+        if 'Clinical LAT' in plotter.scalar_field_actions:
+            plotter.scalar_field_actions['Clinical LAT'].triggered.connect(
+                lambda: self.change_active_scalars(system, index=index, scalars='Clinical LAT')
+            )
+        if 'Clinical force' in plotter.scalar_field_actions:
+            plotter.scalar_field_actions['Clinical force'].triggered.connect(
+                lambda: self.change_active_scalars(system, index=index, scalars='Clinical force')
+            )
+        if 'Clinical impedance' in plotter.scalar_field_actions:
+            plotter.scalar_field_actions['Clinical impedance'].triggered.connect(
+                lambda: self.change_active_scalars(system, index=index, scalars='Clinical impedance')
             )
 
         dock.setWindowTitle(f"{system.name}: {mesh.active_scalars_info.name}")
