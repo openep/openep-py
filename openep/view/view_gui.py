@@ -259,7 +259,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             figure=self.egm_figure,
             axis=[0.782, 0.02, 0.09, 0.025],
         )
-        self.set_woi_button.on_clicked(self.update_fields_and_draw)
+        self.set_woi_button.on_clicked(self.update_scalar_fields)
 
         # Create toolbar for saving, zooming etc.
         toolbar = openep.view.canvases.add_toolbar(
@@ -583,13 +583,19 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             )
 
         dock.setWindowTitle(f"{system.name}: {mesh.active_scalars_info.name}")
+        active_scalars_name = mesh.active_scalars_info.name
         self.draw_map(
             mesh=mesh,
             plotter=plotter,
-            data=mesh.active_scalars_info.name,
+            data=None,
             add_mesh_kws=add_mesh_kws,
             free_boundaries=free_boundaries,
         )
+
+        # Doing add_mesh and setting a title to the colour bar causes pyvista to add
+        # the data to the point_data array with the name of the title, and then sets this
+        # new point_data array as the active scalars
+        mesh.set_active_scalars(active_scalars_name)
 
         # If this is the first 3d viewer for the first system loaded, we need to update the egms etc.
         if (system.name == self._active_system.name) and (len(system.plotters) == 1):
@@ -672,7 +678,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             self.egm_canvas.draw()
 
     def change_active_scalars(self, system, index, scalars):
-        """Update the scalar values that are being projected onto the mesh."""
+        """Cahnge the scalar values that are being projected onto the mesh."""
 
         dock = system.docks[index]
         dock.setWindowTitle(f"{system.name}: {scalars}")
@@ -680,7 +686,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         mesh = system.meshes[index]
         mesh.set_active_scalars(name=scalars)
 
-    def update_fields_and_draw(self, event):
+    def update_scalar_fields(self, event):
         """
         If the active system is an OpenEP case:
         Interpolate EGM data onto the surface and draw a map if necessary.
@@ -698,10 +704,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             self.interpolate_openEP_fields()
         elif system.type == "openCARP":
             self.recalculate_openCARP_fields()
-
-        n_plotters = len(system.plotters)
-        for index in range(n_plotters):
-            self.change_active_scalars(system, index=index, scalars=system.meshes[index].active_scalars_info.name)
 
     def interpolate_openEP_fields(self, system=None):
         """
@@ -742,26 +744,46 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             error.exec_()
             return
 
-        # We index into the arrays so we modify the view
+        # We need to modify these value so docks/plotters/meshes create in the future
+        # use the correct (current) values
         system.scalar_fields['Bipolar voltage'][:] = bipolar_voltage
         system.scalar_fields['Unipolar voltage'][:] = unipolar_voltage
+
+        # We index into the arrays so we modify the view without redrawing the scene
+        for mesh in system.meshes:
+            mesh.point_data['Bipolar voltage'][:] = bipolar_voltage
+            mesh.point_data['Unipolar voltage'][:] = unipolar_voltage
 
     def recalculate_openCARP_fields(self):
         """Recalculate the scalar values that are being projected onto the mesh for an openCARP dataset."""
 
-        carp = self._active_system.data
+        system = self._active_system
+        carp = system.data
 
         # TODO: If bipolar voltages are calculated from unipolar electrograms, the bipolar electrograms
         #       should first be reproducted using carp.bipolar_from_unipolar(electrograms[:, woi])
 
         if self.egm_unipolar_A_checkbox.isEnabled():
-            carp.electric.unipolar_egm.voltage[:] = openep.case.calculate_voltage_from_electrograms(
+
+            unipolar_voltage = openep.case.calculate_voltage_from_electrograms(
                 carp, buffer=0, bipolar=False,
             )
+
+            carp.electric.unipolar_egm.voltage[:] = unipolar_voltage
+            system.scalar_fields['Unipolar voltage'][:] = unipolar_voltage[:, 0]
+            for mesh in system.meshes:
+                mesh.point_data['Unipolar voltage'][:] = unipolar_voltage[:, 0]
+
         if self.egm_bipolar_checkbox.isEnabled():
-            carp.electric.bipolar_egm.voltage[:] = openep.case.calculate_voltage_from_electrograms(
+
+            bipolar_voltage = openep.case.calculate_voltage_from_electrograms(
                 carp, buffer=0, bipolar=True,
             )
+
+            carp.electric.bipolar_egm.voltage[:] = bipolar_voltage
+            system.scalar_fields['Bipolar voltage'][:] = bipolar_voltage
+            for mesh in system.meshes:
+                mesh.point_data['Bipolar voltage'][:] = bipolar_voltage
 
     def draw_map(self, mesh, plotter, data, add_mesh_kws, free_boundaries=None):
         """
