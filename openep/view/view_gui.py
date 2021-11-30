@@ -495,6 +495,10 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         plotter.upper_limit.returnPressed.connect(lambda: self.update_colourbar_limits(system, index=index))
         plotter.opacity.valueChanged.connect(lambda: self.update_opacity(system, index=index))
 
+        # Link views across plotters
+        if index > 0:
+            system.plotters[0].link_views_across_plotters(plotter)
+
         system.docks.append(dock)
         system.plotters.append(plotter)
         system.meshes.append(mesh)
