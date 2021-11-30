@@ -25,6 +25,7 @@ from attr import attrs
 
 from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtCore import Qt
+import numpy as np
 
 import openep
 import openep.view.custom_widgets
@@ -54,9 +55,75 @@ class System:
         self.meshes = []
         self.free_boundaries = []
         self.add_mesh_kws = []
+        self.scalar_fields = None
 
     def __repr__(self):
         return f"{self.type} dataset {len(self.data.points)} mapping sites."
+
+    def _determine_available_fields(self):
+        """Create a dictionary of scalar fields that can be used to colour the 3D map."""
+
+        if self.type == 'OpenEP':
+            self._determine_available_OpenEP_fields()
+        elif self.type == 'openCARP':
+            self._determine_available_openCARP_fields()
+
+    def _determine_available_OpenEP_fields(self):
+        """Create a dictionary of scalar fields that can be used to colour the 3D map."""
+
+        self.scalar_fields = {}
+
+        # Add scalar fields that are interpolated by openep
+        if self.data.electric.bipolar_egm is not None:
+            field = openep.case.interpolate_voltage_onto_surface(
+                self.data,
+                max_distance=None,
+                buffer=0,
+            )
+            self.scalar_fields['Bipolar voltage'] = field
+
+        if self.data.electric.bipolar_egm is not None:
+            field = openep.case.interpolate_voltage_onto_surface(
+                self.data,
+                max_distance=None,
+                buffer=0,
+                bipolar=False,
+            )
+            self.scalar_fields['Unipolar voltage'] = field
+
+        # Add scalar fields that are calculate by the clinical mapping system
+        clinical_field_names = [
+            'Clinical bipolar voltage',
+            'Clinical unipolar voltage',
+            'Clinical LAT',
+            'Clinical force',
+            'Clinical impedance ',
+        ]
+        clinical_fields = [
+            self.data.fields.bipolar_voltage,
+            self.data.fields.unipolar_voltage,
+            self.data.fields.local_activation_time,
+            self.data.fields.force,
+            self.data.fields.impedance,
+        ]
+
+        for field_name, field in zip(clinical_field_names, clinical_fields):
+            
+            if np.isnan(field).all():
+                continue
+
+            self.scalar_fields[field_name] = field
+
+    def _determine_available_openCARP_fields(self):
+        """Create a dictionary of scalar fields that can be used to colour the 3D map."""
+
+        self.scalar_fields = {}
+
+        if self.data.electric.bipolar_egm is not None and self.data.electric.bipolar_egm.voltage is not None:
+            self.scalar_fields['Bipolar voltage'] = self.data.electric.bipolar_egm.voltage
+
+        if self.data.electric.bipolar_egm is not None and self.data.electric.unipolar_egm.voltage is not None:
+            self.scalar_fields['Unipolar voltage'] = self.data.electric.unipolar_egm.voltage[:, 0]
 
     def create_dock(self):
         """Create a new dockable pyvista-qt plotter for rendering 3D maps.
@@ -68,12 +135,18 @@ class System:
         if self.data is None or self.data.electric is None:
             return
 
+        if self.scalar_fields is None:
+            self._determine_available_fields()
+
         dock = openep.view.custom_widgets.CustomDockWidget("Temporary title")  # this will be changed
         dock.main = QtWidgets.QMainWindow()
         plotter = openep.view.plotters.create_plotter()
-        plotter_layout = QtWidgets.QVBoxLayout(plotter)
+        mesh = self.data.create_mesh()
+
+        self._add_scalars_to_mesh(mesh)
 
         # TODO: We're currently using line edits to set colourbar limits - look into RangeSlider
+        plotter_layout = QtWidgets.QVBoxLayout(plotter)
         plotter.colour_bar_layout, plotter.lower_limit, plotter.upper_limit = self._create_colourbar_layout()
         plotter.opacity_layout, plotter.opacity = self._create_opacity_layout()
         control_layout = self._create_control_layout(plotter=plotter)
@@ -99,7 +172,16 @@ class System:
         dock.setWidget(dock.main)
         dock.setAllowedAreas(Qt.AllDockWidgetAreas)
 
-        return dock, plotter
+        return dock, plotter, mesh
+
+    def _add_scalars_to_mesh(self, mesh):
+        """Add all scalar fields to the mesh point data"""
+
+        if self.scalar_fields is None:
+            return
+
+        for field_name, field in self.scalar_fields.items():
+            mesh.point_data[field_name] = field
 
     def _create_colourbar_layout(self):
         """Create a layout with widgets for setting the limits of the colourbar."""
@@ -169,60 +251,16 @@ class System:
         field_menu = dock.main.menubar.addMenu("Field")
         field_group = QtWidgets.QActionGroup(dock.main)
 
-        plotter.bipolar_action = None
-        plotter.unipolar_action = None
-        plotter.clinical_bipolar_action = None
+        plotter.scalar_field_actions = {}
+        for field_name in self.scalar_fields:
 
-        # Bipolar voltage
-        if self.data.electric.bipolar_egm is not None and self.data.electric.bipolar_egm.voltage is not None:
+            dock.setWindowTitle(f"{self.name}: {field_name}")
+            action = QtWidgets.QAction(field_name, dock.main, checkable=True)
+            action.setChecked(False)
 
-            self._create_action_for_field_menu(
-                dock=dock,
-                plotter=plotter,
-                action_attr='bipolar_action',
-                scalars=self.data.electric.bipolar_egm.voltage if self.type == "openCARP" else None,
-                title="Bipolar voltage",
-                scalars_sel='bipolar',
-            )
-            field_menu.addAction(plotter.bipolar_action)
-            field_group.addAction(plotter.bipolar_action)
-
-        # Unipolar voltage
-        if self.data.electric.unipolar_egm is not None and self.data.electric.unipolar_egm.voltage is not None:
-            self._create_action_for_field_menu(
-                dock=dock,
-                plotter=plotter,
-                action_attr='unipolar_action',
-                scalars=self.data.electric.unipolar_egm.voltage[:, 0] if self.type == "openCARP" else None,
-                title="Unipolar voltage",
-                scalars_sel='unipolar',
-            )
-            field_menu.addAction(plotter.unipolar_action)
-            field_group.addAction(plotter.unipolar_action)
-
-        # Clinical bipolar voltage
-        if self.type == "OpenEP" and self.data.fields.bipolar_voltage is not None:
-
-            self._create_action_for_field_menu(
-                dock=dock,
-                plotter=plotter,
-                action_attr='clinical_bipolar_action',
-                scalars=self.data.fields.bipolar_voltage,
-                title="Clinical bipolar voltage",
-                scalars_sel='clinical bipolar',
-            )
-            field_menu.addAction(plotter.clinical_bipolar_action)
-            field_group.addAction(plotter.clinical_bipolar_action)
-
-    def _create_action_for_field_menu(self, dock, plotter, action_attr, scalars, title, scalars_sel):
-        """Add an action to project the given scalars onto the mesh of the given plotter."""
-
-        action = QtWidgets.QAction(title, dock.main, checkable=True)
-        action.setChecked(False)
-        setattr(plotter, action_attr, action)
-        plotter.active_scalars = scalars
-        plotter.title = f"{self.name}: {title}"
-        plotter.active_scalars_sel = scalars_sel
+            field_menu.addAction(action)
+            field_group.addAction(action)
+            plotter.scalar_field_actions[field_name] = action
 
     def _create_default_kws(self):
         """Create a dictionary of keyword arguments to be passed to openep.draw.draw_map"""
