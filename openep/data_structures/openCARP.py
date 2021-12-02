@@ -131,7 +131,7 @@ class CARPData:
             annotations=annotations,
         )
 
-        # We will need to original info if we later want to update bipolar egms/pairs
+        # We will need the original info if we later want to update bipolar egms/pairs
         # based on a different window of interest
         self._unipolar = unipolar
         self._unipolar_pairs = pair_indices
