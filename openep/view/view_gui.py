@@ -125,8 +125,13 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         # The below will be used for adding data to openCARP datasets
         self.system_main.add_data_menu = QtWidgets.QMenu("Add data to", self.system_main)
 
+        # The below will be used exporting OpenEP mesh data in openCARP format
+        self.system_main.export_data_menu = QtWidgets.QMenu("Export", self.system_main)
+
         file_menu.addMenu(load_menu)
         file_menu.addMenu(self.system_main.add_data_menu)
+        file_menu.addSeparator()
+        file_menu.addMenu(self.system_main.export_data_menu)
 
         # The below will be used for creating a new 3D viewer for a given system
         view_menu = self.system_main.menubar.addMenu("View")
@@ -398,7 +403,13 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         self.update_system_manager_table(new_system)
 
-        # We need to dynamically add options for creating 3D viewers to the main menubar
+        # We need to dynamically add options for exporting data/creating 3D viewers to the main menubar
+        add_export_system_menu = QtWidgets.QMenu(filename, self)
+        add_export_openCARP_action = QtWidgets.QAction("as openCARP", self)
+        add_export_openCARP_action.triggered.connect(lambda: self._export_data_to_openCARP(new_system))
+        add_export_system_menu.addAction(add_export_openCARP_action)
+        self.system_main.export_data_menu.addMenu(add_export_system_menu)
+
         add_view_for_system_action = QtWidgets.QAction(filename, self)
         add_view_for_system_action.triggered.connect(lambda: self.add_view(new_system))
         self.system_main.add_view_menu.addAction(add_view_for_system_action)
@@ -515,6 +526,40 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             system.data.add_data('unipolar egm', filename)
             if len(system.plotters) == 0:
                 self.add_view(system)
+
+    def _export_data_to_openCARP(self, system):
+        """Export mesh data form an OpenEP dataset into openCARP format."""
+
+        dialogue = QtWidgets.QFileDialog()
+        dialogue.setWindowTitle('Save As (prefix only)')
+        dialogue.setDirectory(QtCore.QDir.currentPath())
+        dialogue.setFileMode(QtWidgets.QFileDialog.AnyFile)
+        dialogue.setNameFilter("No extension ()")
+
+        prefix, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self,
+            caption="Save As (prefix only)",
+            directory=QtCore.QDir.currentPath(),
+            filter="Prefix only ()",
+        )
+
+        error = QtWidgets.QMessageBox()
+        error.setIcon(QtWidgets.QMessageBox.Critical)
+        error.setText("File selection error")
+        error.setInformativeText(
+            "Please select a filename prefix - do not specify the extension."
+        )
+        error.setWindowTitle("Error")
+
+        prefix_path = pathlib.Path(prefix).resolve()
+        if prefix_path.suffix:
+            error.exec_()
+            return
+
+        openep.export_openCARP(
+            case=system.data,
+            prefix=prefix,
+        )
 
     def add_view(self, system):
         """
