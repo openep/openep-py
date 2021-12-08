@@ -206,11 +206,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         if new_name not in self.systems:
             self.systems[new_name] = self.systems.pop(system.name)
             self.systems[new_name].name = new_name
-            for dock, plotter in zip(system.docks, system.plotters):
-                suffix = plotter.title.split(":")[1]
-                title = f"{new_name}: {suffix}"
-                plotter.title = title
-                dock.setWindowTitle(title)
+            for dock, mesh  in zip(system.docks, system.meshes):
+                dock.setWindowTitle(f"{system.name}: {mesh.active_scalars_info.name}")
         else:
 
             system.name_widget.setText(system.name)
