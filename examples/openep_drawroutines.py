@@ -21,7 +21,7 @@ import openep
 
 
 filename = "/Users/paul/github/openep-py/examples/data/new_dataset_2.mat"
-case = openep.load_case(filename)
+case = openep.load_openep(filename)
 mesh = case.create_mesh()
 
 # DrawVoltage Map
