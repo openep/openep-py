@@ -4,7 +4,7 @@ from openep._datasets.simple_meshes import TRIANGLES
 
 filename = "/Users/paul/github/openep-py/examples/data/new_dataset_2.mat"
 
-case = openep.load_openep(filename)
+case = openep.load_openep_mat(filename)
 mesh = case.create_mesh()
 
 mesh = pyvista.read(TRIANGLES)
