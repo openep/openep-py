@@ -17,7 +17,7 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 """
-Loading datasets --- :func:`openep.load_openep`
+Loading datasets --- :func:`openep.load_openep_mat`
 =============================================
 
 This module contains functions to load an OpenEP dataset.
@@ -40,13 +40,13 @@ Case data can be loaded as follows:
     import openep
     from openep._datasets.openep_datasets import DATASET_2_V73
 
-    case = openep.load_openep(DATASET_2_V73)
+    case = openep.load_openep_mat(DATASET_2_V73)
 
 This will load the dataset and store the information in a `Case` object.
 See :class:`openep.data_structures.case.Case` for information on the attributes
 and methods of `Case`.
 
-.. autofunction:: load_openep
+.. autofunction:: load_openep_mat
 
 """
 
@@ -62,7 +62,7 @@ from ..data_structures.ablation import extract_ablation_data
 from ..data_structures.case import Case
 from ..data_structures.openCARP import CARPData
 
-__all__ = ["load_openep", "load_mat", "load_opencarp"]
+__all__ = ["load_openep_mat", "load_mat", "load_opencarp"]
 
 
 def _check_mat_version_73(filename):
@@ -88,7 +88,7 @@ def load_mat(filename):
     return data
 
 
-def load_openep(filename, name=None):
+def load_openep_mat(filename, name=None):
     """
     Load a Case object from a MATLAB file.
 

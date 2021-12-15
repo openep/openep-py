@@ -25,7 +25,7 @@ procedure.
 Warning
 -------
     This class should not be instatiated directly. Instead, a `Case` can be
-    created using :func:`openep.io.readers.load_openep`.
+    created using :func:`openep.io.readers.load_openep_mat`.
 
 Tip
 ---
