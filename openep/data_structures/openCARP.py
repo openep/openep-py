@@ -22,6 +22,7 @@ from attr import attrs
 import pyvista
 import numpy as np
 
+from ..case.case_routines import bipolar_from_unipolar_surface_points
 from .electric import Electric, Electrogram, Annotations
 
 __all__ = []
@@ -87,7 +88,11 @@ class CARPData:
 
         # determine the bipolar neibhours
         names = np.arange(len(unipolar)).astype(str)
-        bipolar, pair_indices = self.bipolar_from_unipolar(unipolar)
+        # bipolar, pair_indices = self.bipolar_from_unipolar(unipolar)
+        bipolar, pair_indices = bipolar_from_unipolar_surface_points(
+            unipolar=unipolar,
+            indices=self.indices,
+        )
 
         # Create an Electric object so that CARPData object can also be passed to most of the
         # openep.case.case_routines, which are designed of openEP Case objects
@@ -162,62 +167,3 @@ class CARPData:
             )  # recenter mesh to origin, helps with lighting in default scene
 
         return mesh
-
-    def bipolar_from_unipolar(self, unipolar):
-        """
-        Calculate bipolar electrograms from unipolar electrograms for each point on the mesh.
-
-        Args:
-            unipolar (np.ndarray): Unipolar electrograms
-
-        Returns
-            bipolar (np.ndarray): Bipolar electrograms
-        """
-
-        bipolar = np.full_like(unipolar, fill_value=np.NaN)
-        pair_indices = np.full((len(unipolar), 2), fill_value=0, dtype=int)
-
-        for index, index_unipolar in enumerate(unipolar):
-
-            connected_vertices = self._find_connected_vertices(self.indices, index)
-            index_bipolar, pair_index = self._bipolar_from_unipolar(
-                unipolar=index_unipolar,
-                neighbours=unipolar[connected_vertices],
-            )
-            bipolar[index] = index_bipolar
-            pair_indices[index] = [index, pair_index]
-
-        return bipolar, pair_indices
-
-    def _find_connected_vertices(self, faces, index):
-        """
-        Find all points connected to a given point by a single edge.
-
-        Adapted from: https://github.com/pyvista/pyvista-support/issues/96#issuecomment-571864471
-
-        Args:
-            faces (np.ndarray): faces of a mesh
-            index (int): index of point for which we want to find the neighbouring points
-        """
-
-        connected_faces = [i for i, face in enumerate(faces) if index in face]
-        connected_vertices = np.unique(faces[connected_faces])
-
-        return connected_vertices[connected_vertices != index]
-
-    def _bipolar_from_unipolar(self, unipolar, neighbours):
-        """
-        Calculate the bipolar electrogram of a given point from a series of unipolar electrograms.
-
-        Args:
-            unipolar (np.ndarray): unipolar electrogram at a given point
-            neighbours (np.narray): unipolar electrograms at all points
-                neighbouring the given point
-        """
-
-        difference = neighbours - unipolar
-        voltage = np.ptp(difference, axis=1)
-        pair_index = np.argmax(voltage)
-        bipolar_electrogram = difference[pair_index]
-
-        return bipolar_electrogram, pair_index

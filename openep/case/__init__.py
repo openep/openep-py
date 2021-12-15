@@ -9,4 +9,5 @@ from .case_routines import (
     calculate_points_within_distance,
     Interpolator,
     interpolate_voltage_onto_surface,
+    bipolar_from_unipolar_surface_points,
 )

@@ -77,6 +77,7 @@ __all__ = [
     'calculate_points_within_distance',
     'Interpolator',
     'interpolate_voltage_onto_surface',
+    'bipolar_from_unipolar_surface_points',
 ]
 
 
@@ -500,3 +501,75 @@ def interpolate_voltage_onto_surface(
     interpolated_voltages[not_on_surface] = np.NaN
 
     return interpolated_voltages
+
+
+def bipolar_from_unipolar_surface_points(unipolar, indices):
+    """Calculate bipolar electrograms from unipolar electrograms for each point on a mesh.
+
+    Warning
+    -------
+    The number of unipolar traces **must** be equal to the number of points on the surface.
+    This function should therefore only be used for openCARP datasets that have had phi recovery performed
+    for each point on the surface.
+
+    Args:
+        unipolar (np.ndarray): Unipolar electrograms
+        indices (np.ndarray): Indices of each point in each triangle (i.e Case.indices).
+
+    Returns
+        bipolar (np.ndarray):
+            Bipolar electrograms
+        pair_indices (np.ndarray):
+            Indices of unipolar electrograms that contribute to each bipolar electrogram.
+
+    """
+
+    bipolar = np.full_like(unipolar, fill_value=np.NaN)
+    pair_indices = np.full((len(unipolar), 2), fill_value=0, dtype=int)
+
+    for index, index_unipolar in enumerate(unipolar):
+
+        connected_vertices = _find_connected_vertices(indices, index)
+        index_bipolar, pair_index = _bipolar_from_unipolar(
+            unipolar=index_unipolar,
+            neighbours=unipolar[connected_vertices],
+        )
+        bipolar[index] = index_bipolar
+        pair_indices[index] = [index, pair_index]
+
+    return bipolar, pair_indices
+
+
+def _find_connected_vertices(indices, index):
+    """
+    Find all points connected to a given point by a single edge.
+
+    Adapted from: https://github.com/pyvista/pyvista-support/issues/96#issuecomment-571864471
+
+    Args:
+        indices (np.ndarray): triangular faces of a mesh
+        index (int): index of point for which we want to find the neighbouring points
+    """
+
+    connected_faces = [i for i, face in enumerate(indices) if index in face]
+    connected_vertices = np.unique(indices[connected_faces])
+
+    return connected_vertices[connected_vertices != index]
+
+
+def _bipolar_from_unipolar(unipolar, neighbours):
+    """
+    Calculate the bipolar electrogram of a given point from a series of unipolar electrograms.
+
+    Args:
+        unipolar (np.ndarray): unipolar electrogram at a given point
+        neighbours (np.narray): unipolar electrograms at all points
+            neighbouring the given point
+    """
+
+    difference = neighbours - unipolar
+    voltage = np.ptp(difference, axis=1)
+    pair_index = np.argmax(voltage)
+    bipolar_electrogram = difference[pair_index]
+
+    return bipolar_electrogram, pair_index
