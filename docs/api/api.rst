@@ -9,7 +9,7 @@ currently available in `openep-py`.
 .. toctree::
    :maxdepth: 1
 
-   io/load_case
+   io/load_openep
    data_structures/case
    case/case_routines
    mesh/mesh_routines

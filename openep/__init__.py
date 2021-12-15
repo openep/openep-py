@@ -18,6 +18,6 @@
 
 __all__ = ['case', 'mesh', 'draw']
 
-from .io.readers import load_case, load_openCARP
+from .io.readers import load_openep, load_openCARP
 from .io.writers import export_openCARP
 from . import case, mesh, draw
