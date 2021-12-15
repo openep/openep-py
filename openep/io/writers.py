@@ -32,7 +32,7 @@ Mesh data can be exported to openCARP format as follows:
     import openep
     from openep._datasets.openep_datasets import DATASET_2_V73
 
-    case = openep.load_openep(DATASET_2_V73)
+    case = openep.load_openep_mat(DATASET_2_V73)
     openep.export_openCARP(
         case=case,
         prefix="dataset_2",

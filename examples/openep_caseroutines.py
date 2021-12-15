@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 import openep
 from openep._datasets.openep_datasets import DATASET_2_V73
 
-case = openep.load_openep(DATASET_2_V73)
+case = openep.load_openep_mat(DATASET_2_V73)
 mesh = case.create_mesh()
 
 # determine the window of interest for each point
