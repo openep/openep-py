@@ -115,9 +115,9 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         file_menu = self.system_main.menubar.addMenu("File")
 
         load_menu = QtWidgets.QMenu("Load", self.system_main)
-        load_case_action = QtWidgets.QAction("OpenEP", self.system_main)
-        load_case_action.triggered.connect(self._load_case)
-        load_menu.addAction(load_case_action)
+        load_openep_action = QtWidgets.QAction("OpenEP", self.system_main)
+        load_openep_action.triggered.connect(self._load_openep)
+        load_menu.addAction(load_openep_action)
         load_openCARP_action = QtWidgets.QAction("openCARP", self.system_main)
         load_openCARP_action.triggered.connect(self._load_openCARP)
         load_menu.addAction(load_openCARP_action)
@@ -357,7 +357,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.egm_dock.setEnabled(False)
         self.analysis_dock.setEnabled(False)
 
-    def _load_case(self):
+    def _load_openep(self):
         """
         Load an OpenEP case.
 
@@ -381,7 +381,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         Interpolate data ready to be plotted.
         """
 
-        case = openep.load_case(filename)
+        case = openep.load_openep(filename)
 
         new_system = openep.view.system_manager.System(
             name=str(self._system_counter),

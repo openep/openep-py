@@ -40,7 +40,7 @@ from openep._datasets.openep_datasets import DATASET_2_V73
 
 @pytest.fixture(scope='module')
 def real_case():
-    return openep.load_case(DATASET_2_V73)
+    return openep.load_openep(DATASET_2_V73)
 
 
 @pytest.fixture()
