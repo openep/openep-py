@@ -62,7 +62,7 @@ from ..data_structures.ablation import extract_ablation_data
 from ..data_structures.case import Case
 from ..data_structures.openCARP import CARPData
 
-__all__ = ["load_openep", "load_mat", "load_openCARP"]
+__all__ = ["load_openep", "load_mat", "load_opencarp"]
 
 
 def _check_mat_version_73(filename):
@@ -122,12 +122,12 @@ def load_openep(filename, name=None):
     return Case(name, points, indices, fields, electric, ablation, notes)
 
 
-def load_openCARP(
+def load_opencarp(
     points,
     indices,
 ):
     """
-    Load data from and OpenCARP simulation.
+    Load data from an OpenCARP simulation.
 
     Args:
         points (str): Path to the openCARP points file.
