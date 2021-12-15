@@ -118,9 +118,9 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         load_openep_action = QtWidgets.QAction("OpenEP", self.system_main)
         load_openep_action.triggered.connect(self._load_openep)
         load_menu.addAction(load_openep_action)
-        load_openCARP_action = QtWidgets.QAction("openCARP", self.system_main)
-        load_openCARP_action.triggered.connect(self._load_openCARP)
-        load_menu.addAction(load_openCARP_action)
+        load_opencarp_action = QtWidgets.QAction("openCARP", self.system_main)
+        load_opencarp_action.triggered.connect(self._load_opencarp)
+        load_menu.addAction(load_opencarp_action)
 
         # The below will be used for adding data to openCARP datasets
         self.system_main.add_data_menu = QtWidgets.QMenu("Add data to", self.system_main)
@@ -418,7 +418,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.interpolate_openEP_fields(system=new_system)
         self.add_view(new_system)
 
-    def _load_openCARP(self):
+    def _load_opencarp(self):
         """
         Load a set of openCARP files.
 
@@ -468,7 +468,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         to the 'File > Add data to' and the 'View > Add view for' menus, respectively.
         """
 
-        carp = openep.load_openCARP(
+        carp = openep.load_opencarp(
             points=points,
             indices=indices,
         )
