@@ -85,3 +85,27 @@ def extract_surface_data(surface_data):
     )
 
     return points, indices, fields
+
+def empty_fields():
+    """Create an empty Fields object with empty numpy arrays.
+
+    Returns:
+        fields (Field): Field object that contains numpy arrays of the various
+            scalar fields
+    """
+
+    local_activation_time = np.empty(0)
+    bipolar_voltage = np.empty(0)
+    unipolar_voltage = np.empty(0)
+    impedance = np.empty(0)
+    force = np.empty(0)
+
+    fields = Fields(
+        bipolar_voltage,
+        unipolar_voltage,
+        local_activation_time,
+        impedance,
+        force,
+    )
+
+    return fields

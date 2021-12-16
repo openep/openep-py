@@ -105,3 +105,34 @@ def extract_ablation_data(ablation_data):
     )
 
     return ablation
+
+
+def empty_ablation():
+    """Create an empty Ablation object with empty numpy arrays.
+
+    Returns:
+        ablation (Ablation): times, power, impedance and temperature for each ablation site,
+            as well as the force applied.
+    """
+
+    times = np.empty(0)
+    power = np.empty(0)
+    impedance = np.empty(0)
+    temperature = np.empty(0)
+
+    force = AblationForce(
+        times=times,
+        power=power,
+        impedance=impedance,
+        temperature=temperature,
+    )
+
+    ablation = Ablation(
+        times=times,
+        power=power,
+        impedance=impedance,
+        temperature=temperature,
+        force=force,
+    )
+
+    return ablation

@@ -17,7 +17,7 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 """
-Loading datasets --- :func:`openep.load_openep_mat`
+Loading datasets --- :mod:`openep.io.readers`
 =============================================
 
 This module contains functions to load an OpenEP dataset.
@@ -25,9 +25,10 @@ This module contains functions to load an OpenEP dataset.
 Note
 ----
 
-`openep-py` is currently only able to load data exported from the
-MATLAB implementation of OpenEP. Further, the `rfindex` data is not
-yet loaded.
+`openep-py` is currently only able to load:
+    * data exported from the MATLAB implementation of OpenEP. Further, the
+     `rfindex` data is not yet loaded.
+    * data from an openCARP simulation
 
 
 Example of loading a dataset
@@ -47,6 +48,7 @@ See :class:`openep.data_structures.case.Case` for information on the attributes
 and methods of `Case`.
 
 .. autofunction:: load_openep_mat
+.. autofunction:: load_opencarp
 
 """
 
@@ -56,9 +58,9 @@ import scipy.io
 import numpy as np
 
 from .matlab import _load_mat_v73, _load_mat_below_v73
-from ..data_structures.surface import extract_surface_data
-from ..data_structures.electric import extract_electric_data
-from ..data_structures.ablation import extract_ablation_data
+from ..data_structures.surface import extract_surface_data, empty_fields
+from ..data_structures.electric import extract_electric_data, empty_electric
+from ..data_structures.ablation import extract_ablation_data, empty_ablation
 from ..data_structures.case import Case
 from ..data_structures.openCARP import CARPData
 
@@ -100,6 +102,10 @@ def load_openep_mat(filename, name=None):
             extension.)
         name (str): name to give this dataset. The default is `None`, in which case
             the filename is used at the name.
+    
+    Returns:
+        case (Case): an OpenEP Case object that contains the surface, electric and
+            ablation data.
     """
     data = load_mat(filename)
 
@@ -125,6 +131,7 @@ def load_openep_mat(filename, name=None):
 def load_opencarp(
     points,
     indices,
+    name=None,
 ):
     """
     Load data from an OpenCARP simulation.
@@ -133,11 +140,26 @@ def load_opencarp(
         points (str): Path to the openCARP points file.
         indices (str): Path to the openCARP element file. Currently, only triangular meshes are
             supported.
-        unipolar_egm (str): Path to the openCARP auxiliary grid file containing
-            unipolar electrograms.
+        name (str, optional): Name of the dataset. If None, the basename of the points file
+            will be used as the name.
+
+    Returns:
+        case (Case): an OpenEP Case object that contains the points and indices.
+
+    Note
+    ----
+    All other attributes of the Case object will be empty numpy arrays.
+
     """
+
+    name = os.path.basename(points) if name is None else name
 
     points_data = np.loadtxt(points, skiprows=1)
     indices_data = np.loadtxt(indices, skiprows=1, usecols=[1, 2, 3], dtype=int)  # ignore the tag for now
 
-    return CARPData(points_data, indices_data)
+    fields = empty_fields()
+    electric = empty_electric()
+    ablation = empty_ablation()
+    notes = []
+
+    return Case(name, points_data, indices_data, fields, electric, ablation, notes)

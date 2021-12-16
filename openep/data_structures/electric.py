@@ -198,3 +198,63 @@ def extract_electric_data(electric_data):
     )
 
     return electric
+
+
+def empty_electric():
+    """Create an empty Ablation object with empty numpy arrays.
+
+    Returns:
+        electric (Electric): object containing electric data associated with electrograms
+            taken at each mapping point.
+    """
+
+    names = np.empty(0, dtype=str)
+    internal_names = np.empty(0, dtype=str)
+
+    bipolar_egm = Electrogram(
+        egm=np.empty(0),
+        points=np.empty(0),
+        voltage=np.empty(0),
+        names=np.empty(0),
+    )
+    unipolar_egm = Electrogram(
+        egm=np.empty(0),
+        points=np.empty(0),
+        voltage=np.empty(0),
+        names=np.empty(0),
+    )
+    reference_egm = Electrogram(
+        egm=np.empty(0),
+    )
+
+    ecg = np.empty(0),
+
+    impedance = Impedance(
+        times=np.empty(0),
+        values=np.empty(0),
+    )
+
+    surface = ElectricSurface(
+        nearest_point=np.empty(0),
+        normals=np.empty(0),
+    )
+
+    annotations = Annotations(
+        window_of_interest=np.empty(0),
+        local_activation_time=np.empty(0),
+        reference_activation_time=np.empty(0),
+    )
+
+    electric = Electric(
+        names=names,
+        internal_names=internal_names,
+        bipolar_egm=bipolar_egm,
+        unipolar_egm=unipolar_egm,
+        reference_egm=reference_egm,
+        ecg=ecg,
+        impedance=impedance,
+        surface=surface,
+        annotations=annotations
+    )
+
+    return electric
