@@ -520,7 +520,16 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         if dialogue.exec_():
 
             filename = dialogue.selectedFiles()[0]
-            system.data.add_data('unipolar egm', filename)
+            unipolar_egm, bipolar_egm, annotations = system.data.load_unipolar_electrograms(
+                filename=filename,
+                return_bipolar=True,
+                return_annotations=True,
+            )
+        
+            system.data.electric.bipolar_egm = bipolar_egm
+            system.data.electric.unipolar_egm = unipolar_egm
+            system.data.electric.annotations = annotations
+        
             if len(system.plotters) == 0:
                 self.add_view(system)
 
@@ -565,7 +574,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         By default, the bipolar voltage is drawn.
         """
 
-        if system.data.electric is None:
+        if not system.data.electric.unipolar_egm.voltage.size:
             error = QtWidgets.QMessageBox()
             error.setIcon(QtWidgets.QMessageBox.Critical)
             error.setText("No Data Error")
@@ -853,7 +862,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     def check_for_available_electrograms(self):
         """Update the electrom types that can be plotted."""
 
-        if self._active_system.data.electric is None:
+        if not self._active_system.data.electric.bipolar_egm.egm.size:
             self.has_electrograms = False
             self.egm_dock.setEnabled(False)
             self.egm_reference_checkbox.setEnabled(False)
@@ -865,21 +874,21 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         electric = self._active_system.data.electric
 
         self.has_electrograms = False
-        if electric.reference_egm is not None and electric.reference_egm.egm is not None:
+        if electric.reference_egm.egm.size:
             self.has_electrograms = True
             self.egm_reference_checkbox.setEnabled(True)
             self.egm_times = np.arange(electric.reference_egm.egm.shape[1])
         else:
             self.egm_reference_checkbox.setEnabled(False)
 
-        if electric.bipolar_egm is not None and electric.bipolar_egm.egm is not None:
+        if electric.bipolar_egm.egm.size:
             self.has_electrograms = True
             self.egm_bipolar_checkbox.setEnabled(True)
             self.egm_times = np.arange(electric.bipolar_egm.egm.shape[1])
         else:
             self.egm_bipolar_checkbox.setEnabled(False)
 
-        if electric.unipolar_egm is not None and electric.unipolar_egm.egm is not None:
+        if electric.unipolar_egm.egm.size:
             self.has_electrograms = True
             self.egm_unipolar_A_checkbox.setEnabled(True)
             self.egm_unipolar_B_checkbox.setEnabled(True)

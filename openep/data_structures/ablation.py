@@ -115,24 +115,21 @@ def empty_ablation():
             as well as the force applied.
     """
 
-    times = np.empty(0)
-    power = np.empty(0)
-    impedance = np.empty(0)
-    temperature = np.empty(0)
-
     force = AblationForce(
-        times=times,
-        power=power,
-        impedance=impedance,
-        temperature=temperature,
+        times=np.empty(0),
+        force=np.empty(0),
+        axial_angle=np.empty(0),
+        lateral_angle=np.empty(0),
+        points=np.empty(0),
     )
 
     ablation = Ablation(
-        times=times,
-        power=power,
-        impedance=impedance,
-        temperature=temperature,
+        times=np.empty(0),
+        power=np.empty(0),
+        impedance=np.empty(0),
+        temperature=np.empty(0),
         force=force,
     )
 
     return ablation
+
