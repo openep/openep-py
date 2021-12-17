@@ -94,11 +94,11 @@ def empty_fields():
             scalar fields
     """
 
-    local_activation_time = np.empty(0)
-    bipolar_voltage = np.empty(0)
-    unipolar_voltage = np.empty(0)
-    impedance = np.empty(0)
-    force = np.empty(0)
+    local_activation_time = None
+    bipolar_voltage = None
+    unipolar_voltage = None
+    impedance = None
+    force = None
 
     fields = Fields(
         bipolar_voltage,
