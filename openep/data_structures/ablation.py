@@ -68,7 +68,8 @@ class Ablation:
     force: AblationForce
 
     def __repr__(self):
-        return f"Ablations with {len(self.times)} ablation sites."
+        n_sites = {len(self.times)} if self.times is not None else 0
+        return f"Ablations with {n_sites} ablation sites."
 
 
 def extract_ablation_data(ablation_data):
@@ -116,18 +117,18 @@ def empty_ablation():
     """
 
     force = AblationForce(
-        times=np.empty(0),
-        force=np.empty(0),
-        axial_angle=np.empty(0),
-        lateral_angle=np.empty(0),
-        points=np.empty(0),
+        times=None,
+        force=None,
+        axial_angle=None,
+        lateral_angle=None,
+        points=None,
     )
 
     ablation = Ablation(
-        times=np.empty(0),
-        power=np.empty(0),
-        impedance=np.empty(0),
-        temperature=np.empty(0),
+        times=None,
+        power=None,
+        impedance=None,
+        temperature=None,
         force=force,
     )
 
