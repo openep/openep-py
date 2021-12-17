@@ -208,7 +208,11 @@ def get_electrograms_at_points(
     else:
         raise ValueError(f"egm_type {egm_type} is not recognised.")
 
-    names = case.electric.internal_names
+    if case.electric.internal_names is not None:
+        names = case.electric.internal_names
+    else:
+        names = np.asarray([f"P{index}" for index in range(len(electrograms))], dtype=str)
+    
     if case.electric.annotations.local_activation_time is not None:
         local_activation_time = case.electric.annotations.local_activation_time
     else:
