@@ -493,7 +493,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         # We need to dynamically add options for loading data/creating 3D viewers to the main menubar
         add_data_to_system_menu = QtWidgets.QMenu(points, self)
         add_unipolar_action = QtWidgets.QAction("Unipolar electrograms", self)
-        add_unipolar_action.triggered.connect(lambda: self._add_data_to_openCARP(new_system))
+        add_unipolar_action.triggered.connect(lambda: self._add_data_to_openCARP(system=new_system, data_type='unipolar_egm'))
         add_data_to_system_menu.addAction(add_unipolar_action)
         self.system_main.add_data_menu.addMenu(add_data_to_system_menu)
 
@@ -504,7 +504,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         # Setting the default selected electrograms
         new_system.egm_points = np.asarray([0], dtype=int)
 
-    def _add_data_to_openCARP(self, system):
+    def _add_data_to_openCARP(self, system, data_type):
         """
         Add data into an CARPData object.
 
@@ -520,15 +520,14 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         if dialogue.exec_():
 
             filename = dialogue.selectedFiles()[0]
-            unipolar_egm, bipolar_egm, annotations = system.data.load_unipolar_electrograms(
-                filename=filename,
-                return_bipolar=True,
-                return_annotations=True,
-            )
-        
-            system.data.electric.bipolar_egm = bipolar_egm
-            system.data.electric.unipolar_egm = unipolar_egm
-            system.data.electric.annotations = annotations
+
+            if data_type=="unipolar_egm":
+                unipolar = np.loadtxt(filename)
+                system.data.add_unipolar_electrograms(
+                    unipolar=unipolar,
+                    add_bipolar=True,
+                    add_annotations=True,
+                )
         
             if len(system.plotters) == 0:
                 self.add_view(system)
@@ -862,33 +861,31 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     def check_for_available_electrograms(self):
         """Update the electrom types that can be plotted."""
 
-        if not self._active_system.data.electric.bipolar_egm.egm.size:
-            self.has_electrograms = False
-            self.egm_dock.setEnabled(False)
-            self.egm_reference_checkbox.setEnabled(False)
-            self.egm_bipolar_checkbox.setEnabled(False)
-            self.egm_unipolar_A_checkbox.setEnabled(False)
-            self.egm_unipolar_B_checkbox.setEnabled(False)
-            return
+        # Assume there are no electrograms and disable the viewer
+        self.has_electrograms = False
+        self.egm_dock.setEnabled(False)
+        self.egm_reference_checkbox.setEnabled(False)
+        self.egm_bipolar_checkbox.setEnabled(False)
+        self.egm_unipolar_A_checkbox.setEnabled(False)
+        self.egm_unipolar_B_checkbox.setEnabled(False)
 
         electric = self._active_system.data.electric
 
-        self.has_electrograms = False
-        if electric.reference_egm.egm.size:
+        if electric.reference_egm.egm is not None:
             self.has_electrograms = True
             self.egm_reference_checkbox.setEnabled(True)
             self.egm_times = np.arange(electric.reference_egm.egm.shape[1])
         else:
             self.egm_reference_checkbox.setEnabled(False)
 
-        if electric.bipolar_egm.egm.size:
+        if electric.bipolar_egm.egm is not None:
             self.has_electrograms = True
             self.egm_bipolar_checkbox.setEnabled(True)
             self.egm_times = np.arange(electric.bipolar_egm.egm.shape[1])
         else:
             self.egm_bipolar_checkbox.setEnabled(False)
 
-        if electric.unipolar_egm.egm.size:
+        if electric.unipolar_egm.egm is not None:
             self.has_electrograms = True
             self.egm_unipolar_A_checkbox.setEnabled(True)
             self.egm_unipolar_B_checkbox.setEnabled(True)
@@ -899,8 +896,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         if self.has_electrograms:
             self.egm_dock.setEnabled(True)
-        else:
-            self.egm_dock.setEnabled(False)
 
     def update_electrograms_from_text(self):
         """
