@@ -74,7 +74,7 @@ class System:
         self.scalar_fields = {}
 
         # Add scalar fields that are interpolated by openep
-        if self.data.electric.bipolar_egm.egm.size:
+        if self.data.electric.bipolar_egm.egm is not None:
             field = openep.case.interpolate_voltage_onto_surface(
                 self.data,
                 max_distance=None,
@@ -82,7 +82,7 @@ class System:
             )
             self.scalar_fields['Bipolar voltage'] = field
 
-        if self.data.electric.unipolar_egm.egm.size:
+        if self.data.electric.unipolar_egm.egm is not None:
             field = openep.case.interpolate_voltage_onto_surface(
                 self.data,
                 max_distance=None,
@@ -119,10 +119,10 @@ class System:
 
         self.scalar_fields = {}
 
-        if self.data.electric.bipolar_egm.voltage.size:
+        if self.data.electric.bipolar_egm.voltage is not None:
             self.scalar_fields['Bipolar voltage'] = self.data.electric.bipolar_egm.voltage
 
-        if self.data.electric.unipolar_egm.voltage.size:
+        if self.data.electric.unipolar_egm.voltage is not None:
             self.scalar_fields['Unipolar voltage'] = self.data.electric.unipolar_egm.voltage[:, 0]
 
     def create_dock(self):
