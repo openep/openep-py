@@ -46,7 +46,7 @@ class System:
     name: str
     folder: str
     type: str
-    data: Union[openep.data_structures.case.Case, openep.data_structures.openCARP.CARPData]
+    data: openep.data_structures.case.Case
 
     def __attrs_post_init__(self):
 
@@ -74,7 +74,7 @@ class System:
         self.scalar_fields = {}
 
         # Add scalar fields that are interpolated by openep
-        if self.data.electric.bipolar_egm is not None:
+        if self.data.electric.bipolar_egm.egm.size:
             field = openep.case.interpolate_voltage_onto_surface(
                 self.data,
                 max_distance=None,
@@ -82,7 +82,7 @@ class System:
             )
             self.scalar_fields['Bipolar voltage'] = field
 
-        if self.data.electric.bipolar_egm is not None:
+        if self.data.electric.unipolar_egm.egm.size:
             field = openep.case.interpolate_voltage_onto_surface(
                 self.data,
                 max_distance=None,
@@ -119,10 +119,10 @@ class System:
 
         self.scalar_fields = {}
 
-        if self.data.electric.bipolar_egm is not None and self.data.electric.bipolar_egm.voltage is not None:
+        if self.data.electric.bipolar_egm.voltage.size:
             self.scalar_fields['Bipolar voltage'] = self.data.electric.bipolar_egm.voltage
 
-        if self.data.electric.bipolar_egm is not None and self.data.electric.unipolar_egm.voltage is not None:
+        if self.data.electric.unipolar_egm.voltage.size:
             self.scalar_fields['Unipolar voltage'] = self.data.electric.unipolar_egm.voltage[:, 0]
 
     def create_dock(self):
