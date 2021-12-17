@@ -42,7 +42,8 @@ class Electrogram:
     names: np.ndarray = None
 
     def __repr__(self):
-        return f"Electrograms with {len(self.egm)} mapping points."
+        n_points = len(self.egm) if self.egm is not None else 0
+        return f"Electrograms with {n_points} mapping points."
 
 
 @attrs(auto_attribs=True, auto_detect=True)
@@ -59,7 +60,8 @@ class Impedance:
     values: np.ndarray = None
 
     def __repr__(self):
-        return f"Impedance measurements with {len(self.values)} traces."
+        n_traces = len(self.values) if self.values is not None else 0
+        return f"Impedance measurements with {n_traces} traces."
 
 
 @attrs(auto_attribs=True, auto_detect=True)
@@ -77,7 +79,8 @@ class ElectricSurface:
     normals: np.ndarray = None
 
     def __repr__(self):
-        return f"ElectricSurface with {len(self.nearest_point)} mapping points."
+        n_points = len(self.nearest_point) if self.nearest_point is not None else 0
+        return f"ElectricSurface with {n_points} mapping points."
 
 
 @attrs(auto_attribs=True, auto_detect=True)
@@ -96,7 +99,8 @@ class Annotations:
     reference_activation_time: np.ndarray
 
     def __repr__(self):
-        return f"Annotations with {len(self.window_of_interest)} mapping points."
+        n_points = len(self.window_of_interest) if self.window_of_interest is not None else 0
+        return f"Annotations with {n_points} mapping points."
 
 
 @attrs(auto_attribs=True, auto_detect=True)
@@ -133,7 +137,8 @@ class Electric:
     annotations: Annotations
 
     def __repr__(self):
-        return f"Electric data for {len(self.names)} mapping points."
+        n_points = len(self.unipolar_egm) if self.unipolar_egm is not None else 0
+        return f"Electric data for {n_points} mapping points."
 
 
 def extract_electric_data(electric_data):
@@ -208,41 +213,41 @@ def empty_electric():
             taken at each mapping point.
     """
 
-    names = np.empty(0, dtype=str)
-    internal_names = np.empty(0, dtype=str)
+    names = None
+    internal_names = None
 
     bipolar_egm = Electrogram(
-        egm=np.empty(0),
-        points=np.empty(0),
-        voltage=np.empty(0),
-        names=np.empty(0),
+        egm=None,
+        points=None,
+        voltage=None,
+        names=None,
     )
     unipolar_egm = Electrogram(
-        egm=np.empty(0),
-        points=np.empty(0),
-        voltage=np.empty(0),
-        names=np.empty(0),
+        egm=None,
+        points=None,
+        voltage=None,
+        names=None,
     )
     reference_egm = Electrogram(
-        egm=np.empty(0),
+        egm=None,
     )
 
-    ecg = np.empty(0),
+    ecg = None,
 
     impedance = Impedance(
-        times=np.empty(0),
-        values=np.empty(0),
+        times=None,
+        values=None,
     )
 
     surface = ElectricSurface(
-        nearest_point=np.empty(0),
-        normals=np.empty(0),
+        nearest_point=None,
+        normals=None,
     )
 
     annotations = Annotations(
-        window_of_interest=np.empty(0),
-        local_activation_time=np.empty(0),
-        reference_activation_time=np.empty(0),
+        window_of_interest=None,
+        local_activation_time=None,
+        reference_activation_time=None,
     )
 
     electric = Electric(
