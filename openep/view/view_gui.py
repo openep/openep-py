@@ -44,9 +44,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         self._init_systems()
         self._init_ui()
-        self._create_system_manager_dock()
-        self._create_system_manager_menubar()
-        self._create_system_manager_table()
+        self._create_system_manager_ui()
         self._create_egm_canvas_dock()
         self._create_analysis_canvas_dock()
         self._add_dock_widgets()
@@ -77,122 +75,34 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.setMinimumSize(800, 600)
         self.setWindowTitle("OpenEP: The open-source solution for electrophysiology data analysis")
 
-    def _create_system_manager_dock(self):
-        """Create a dockable widget that for managing systems loaded into the GUI."""
+    def _create_system_manager_ui(self):
+        """Create a dockable widget that for managing systems loaded into the GUI"""        
 
-        self.system_dock = openep.view.custom_widgets.CustomDockWidget("Systems")
-        self.system_main = QtWidgets.QMainWindow()
-        self.system_main.setStyleSheet('QMainWindow {border: 0px; background-color: #d8dcd6;}')
-
-        # The dock is set to have bold font (so the title stands out)
-        # But all other widgets should have normal weighted font
-        main_font = QtGui.QFont()
-        main_font.setBold(False)
-        self.system_main.setFont(main_font)
-
-    def _create_system_manager_menubar(self):
-        """
-        Add a menu bar to the 'System' window of the GUI.
-
-        The file menu has options for loading either an OpenEP dataset or an openCARP one, as well as
-        loading auxillary data into an existing openCARP system.
-
-        The view menu has options for creating a new 3D-viewer for an existing system.
-        """
-
-        # For loading new systems, deleting systems, adding a view of existing systems
-        # Adding data to systems, exporting system to a different format
-        self.system_main.menubar = self.system_main.menuBar()
-        self.system_main.menubar.setNativeMenuBar(False)
-        self.system_main.menubar.setStyleSheet(
-            "QMenuBar{"
-            "background-color: #95a3a6;"  # xkcd:cool grey
-            "color: black;"
-            "border: None;"
-            "}"
+        self.system_manager_ui = openep.view.system_manager_ui.SystemManagetDockWidget(
+            title="Systems"
         )
 
-        file_menu = self.system_main.menubar.addMenu("File")
-
-        load_menu = QtWidgets.QMenu("Load", self.system_main)
-        load_openep_mat_action = QtWidgets.QAction("OpenEP", self.system_main)
-        load_openep_mat_action.triggered.connect(self._load_openep_mat)
-        load_menu.addAction(load_openep_mat_action)
-        load_opencarp_action = QtWidgets.QAction("openCARP", self.system_main)
-        load_opencarp_action.triggered.connect(self._load_opencarp)
-        load_menu.addAction(load_opencarp_action)
-
-        # The below will be used for adding data to openCARP datasets
-        self.system_main.add_data_menu = QtWidgets.QMenu("Add data to", self.system_main)
-
-        # The below will be used exporting OpenEP mesh data in openCARP format
-        self.system_main.export_data_menu = QtWidgets.QMenu("Export", self.system_main)
-
-        file_menu.addMenu(load_menu)
-        file_menu.addMenu(self.system_main.add_data_menu)
-        file_menu.addSeparator()
-        file_menu.addMenu(self.system_main.export_data_menu)
-
-        # The below will be used for creating a new 3D viewer for a given system
-        view_menu = self.system_main.menubar.addMenu("View")
-        self.system_main.add_view_menu = QtWidgets.QMenu("Add view for", self.system_main)
-        view_menu.addMenu(self.system_main.add_view_menu)
-        view_menu.addSeparator()
-
-    def _create_system_manager_table(self):
-        """
-        Create a widget that will display information about each system loaded, and
-        allow selection of an active system.
-        """
-
-        system_main_widget = QtWidgets.QWidget()
-        self.system_main_layout = QtWidgets.QGridLayout(system_main_widget)
-
-        # add a row containing heading labels to the grid
-        openep.view.system_manager_ui.add_heading_bar(layout=self.system_main_layout)
-
-        # we need a method for selecting the active system
-        self._active_system_button_group = QtWidgets.QButtonGroup()
-
-        # After adding all the rows we need to make sure they are at the top of the layout
-        self.system_main.vertical_stretch = openep.view.system_manager_ui.create_vertical_stretch()
-        self.system_main_layout.addItem(self.system_main.vertical_stretch)
-
-        # Setting nested layouts
-        self.system_main.setCentralWidget(system_main_widget)
-        self.system_dock.setWidget(self.system_main)
+        # We also need to connect up the actions
+        self.system_manager_ui.main.load_openep_mat_action.triggered.connect(self._load_openep_mat)
+        self.system_manager_ui.main.load_opencarp_action.triggered.connect(self._load_opencarp)
 
     def update_system_manager_table(self, system):
-        """Update the System manager table when a new system is loaded.
-
-        We need to remove the vertical spacer, add a new row in the system table,
-        then put the vertical spacer back.
-
-        We also need to add the system to the 'File > Add data to' submenu and the
-        'View > Add view for' submenu.
-        """
-
-        self.system_main_layout.removeItem(self.system_main.vertical_stretch)
+        """Update the System manager table when a new system is loaded."""
 
         # Not sure why * 10 works. But if not multiplied by at least 10, there is vertical overlap between rows
         row_number = len(self.systems) * 10
 
-        system.name_widget, *_, active_widget = openep.view.system_manager_ui.create_widgets_for_system_row(
-            layout=self.system_main_layout,
+        system.name_widget, *_, active_widget = self.system_manager_ui.update_system_manager_table(
             name=str(system.name),
-            directory=str(system.folder),
+            basename=str(system.basename),
             data_type=system.type,
             is_active=True if self._active_system.name == system.name else False,
             row_number=row_number,
-            )
+        )
 
+        # We need to connect up the actions
         system.name_widget.returnPressed.connect(lambda: self.update_system_name(system))
         active_widget.clicked.connect(lambda: self.change_active_system(system))
-        self._active_system_button_group.addButton(active_widget)
-
-        # Make sure the vertical spacing is correct again
-        self.system_main.vertical_stretch = openep.view.system_manager_ui.create_vertical_stretch()
-        self.system_main_layout.addItem(self.system_main.vertical_stretch)
 
     def update_system_name(self, system):
         """
@@ -337,10 +247,10 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.addDockWidget(Qt.LeftDockWidgetArea, self.egm_dock)
 
         self.addDockWidget(Qt.RightDockWidgetArea, self.analysis_dock)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.system_dock)
-        self.tabifyDockWidget(self.analysis_dock, self.system_dock)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.system_manager_ui)
+        self.tabifyDockWidget(self.analysis_dock, self.system_manager_ui)
 
-        for dock in [self.egm_dock, self.analysis_dock, self.system_dock]:
+        for dock in [self.egm_dock, self.analysis_dock, self.system_manager_ui]:
             dock.setAllowedAreas(Qt.AllDockWidgetAreas)
 
         self.setDockOptions(self.GroupedDragging | self.AllowTabbedDocks | self.AllowNestedDocks)
@@ -382,10 +292,11 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         """
 
         case = openep.load_openep_mat(filename)
+        basename = str(pathlib.Path(filename).resolve().with_suffix(""))
 
         new_system = openep.view.system_manager.System(
             name=str(self._system_counter),
-            folder=pathlib.Path(filename).parent.resolve(),
+            basename=basename,
             type="OpenEP",
             data=case,
         )
@@ -401,15 +312,15 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.update_system_manager_table(new_system)
 
         # We need to dynamically add options for exporting data/creating 3D viewers to the main menubar
-        add_export_system_menu = QtWidgets.QMenu(filename, self)
+        add_export_system_menu = QtWidgets.QMenu(basename, self)
         add_export_openCARP_action = QtWidgets.QAction("as openCARP", self)
         add_export_openCARP_action.triggered.connect(lambda: self._export_data_to_openCARP(new_system))
         add_export_system_menu.addAction(add_export_openCARP_action)
-        self.system_main.export_data_menu.addMenu(add_export_system_menu)
+        self.system_manager_ui.main.export_data_menu.addMenu(add_export_system_menu)
 
-        add_view_for_system_action = QtWidgets.QAction(filename, self)
+        add_view_for_system_action = QtWidgets.QAction(basename, self)
         add_view_for_system_action.triggered.connect(lambda: self.add_view(new_system))
-        self.system_main.add_view_menu.addAction(add_view_for_system_action)
+        self.system_manager_ui.main.add_view_menu.addAction(add_view_for_system_action)
 
         # Setting the default selected electrograms
         new_system.egm_points = np.asarray([0], dtype=int)
@@ -472,6 +383,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             points=points,
             indices=indices,
         )
+        basename = str(pathlib.Path(points).resolve().with_suffix(""))
 
         # we need a unique key for each system
         while str(self._system_counter) in self.systems:
@@ -479,7 +391,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         new_system = openep.view.system_manager.System(
             name=str(self._system_counter),
-            folder=pathlib.Path(points).parent.resolve(),
+            basename=basename,
             type="openCARP",
             data=carp,
         )
@@ -490,16 +402,14 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         self.update_system_manager_table(new_system)
 
-        # We need to dynamically add options for loading data/creating 3D viewers to the main menubar
-        add_data_to_system_menu = QtWidgets.QMenu(points, self)
+        # We need to dynamically add option for loading data to the main menubar.
+        # But we shouldn't an option to create 3d viewer yet because we have no scalar fields at the minute.
+        # Instead, this is done in self._add_data_to_openCARP
+        add_data_to_system_menu = QtWidgets.QMenu(basename, self)
         add_unipolar_action = QtWidgets.QAction("Unipolar electrograms", self)
         add_unipolar_action.triggered.connect(lambda: self._add_data_to_openCARP(system=new_system, data_type='unipolar_egm'))
         add_data_to_system_menu.addAction(add_unipolar_action)
-        self.system_main.add_data_menu.addMenu(add_data_to_system_menu)
-
-        add_view_for_system_action = QtWidgets.QAction(points, self)
-        add_view_for_system_action.triggered.connect(lambda: self.add_view(new_system))
-        self.system_main.add_view_menu.addAction(add_view_for_system_action)
+        self.system_manager_ui.main.add_data_menu.addMenu(add_data_to_system_menu)
 
         # Setting the default selected electrograms
         new_system.egm_points = np.asarray([0], dtype=int)
@@ -530,6 +440,13 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                 )
         
             if len(system.plotters) == 0:
+
+                # We need to dynamically add an option for creating 3D viewers to the main menubar
+                add_view_for_system_action = QtWidgets.QAction(str(system.basename), self)
+                add_view_for_system_action.triggered.connect(lambda: self.add_view(system))
+                self.system_manager_ui.main.add_view_menu.addAction(add_view_for_system_action)
+
+                # And also create the first 3d viewer
                 self.add_view(system)
 
     def _export_data_to_openCARP(self, system):
