@@ -58,17 +58,11 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     def _init_systems(self):
         """Containers and variables for keeping track of the systems loaded into the GUI."""
 
-        # We need to keep track of all cases currently loaded (both OpenEP and openCARP)
-        # Each system will keep track of its own docks/plotters/meshes
-        self.systems = {}
-        self._system_counter = 0  # we need a unique ID for each new system (IDs of deleted systems should not be reused)
-
-        # We will use this to determine which egms to plot
-        # All windows belonging to the main case have their menubars coloured blue
-        self._active_system = None
+        self.system_manager = openep.view.system_manager.SystemManager()
 
         self.egm_slider = None
-        self.egm_selection_filter = re.compile('\d+')  # noqa: W605
+        self.egm_times = None
+        self.egm_selection_filter = re.compile(r'\d+')
 
     def _init_ui(self):
         """
@@ -90,51 +84,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         # We also need to connect up the actions
         self.system_manager_ui.main.load_openep_mat_action.triggered.connect(self._load_openep_mat)
         self.system_manager_ui.main.load_opencarp_action.triggered.connect(self._load_opencarp)
-
-    def update_system_manager_table(self, system):
-        """Update the System manager table when a new system is loaded."""
-
-        # Not sure why * 10 works. But if not multiplied by at least 10, there is vertical overlap between rows
-        row_number = len(self.systems) * 10
-
-        system.name_widget, *_, active_widget = self.system_manager_ui.update_system_manager_table(
-            name=str(system.name),
-            basename=str(system.basename),
-            data_type=system.type,
-            is_active=True if self._active_system.name == system.name else False,
-            row_number=row_number,
-        )
-
-        # We need to connect up the actions
-        system.name_widget.returnPressed.connect(lambda: self.update_system_name(system))
-        active_widget.clicked.connect(lambda: self.change_active_system(system))
-
-    def update_system_name(self, system):
-        """
-        Change the name of a system.
-
-        We also need to change the window title of its dock widgets.
-        """
-
-        new_name = system.name_widget.text()
-
-        if new_name not in self.systems:
-            self.systems[new_name] = self.systems.pop(system.name)
-            self.systems[new_name].name = new_name
-            for dock, mesh  in zip(system.docks, system.meshes):
-                dock.setWindowTitle(f"{system.name}: {mesh.active_scalars_info.name}")
-        else:
-
-            system.name_widget.setText(system.name)
-
-            error = QtWidgets.QMessageBox()
-            error.setIcon(QtWidgets.QMessageBox.Critical)
-            error.setText("Name Error")
-            error.setInformativeText(
-                "System names must be unique."
-            )
-            error.setWindowTitle("Error")
-            error.exec_()
 
     def _create_egm_canvas_dock(self):
         """
@@ -287,9 +236,9 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         if dialogue.exec_():
             filename = dialogue.selectedFiles()[0]
-            self._initialise_case(filename)
+            self._initialise_openep_mat(filename)
 
-    def _initialise_case(self, filename):
+    def _initialise_openep_mat(self, filename):
         """Initialise data from an OpenEP case object.
 
         Create separate meshes for the two BackgroundPlotters.
@@ -298,41 +247,27 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         case = openep.load_openep_mat(filename)
         basename = str(pathlib.Path(filename).resolve().with_suffix(""))
-
-        new_system = openep.view.system_manager.System(
-            name=str(self._system_counter),
+        system = self.system_manager.add_system(
+            case=case,
             basename=basename,
             type="OpenEP",
-            data=case,
         )
-
-        # we need a unique key for each system
-        while self._system_counter in self.systems:
-            self._system_counter += 1
-
-        self.systems[new_system.name] = new_system
-        self._system_counter += 1
-        self._active_system = new_system if self._active_system is None else self._active_system
-
-        self.update_system_manager_table(new_system)
+        self.update_system_manager_table(system)
 
         # We need to dynamically add options for exporting data/creating 3D viewers to the main menubar
-        add_export_system_menu = QtWidgets.QMenu(basename, self)
-        add_export_openCARP_action = QtWidgets.QAction("as openCARP", self)
-        add_export_openCARP_action.triggered.connect(lambda: self._export_data_to_openCARP(new_system))
-        add_export_system_menu.addAction(add_export_openCARP_action)
-        self.system_manager_ui.main.export_data_menu.addMenu(add_export_system_menu)
+        export_action = self.system_manager_ui.create_export_action(
+            system_basename=system.basename,
+            export_name="as openCARP",
+        )
+        view_action = self.system_manager_ui.create_view_action(
+            system_basename=system.basename,
+        )
 
-        add_view_for_system_action = QtWidgets.QAction(basename, self)
-        add_view_for_system_action.triggered.connect(lambda: self.add_view(new_system))
-        self.system_manager_ui.main.add_view_menu.addAction(add_view_for_system_action)
+        export_action.triggered.connect(lambda: self._export_data_to_openCARP(system))
+        view_action.triggered.connect(lambda: self.add_view(system))
 
-        # Setting the default selected electrograms
-        new_system.egm_points = np.asarray([0], dtype=int)
-
-        new_system._determine_available_fields()
-        self.interpolate_openEP_fields(system=new_system)
-        self.add_view(new_system)
+        self.interpolate_openEP_fields(system=system)
+        self.add_view(system)
 
     def _load_opencarp(self):
         """
@@ -384,40 +319,27 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         to the 'File > Add data to' and the 'View > Add view for' menus, respectively.
         """
 
-        carp = openep.load_opencarp(
+        case = openep.load_opencarp(
             points=points,
             indices=indices,
         )
         basename = str(pathlib.Path(points).resolve().with_suffix(""))
-
-        # we need a unique key for each system
-        while str(self._system_counter) in self.systems:
-            self._system_counter += 1
-
-        new_system = openep.view.system_manager.System(
-            name=str(self._system_counter),
+        system = self.system_manager.add_system(
+            case=case,
             basename=basename,
             type="openCARP",
-            data=carp,
         )
-
-        self.systems[new_system.name] = new_system
-        self._system_counter += 1
-        self._active_system = new_system if self._active_system is None else self._active_system
-
-        self.update_system_manager_table(new_system)
+        self.update_system_manager_table(system)
 
         # We need to dynamically add option for loading data to the main menubar.
         # But we shouldn't an option to create 3d viewer yet because we have no scalar fields at the minute.
         # Instead, this is done in self._add_data_to_openCARP
-        add_data_to_system_menu = QtWidgets.QMenu(basename, self)
-        add_unipolar_action = QtWidgets.QAction("Unipolar electrograms", self)
-        add_unipolar_action.triggered.connect(lambda: self._add_data_to_openCARP(system=new_system, data_type='unipolar_egm'))
-        add_data_to_system_menu.addAction(add_unipolar_action)
-        self.system_manager_ui.main.add_data_menu.addMenu(add_data_to_system_menu)
-
-        # Setting the default selected electrograms
-        new_system.egm_points = np.asarray([0], dtype=int)
+        add_data_action = self.system_manager_ui.create_add_data_action(
+            system_basename=system.basename,
+            data_type="Unipolar electrograms",
+        )
+        add_data_action.triggered.connect(lambda: self._add_data_to_openCARP(system=system, data_type='unipolar_egm'))
+        # TODO: support loading of different data to the system, e.g. arbitrary scalar fields that can be named by the user
 
     def _add_data_to_openCARP(self, system, data_type):
         """
@@ -438,11 +360,13 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
             if data_type=="unipolar_egm":
                 unipolar = np.loadtxt(filename)
-                system.data.add_unipolar_electrograms(
+                system.case.add_unipolar_electrograms(
                     unipolar=unipolar,
                     add_bipolar=True,
                     add_annotations=True,
                 )
+
+            system._determine_available_fields()  # ensure we can access the loaded data
         
             if len(system.plotters) == 0:
 
@@ -484,14 +408,61 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             return
 
         openep.export_openCARP(
-            case=system.data,
+            case=system.case,
             prefix=prefix,
         )
+
+    def update_system_manager_table(self, system):
+        """Update the System manager table when a new system is loaded."""
+
+        # Not sure why * 10 works. But if not multiplied by at least 10, there is vertical overlap between rows
+        row_number = len(self.system_manager.systems) * 10
+
+        system.name_widget, *_, active_widget = self.system_manager_ui.update_system_manager_table(
+            name=str(system.name),
+            basename=str(system.basename),
+            data_type=system.type,
+            is_active=True if self.system_manager.active_system.name == system.name else False,
+            row_number=row_number,
+        )
+
+        # We need to connect up the actions
+        system.name_widget.returnPressed.connect(lambda: self.update_system_name(system))
+        active_widget.clicked.connect(lambda: self.change_active_system(system))
+
+    def update_system_name(self, system):
+        """
+        Change the name of a system.
+
+        We also need to change the window title of its dock widgets.
+        """
+
+        new_name = system.name_widget.text()
+
+        try :
+            self.system_manager.update_system_name(system=system, new_name=new_name)
+
+        except KeyError as e:
+       
+            system.name_widget.setText(system.name)
+
+            error = QtWidgets.QMessageBox()
+            error.setIcon(QtWidgets.QMessageBox.Critical)
+            error.setText("Name Error")
+            error.setInformativeText(
+                "System names must be unique."
+            )
+            error.setWindowTitle("Error")
+            error.exec_()
+
+        else:
+            for dock, mesh  in zip(system.docks, system.meshes):
+                dock.setWindowTitle(f"{system.name}: {mesh.active_scalars_info.name}")
 
     def add_view(self, system):
         """Create a new CustomDockWidget for the given system (i.e. open a new 3D viewer)."""
 
-        if system.data.electric.unipolar_egm.voltage is None:
+        if system.case.electric.unipolar_egm.voltage is None:
             error = QtWidgets.QMessageBox()
             error.setIcon(QtWidgets.QMessageBox.Critical)
             error.setText("No Data Error")
@@ -502,9 +473,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             error.setWindowTitle("Error")
             error.exec_()
             return
-
-        if system.scalar_fields is None:
-            system._determine_available_fields()
 
         plotter = openep.view.plotters.create_plotter()
         plotter_layout = openep.view.plotters_ui.create_plotter_layout(plotter=plotter)
@@ -517,7 +485,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             system_name=system.name,
             scalar_fields=system.scalar_fields,
         )
-        
+
         mesh = system.create_mesh()
         add_mesh_kws = system._create_default_kws()
         free_boundaries = openep.mesh.get_free_boundaries(mesh)
@@ -536,6 +504,10 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         # We can't put this into a for loop.
         # For some reason, when iterating over the items in plotter.scalar_field_actions,
         # all actions are passed the key in the iteration for the scalars argument
+        # TODO: Don't distinguish between Clinical and non-clinical data. Use clinical by default. If
+        #       values are interpolated from mapping points onto the surface, then overwrite the
+        #       default clinical values. Add an option to reset the interpolated values to the original
+        #       clinical ones. This can be done by simply reading the file.
         if 'Bipolar voltage' in plotter.scalar_field_actions:
             plotter.scalar_field_actions['Bipolar voltage'].triggered.connect(
                 lambda: self.change_active_scalars(system, index=index, scalars='Bipolar voltage')
@@ -581,7 +553,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         mesh.set_active_scalars(active_scalars_name)
 
         # If this is the first 3d viewer for the first system loaded, we need to update the egms etc.
-        if (system.name == self._active_system.name) and (len(system.plotters) == 1):
+        if (system.name == self.system_manager.active_system.name) and (len(system.plotters) == 1):
             self.change_active_system(system)
 
         self.addDockWidget(Qt.LeftDockWidgetArea, dock)
@@ -637,12 +609,12 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         those of the active system.
         """
 
-        self._active_system = system
+        self.system_manager.active_system = system
 
         self.highlight_menubars_of_active_plotters()
 
         self.remove_woi_slider()
-        self.check_for_available_electrograms()
+        self.check_available_electrograms()
         if self.has_electrograms:
 
             self.egm_axis.axis('on')  # make sure we can see the axes now
@@ -682,7 +654,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         matplotlib passes an event to the called function (i.e. this one).
         """
 
-        system = self._active_system
+        system = self.system_manager.active_system
         if system.type == "OpenEP":
             self.interpolate_openEP_fields()
         elif system.type == "openCARP":
@@ -696,8 +668,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         via self.slider (mpl.widgets.RangeSlider) and self.set_woi_button (mpl.widgets.Button).
         """
 
-        system = self._active_system if system is None else system
-        case = system.data
+        system = self.system_manager.active_system if system is None else system
+        case = system.case
 
         try:
             bipolar_voltage = openep.case.interpolate_voltage_onto_surface(
@@ -740,8 +712,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     def recalculate_openCARP_fields(self):
         """Recalculate the scalar values that are being projected onto the mesh for an openCARP dataset."""
 
-        system = self._active_system
-        carp = system.data
+        system = self.system_manager.active_system
+        carp = system.case
 
         # TODO: If bipolar voltages are calculated from unipolar electrograms, the bipolar electrograms
         #       should first be reproducted using carp.bipolar_from_unipolar(electrograms[:, woi])
@@ -791,44 +763,24 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                 plotter=plotter,
             )
 
-    def check_for_available_electrograms(self):
+    def check_available_electrograms(self):
         """Update the electrom types that can be plotted."""
 
-        # Assume there are no electrograms and disable the viewer
-        self.has_electrograms = False
-        self.egm_dock.setEnabled(False)
-        self.egm_reference_checkbox.setEnabled(False)
-        self.egm_bipolar_checkbox.setEnabled(False)
-        self.egm_unipolar_A_checkbox.setEnabled(False)
-        self.egm_unipolar_B_checkbox.setEnabled(False)
+        has_reference, has_bipolar, has_unipolar = self.system_manager.check_available_electrograms()
 
-        electric = self._active_system.data.electric
+        self.has_electrograms = any([has_reference, has_bipolar, has_unipolar])
+        self.egm_dock.setEnabled(self.has_electrograms)
+        self.egm_reference_checkbox.setEnabled(has_reference)
+        self.egm_bipolar_checkbox.setEnabled(has_bipolar)
+        self.egm_unipolar_A_checkbox.setEnabled(has_unipolar)
+        self.egm_unipolar_B_checkbox.setEnabled(has_unipolar)
 
-        if electric.reference_egm.egm is not None:
-            self.has_electrograms = True
-            self.egm_reference_checkbox.setEnabled(True)
-            self.egm_times = np.arange(electric.reference_egm.egm.shape[1])
-        else:
-            self.egm_reference_checkbox.setEnabled(False)
+        self._set_electrogram_times()
 
-        if electric.bipolar_egm.egm is not None:
-            self.has_electrograms = True
-            self.egm_bipolar_checkbox.setEnabled(True)
-            self.egm_times = np.arange(electric.bipolar_egm.egm.shape[1])
-        else:
-            self.egm_bipolar_checkbox.setEnabled(False)
+    def _set_electrogram_times(self):
+        """Generate the electrogram times based on the """
 
-        if electric.unipolar_egm.egm is not None:
-            self.has_electrograms = True
-            self.egm_unipolar_A_checkbox.setEnabled(True)
-            self.egm_unipolar_B_checkbox.setEnabled(True)
-            self.egm_times = np.arange(electric.unipolar_egm.egm.shape[1])
-        else:
-            self.egm_unipolar_A_checkbox.setEnabled(False)
-            self.egm_unipolar_B_checkbox.setEnabled(False)
-
-        if self.has_electrograms:
-            self.egm_dock.setEnabled(True)
+        self.egm_times = self.system_manager.electrogram_times()
 
     def update_electrograms_from_text(self):
         """
@@ -841,7 +793,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         # Get data for new set of points
         egm_text = self.egm_selection.text()
         selected_indices = self.egm_selection_filter.findall(egm_text)
-        self._active_system.egm_points = np.asarray(selected_indices, dtype=int)
+        self.system_manager.active_system.egm_points = np.asarray(selected_indices, dtype=int)
 
         self.extract_electrograms()
         self.plot_electrograms()
@@ -849,7 +801,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     def update_electrograms_from_stored(self):
 
         # Retrieve data for the stored set of points
-        egm_points = self._active_system.egm_points
+        egm_points = self.system_manager.active_system.egm_points
         egm_text = " ".join(egm_points.astype(str))
         self.egm_selection.setText(egm_text)
 
@@ -858,11 +810,11 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
     def extract_electrograms(self):
 
-        system = self._active_system
+        system = self.system_manager.active_system
 
         if self.egm_reference_checkbox.isEnabled():
             self.egm_reference_traces, self.egm_names = openep.case.get_electrograms_at_points(
-                system.data,
+                system.case,
                 within_woi=False,
                 buffer=0,
                 indices=system.egm_points,
@@ -873,7 +825,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         if self.egm_bipolar_checkbox.isEnabled():
             self.egm_bipolar_traces, self.egm_names = openep.case.get_electrograms_at_points(
-                system.data,
+                system.case,
                 within_woi=False,
                 buffer=0,
                 indices=system.egm_points,
@@ -884,7 +836,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         if self.egm_unipolar_A_checkbox.isEnabled():
             unipolar_traces, self.egm_names = openep.case.get_electrograms_at_points(
-                system.data,
+                system.case,
                 within_woi=False,
                 buffer=0,
                 indices=system.egm_points,
@@ -962,7 +914,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         # Add labels if necessary
         yticks = []
         yticklabels = []
-        separations = np.arange(self._active_system.egm_points.size) * 2
+        separations = np.arange(self.system_manager.active_system.egm_points.size) * 2
 
         if (
             (self.egm_reference_checkbox.isEnabled() and self.egm_reference_checkbox.isChecked()) or
@@ -1007,7 +959,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     def initialise_woi_slider_limits(self):
         """Set the limits to be the window of interest."""
 
-        annotations = self._active_system.data.electric.annotations
+        annotations = self.system_manager.active_system.case.electric.annotations
 
         start_woi, stop_woi = annotations.window_of_interest[0]
         start_woi += annotations.reference_activation_time[0]
@@ -1038,7 +990,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         of the two axvlines drawn on the EGM canvas.
         """
 
-        annotations = self._active_system.data.electric.annotations
+        annotations = self.system_manager.active_system.case.electric.annotations
 
         # from https://matplotlib.org/devdocs/gallery/widgets/range_slider.html
         start_woi, stop_woi = val
@@ -1052,8 +1004,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     def highlight_menubars_of_active_plotters(self):
         """Make the menubars of all docks in the active system blue."""
 
-        for system_name, system in self.systems.items():
-            if system_name == self._active_system.name:
+        for system_name, system in self.system_manager.systems.items():
+            if system_name == self.system_manager.active_system.name:
                 for dock in system.docks:
                     dock.main.menubar.setStyleSheet(
                         "QMenuBar{"
