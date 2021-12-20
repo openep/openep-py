@@ -38,13 +38,13 @@ class System:
 
     Args:
         name (str): Label for the system
-        folder (pathlib.Path): Directory containing the file(s) for the system
+        basename (str): basename of the file(s) for the system
         type (str): System type - either OpenEP or openCARP
         data (Union[Case, CARPData]): Data for the system, including e.g. points and triangles
             for creating a mesh.
     """
     name: str
-    folder: str
+    basename: str
     type: str
     data: openep.data_structures.case.Case
 
