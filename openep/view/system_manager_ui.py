@@ -151,6 +151,57 @@ class SystemManagetDockWidget(CustomDockWidget):
 
         return vertical_stretch
 
+    def create_export_action(self, system_basename, export_name):
+        """Add an action to the Menubar for exporting a system dataset to a specific format.
+
+        Args:
+            system_basename (str): Basename of the system to be exported (i.e. system.basename)
+            export_name (str): Name of the export action action (will appear under 'File > export > `system.basename`')
+
+        Returns:
+            export_action (QtWidgets.QAction): Action to perform for exporting the data
+        """
+
+        # TODO: the menu should be created separately from the action
+        export_menu = QtWidgets.QMenu(system_basename, self)
+        export_action = QtWidgets.QAction(export_name, self)
+        export_menu.addAction(export_action)
+
+        self.main.export_data_menu.addMenu(export_menu)
+
+        return export_action
+
+    def create_view_action(self, system_basename):
+        """Add an action to the Menubar for creating a new 3d viewer of a system.
+
+        Args:
+            system_basename (str): Basename of the system to be exported (i.e. system.basename)
+
+        Returns:
+            view_action (QtWidgets.QAction): Action to open a new 3d viewer
+        """
+
+        view_action = QtWidgets.QAction(system_basename, self)
+        self.main.add_view_menu.addAction(view_action)
+
+        return view_action
+
+    def create_add_data_action(self, system_basename, data_type):
+        """Add an action to the menubar for loading auxillary data into a system.
+
+        Args:
+            system_basename (str): Basename of the system to be exported (i.e. system.basename)
+            data_type (str): Description of data that will be exported using this action
+        """
+
+        # TODO: the menu should be created separately from the action
+        add_data_menu = QtWidgets.QMenu(system_basename, self)
+        add_data_action = QtWidgets.QAction(data_type, self)
+        add_data_menu.addAction(add_data_action)
+        self.main.add_data_menu.addMenu(add_data_menu)
+
+        return add_data_action
+
     def update_system_manager_table(
         self,
         name: str,
