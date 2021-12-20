@@ -20,7 +20,7 @@
 """
 Class and functions for managing OpenEP and openCARP systems loaded into the GUI.
 """
-from attr import attrs
+from attr import attrs, has
 
 from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtCore import Qt
@@ -39,13 +39,13 @@ class System:
         name (str): Label for the system
         basename (str): basename of the file(s) for the system
         type (str): System type - either OpenEP or openCARP
-        data (Union[Case, CARPData]): Data for the system, including e.g. points and triangles
+        case (Case): Data for the system, including e.g. points and triangles
             for creating a mesh.
     """
     name: str
     basename: str
     type: str
-    data: openep.data_structures.case.Case
+    case: openep.data_structures.case.Case
 
     def __attrs_post_init__(self):
 
@@ -55,9 +55,10 @@ class System:
         self.free_boundaries = []
         self.add_mesh_kws = []
         self.scalar_fields = None
+        self.egm_points = np.asarray([0], dtype=int)  # default selected electrograms
 
     def __repr__(self):
-        return f"{self.type} dataset {len(self.data.points)} mapping sites."
+        return f"{self.type} dataset {len(self.case.points)} mapping sites."
 
     def _determine_available_fields(self):
         """Create a dictionary of scalar fields that can be used to colour the 3D map."""
@@ -66,6 +67,8 @@ class System:
             self._determine_available_OpenEP_fields()
         elif self.type == 'openCARP':
             self._determine_available_openCARP_fields()
+        else:
+            raise ValueError("self.type must be one of: OpenEP; openCARP")
 
     def _determine_available_OpenEP_fields(self):
         """Create a dictionary of scalar fields that can be used to colour the 3D map."""
@@ -73,17 +76,17 @@ class System:
         self.scalar_fields = {}
 
         # Add scalar fields that are interpolated by openep
-        if self.data.electric.bipolar_egm.egm is not None:
+        if self.case.electric.bipolar_egm.egm is not None:
             field = openep.case.interpolate_voltage_onto_surface(
-                self.data,
+                self.case,
                 max_distance=None,
                 buffer=0,
             )
             self.scalar_fields['Bipolar voltage'] = field
 
-        if self.data.electric.unipolar_egm.egm is not None:
+        if self.case.electric.unipolar_egm.egm is not None:
             field = openep.case.interpolate_voltage_onto_surface(
-                self.data,
+                self.case,
                 max_distance=None,
                 buffer=0,
                 bipolar=False,
@@ -99,11 +102,11 @@ class System:
             'Clinical impedance ',
         ]
         clinical_fields = [
-            self.data.fields.bipolar_voltage,
-            self.data.fields.unipolar_voltage,
-            self.data.fields.local_activation_time,
-            self.data.fields.force,
-            self.data.fields.impedance,
+            self.case.fields.bipolar_voltage,
+            self.case.fields.unipolar_voltage,
+            self.case.fields.local_activation_time,
+            self.case.fields.force,
+            self.case.fields.impedance,
         ]
 
         for field_name, field in zip(clinical_field_names, clinical_fields):
@@ -118,16 +121,16 @@ class System:
 
         self.scalar_fields = {}
 
-        if self.data.electric.bipolar_egm.voltage is not None:
-            self.scalar_fields['Bipolar voltage'] = self.data.electric.bipolar_egm.voltage
+        if self.case.electric.bipolar_egm.voltage is not None:
+            self.scalar_fields['Bipolar voltage'] = self.case.electric.bipolar_egm.voltage
 
-        if self.data.electric.unipolar_egm.voltage is not None:
-            self.scalar_fields['Unipolar voltage'] = self.data.electric.unipolar_egm.voltage[:, 0]
+        if self.case.electric.unipolar_egm.voltage is not None:
+            self.scalar_fields['Unipolar voltage'] = self.case.electric.unipolar_egm.voltage[:, 0]
 
     def create_mesh(self):
         """Create a new mesh from the system data"""
 
-        mesh = self.data.create_mesh()
+        mesh = self.case.create_mesh()
         return self._add_scalars_to_mesh(mesh)
 
     def _add_scalars_to_mesh(self, mesh):
@@ -150,3 +153,114 @@ class System:
                 "title": "Voltage (mV)",
             }
         }
+
+class SystemManager:
+    """Keep track of all systems loaded into the GUI"""
+
+    def __init__(self):
+
+        # We need to keep track of all cases currently loaded (both OpenEP and openCARP)
+        # Each system will keep track of its own docks/plotters/meshes
+        self.systems = {}
+        self.system_counter = 0  # we need a unique ID for each new system (IDs of deleted systems should not be reused)
+
+        # We will use this to determine which egms to plot
+        # All windows belonging to the main case have their menubars coloured blue
+        self.active_system = None
+
+    def add_system(self, basename, type, case):
+        """Add a system to the dictionary of systems.
+
+        If this is the first system, set it to be the active system.
+
+        Args:
+            basename (str): basename of the file(s) for the system
+            type (str): System type - either OpenEP or openCARP
+            case (Case): Data for the system, including e.g. points and triangles
+                for creating a mesh.
+
+        Returns:
+            system (System): newly created system
+        """
+
+        # we need a unique key for each system
+        while self.system_counter in self.systems:
+            self.system_counter += 1
+
+        name = str(self.system_counter)
+        system = System(
+            name=name,
+            basename=basename,
+            type=type,
+            case=case,
+        )
+
+        self.systems[name] = system
+        self.system_counter += 1
+        self.active_system = self.active_system or system
+
+        system._determine_available_fields()
+
+        return system
+
+    def update_system_name(self, system, new_name):
+        """Change the name of a system. It must be unique - two systems cannot have the same name.py
+
+        The name is updated in-place.
+
+        Args:
+            system (System): system whose name will be changed
+            new_name (str): new name for the system
+        """
+
+        if new_name in self.systems:
+            raise KeyError("System names must be unique")
+
+        self.systems[new_name] = self.systems.pop(system.name)
+        self.systems[new_name].name = new_name
+
+    def check_available_electrograms(self):
+        """Check which electrogram type(s) are present in the active system.
+
+        Returns:
+            has_reference (bool): If True, the active system has reference electrograms
+            has_bipolar (bool): If True, the active system has bipolar electrograms
+            has_unipolar (bool): If True, the active system has unipolar electrograms
+        """
+
+        electric = self.active_system.case.electric
+
+        has_reference = True if electric.reference_egm.egm is not None else False
+        has_bipolar = True if electric.bipolar_egm.egm is not None else False
+        has_unipolar = True if electric.unipolar_egm.egm is not None else False
+
+        return has_reference, has_bipolar, has_unipolar
+
+    def electrogram_times(self):
+        """Generate the electrogram times based on the number of values in each electrogram.
+        
+        Warning
+        -------
+        This assumes that the number of values in each type of electrogram (reference,
+        bipolar, unipolar) is the same.
+        """
+
+        electric = self.active_system.case.electric
+        egm_times = None
+
+        try:
+            return np.arange(electric.reference_egm.egm.shape[1])
+        except AttributeError as e:
+            pass
+
+        try:
+            return np.arange(electric.biipolar_egm.egm.shape[1])
+        except AttributeError as e:
+            pass
+
+        try:
+            return np.arange(electric.unipolar_egm.egm.shape[1])
+        except AttributeError as e:
+            pass
+
+        return egm_times
