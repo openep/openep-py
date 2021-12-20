@@ -29,12 +29,17 @@ from PyQt5.QtCore import Qt
 import numpy as np
 
 import openep
+
 import openep.view.custom_widgets
 import openep.view.canvases
-import openep.view.images
+import openep.view.plotters_ui
 import openep.view.system_manager_ui
+import openep.view.system_ui
+
+import openep.view.plotters
 import openep.view.system_manager
 
+import openep.view.images
 
 class OpenEPGUI(QtWidgets.QMainWindow):
 
@@ -484,13 +489,9 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         )
 
     def add_view(self, system):
-        """
-        Create a new CustomDockWidget for the given system (i.e. open a new 3D viewer).
+        """Create a new CustomDockWidget for the given system (i.e. open a new 3D viewer)."""
 
-        By default, the bipolar voltage is drawn.
-        """
-
-        if not system.data.electric.unipolar_egm.voltage.size:
+        if system.data.electric.unipolar_egm.voltage is None:
             error = QtWidgets.QMessageBox()
             error.setIcon(QtWidgets.QMessageBox.Critical)
             error.setText("No Data Error")
@@ -502,7 +503,22 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             error.exec_()
             return
 
-        dock, plotter, mesh = system.create_dock()
+        if system.scalar_fields is None:
+            system._determine_available_fields()
+
+        plotter = openep.view.plotters.create_plotter()
+        plotter_layout = openep.view.plotters_ui.create_plotter_layout(plotter=plotter)
+        dock = openep.view.system_ui.create_system_dock(plotter=plotter)
+
+        # Add a Field menu to the menubar. This is used for selecting the scalar field to project onto the surface.
+        dock, plotter = openep.view.system_ui.add_field_menu(
+            dock=dock,
+            plotter=plotter,
+            system_name=system.name,
+            scalar_fields=system.scalar_fields,
+        )
+        
+        mesh = system.create_mesh()
         add_mesh_kws = system._create_default_kws()
         free_boundaries = openep.mesh.get_free_boundaries(mesh)
 
