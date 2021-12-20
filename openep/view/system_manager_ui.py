@@ -18,7 +18,7 @@
 
 
 """
-Functions for creating the system manager widget.
+Class for creating the system manager widget.
 """
 from PyQt5 import QtGui, QtWidgets
 from .custom_widgets import CustomDockWidget
