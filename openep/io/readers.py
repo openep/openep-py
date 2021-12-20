@@ -62,7 +62,6 @@ from ..data_structures.surface import extract_surface_data, empty_fields
 from ..data_structures.electric import extract_electric_data, empty_electric
 from ..data_structures.ablation import extract_ablation_data, empty_ablation
 from ..data_structures.case import Case
-from ..data_structures.openCARP import CARPData
 
 __all__ = ["load_openep_mat", "load_mat", "load_opencarp"]
 
