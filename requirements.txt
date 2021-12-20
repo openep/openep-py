@@ -11,3 +11,4 @@ trimesh
 shapely
 PyQt5
 pyvistaqt
+typing_extensions
