@@ -21,28 +21,47 @@
 Functions for creating the UI for BackgroundPlotters.
 """      
         
-from PyQt5 import  QtWidgets, QtGui
+from PyQt5 import  QtCore, QtWidgets, QtGui
+
+import openep.view.static
 
 
-def create_plotter_layout(plotter):
+def create_plotter_layout(plotter, add_link_views_button=True):
     """Create the layout of a BackgroundPlotter.
+
+    Add widgets to the plotter for:
+        * setting the colourbar limits (with QLineEdits)
+        * setting the opacity of the mesh (with QDoubleSpinBox)
+        * linking the view of a secondary plotter with that of the primary plotter (with QPushButton)
 
     Args:
         plotter [BackgrounPlotter]: Plotter for which the layout will be created
 
     Returns:
+        plotter [BackgrounPlotter]: Plotter for which the layout has been created. 
         plotter_layout [QtWidgets.QVBoxLayout]: Layout for the plotter
     """
 
     # TODO: We're currently using line edits to set colourbar limits - look into RangeSlider
     plotter_layout = QtWidgets.QVBoxLayout(plotter)
-    plotter.colour_bar_layout, plotter.lower_limit, plotter.upper_limit = _create_colourbar_layout()
-    plotter.opacity_layout, plotter.opacity = _create_opacity_layout()
-    control_layout = _create_control_layout(plotter=plotter)
+
+    colour_bar_layout, lower_limit, upper_limit = _create_colourbar_layout()
+    opacity_layout, opacity = _create_opacity_layout()
+    control_layout = _create_control_layout(
+        colour_bar_layout=colour_bar_layout,
+        opacity_layout=opacity_layout,
+    )
     plotter_layout.addLayout(control_layout)
+
+    if add_link_views_button:
+        link_views_layout, link_view_with_primary = _create_link_views_layout()
+        plotter_layout.addLayout(link_views_layout)
+    else:
+        link_view_with_primary = None
+
     plotter_layout.addStretch()
 
-    return plotter_layout
+    return plotter_layout, lower_limit, upper_limit, opacity, link_view_with_primary
 
 def _create_colourbar_layout():
     """Create a layout with widgets for setting the limits of the colourbar for a BackgroundPlotter."""
@@ -78,7 +97,7 @@ def _create_opacity_layout():
     """Create a layout with widgets for setting the opacity of the mesh belonging to a BackgroundPlotter."""
 
     opacity_layout = QtWidgets.QHBoxLayout()
-    opacity_layout.addStretch
+    opacity_layout.addStretch()
 
     opacity_text = QtWidgets.QLabel("Opacity:")
     opacity_text.setMinimumWidth(50)
@@ -98,11 +117,30 @@ def _create_opacity_layout():
 
     return opacity_layout, opacity_selector
 
-def _create_control_layout(plotter):
-    """Add the colourbar and opacity layouts to a single horizontal layout"""
+def _create_control_layout(colour_bar_layout, opacity_layout):
+    """Add colourbar and opacity layouts to a single horizontal layout for controlling mesh properties"""
 
     control_layout = QtWidgets.QHBoxLayout()
-    control_layout.addLayout(plotter.colour_bar_layout)
-    control_layout.addLayout(plotter.opacity_layout)
+    control_layout.addLayout(colour_bar_layout)
+    control_layout.addLayout(opacity_layout)
 
     return control_layout
+
+def _create_link_views_layout():
+    """Add a button to link/unlink the view of a secondary plotter with that of the primary plotter."""
+
+    link_views_layout = QtWidgets.QHBoxLayout()
+
+    link_views_button = QtWidgets.QPushButton()
+    link_views_button.setCheckable(True)
+    link_views_button.setChecked(True)
+    link_views_button.setFixedSize(30, 30)
+
+    link_views_button.setIconSize(QtCore.QSize(30, 30))
+    link_views_button.setIcon(QtGui.QIcon(openep.view.static.LINK_ICON))
+    link_views_button.setToolTip("3D viewer is linked with the primary 3D viewer")
+
+    link_views_layout.addWidget(link_views_button)
+    link_views_layout.addStretch()
+
+    return link_views_layout, link_views_button
