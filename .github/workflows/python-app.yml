@@ -48,7 +48,7 @@ jobs:
         pytest --cov --cov-config=.coveragerc --cov-report=xml -vv
     # Using Codecov's action, upload the coverage report for the triggering commit/PR
     - name: Upload coverage
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v2
       with:
         file: ./coverage.xml
   
