@@ -5,10 +5,10 @@ numpy
 scipy
 scikit-learn
 matplotlib
-pyvista==0.32
+pyvista>=0.33
 pymeshfix
 trimesh
 shapely
 PyQt5
-pyvistaqt
+pyvistaqt>=0.6
 typing_extensions
