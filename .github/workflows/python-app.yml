@@ -51,6 +51,8 @@ jobs:
       uses: codecov/codecov-action@v2
       with:
         file: ./coverage.xml
+        fail_ci_if_error: true
+        verbose: true
   
   build_docs:
     if: "github.repository == 'openep/openep-py'"
