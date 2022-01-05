@@ -39,7 +39,7 @@ import openep.view.system_ui
 import openep.view.plotters
 import openep.view.system_manager
 
-import openep.view.images
+import openep.view.static
 
 class OpenEPGUI(QtWidgets.QMainWindow):
 
@@ -475,7 +475,16 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             return
 
         plotter = openep.view.plotters.create_plotter()
-        plotter_layout = openep.view.plotters_ui.create_plotter_layout(plotter=plotter)
+
+        index = len(system.plotters)
+        plotter_is_secondary_view = index > 0
+        _, *plotter_widgets = openep.view.plotters_ui.create_plotter_layout(
+            plotter=plotter,
+            add_link_views_button=plotter_is_secondary_view,
+        )
+        plotter.lower_limit, plotter.upper_limit, plotter.opacity, plotter.link_view_with_primary = \
+            plotter_widgets
+
         dock = openep.view.system_ui.create_system_dock(plotter=plotter)
 
         # Add a Field menu to the menubar. This is used for selecting the scalar field to project onto the surface.
@@ -490,14 +499,14 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         add_mesh_kws = system._create_default_kws()
         free_boundaries = openep.mesh.get_free_boundaries(mesh)
 
-        index = len(system.plotters)
         plotter.lower_limit.returnPressed.connect(lambda: self.update_colourbar_limits(system, index=index))
         plotter.upper_limit.returnPressed.connect(lambda: self.update_colourbar_limits(system, index=index))
         plotter.opacity.valueChanged.connect(lambda: self.update_opacity(system, index=index))
 
         # Link views across plotters
-        if index > 0:
+        if plotter_is_secondary_view:
             system.plotters[0].link_views_across_plotters(plotter)
+            plotter.link_view_with_primary.toggled.connect(lambda: self.link_views_across_plotters(system, index=index))
 
         system.docks.append(dock)
         system.plotters.append(plotter)
@@ -602,6 +611,31 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         actor = plotter.renderer._actors['mesh']
         actor_properties = actor.GetProperty()
         actor_properties.SetOpacity(plotter.opacity.value())
+
+    def link_views_across_plotters(self, system, index):
+        """Link or unlink the views of two plotters.
+
+        Args:
+            system (System): system containing the plotter whose view will be
+                linked/unliked with the primary plotter of the system
+            index (int): index of plotter to link/unlink the view of
+        """
+
+        plotter = system.plotters[index]
+
+        if plotter.link_view_with_primary.isChecked():
+
+            primary_plotter = system.plotters[0]
+            primary_plotter.link_views_across_plotters(other_plotter=plotter)
+           
+            plotter.link_view_with_primary.setToolTip("3D viewer is linked with the primary 3D viewer")
+            plotter.link_view_with_primary.setIcon(QtGui.QIcon(openep.view.static.LINK_ICON))
+
+            return
+
+        plotter.unlink_views()
+        plotter.link_view_with_primary.setToolTip("3D viewer is independent of the primary 3D viewer")
+        plotter.link_view_with_primary.setIcon(QtGui.QIcon(openep.view.static.UNLINK_ICON))
 
     def change_active_system(self, system):
         """
@@ -1039,7 +1073,7 @@ def main():
 
     # Create an instance of Qapplication
     app = QtWidgets.QApplication(sys.argv)
-    app.setWindowIcon(QtGui.QIcon(openep.view.images.LOGO))
+    app.setWindowIcon(QtGui.QIcon(openep.view.static.LOGO))
 
     # Create an instance of GUI
     window = OpenEPGUI()
