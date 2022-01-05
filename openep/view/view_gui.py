@@ -633,7 +633,11 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
             return
 
+        # TODO: submit a PR to pyvist to add a 'keep_camera_position' argument to 'plotter.unlink_views'
+        original_camera_position = plotter.camera_position.to_list()
         plotter.unlink_views()
+        plotter.camera_position = original_camera_position
+
         plotter.link_view_with_primary.setToolTip("3D viewer is independent of the primary 3D viewer")
         plotter.link_view_with_primary.setIcon(QtGui.QIcon(openep.view.static.UNLINK_ICON))
 
