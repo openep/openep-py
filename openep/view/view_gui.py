@@ -495,6 +495,13 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             scalar_fields=system.scalar_fields,
         )
 
+        # Add a Show/Hide menu to the menubar. This is used for showing/hiding the surface mesh, mapping points,
+        # and surface-projected mapping points
+        dock, plotter = openep.view.system_ui.add_show_menu(
+            dock=dock,
+            plotter=plotter,
+        )
+
         mesh = system.create_mesh()
         add_mesh_kws = system._create_default_kws()
         free_boundaries = openep.mesh.get_free_boundaries(mesh)
@@ -562,7 +569,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         # Doing add_mesh and setting a title to the colour bar causes pyvista to add
         # the data to the point_data array with the name of the title, and then sets this
-        # new point_data array as the active scalars
+        # new point_data array as the active scalars.
         mesh.set_active_scalars(active_scalars_name)
 
         # If this is the first 3d viewer for the first system loaded, we need to update the egms etc.
