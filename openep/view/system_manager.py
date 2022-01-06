@@ -145,14 +145,25 @@ class System:
         return mesh
 
     def _create_default_kws(self):
-        """Create a dictionary of keyword arguments to be passed to openep.draw.draw_map"""
+        """Create a dictionary of keyword arguments to be passed to openep.draw.draw_map and plotter.add_points"""
 
-        return {
+        add_mesh_kws = {
             "clim": [0, 5],
+            "name": "Surface",
+            "opacity": 1,
             "scalar_bar_args": {
                 "title": "Voltage (mV)",
             }
         }
+
+        add_points_kws = {
+            "render_points_as_spheres": True,
+            "point_size": 10,
+            "opacity": 1,
+            "show_scalar_bar": False,
+        }
+
+        return add_mesh_kws, add_points_kws
 
 class SystemManager:
     """Keep track of all systems loaded into the GUI"""
