@@ -73,6 +73,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         self.setMinimumSize(800, 600)
         self.setWindowTitle("OpenEP: The open-source solution for electrophysiology data analysis")
+        self.setToolTipDuration(-1)
+        self.setAttribute(QtCore.Qt.WA_MacOpaqueSizeGrip, True)
 
     def _create_system_manager_ui(self):
         """Create a dockable widget that for managing systems loaded into the GUI"""        
