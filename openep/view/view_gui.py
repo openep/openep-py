@@ -571,7 +571,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         # Doing add_mesh and setting a title to the colour bar causes pyvista to add
         # the data to the point_data array with the name of the title, and then sets this
-        # new point_data array as the active scalars.
+        # new point_data array as the active scalars. We need to undo this unwanted behaviour.
         mesh.set_active_scalars(active_scalars_name)
 
         # If this is the first 3d viewer for the first system loaded, we need to update the egms etc.
