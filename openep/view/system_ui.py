@@ -66,6 +66,11 @@ def add_field_menu(dock, plotter, system_name, scalar_fields):
             menu are selected.
         system_name (str): Name of the system. Will be used in setting the title of the dock widget.
         scalar_fields (dict): Names and values of the scalar fields to be added as options in the Field menu.
+
+    Returns:
+        dock (CustomDockWidget): Dockwidget with a 'Field' menu added to the menubar.
+        plotter (BackgroundPlotter): Plotter with actions for selecting the scalar field stored in a dictionary
+            as the attribute `plotter.scalar_field_actions`.
     """
 
     field_menu = dock.main.menubar.addMenu("Field")
@@ -81,5 +86,33 @@ def add_field_menu(dock, plotter, system_name, scalar_fields):
         field_menu.addAction(action)
         field_group.addAction(action)
         plotter.scalar_field_actions[field_name] = action
+
+    return dock, plotter
+
+def add_show_menu(dock, plotter):
+    """Add a Show menu to the menubar. This is used for showing/hiding the mesh, mapping points, surface-projected mapping points.
+
+    Args:
+        dock (CustomDockWidget): the dockwidget to which the 'Show' menu will be added to the menubar
+        plotter (BackgroundPlotter): The plotter which will have actions added for when specific values from the Show
+            menu are selected.
+
+    Returns:
+        dock (CustomDockWidget): Dockwidget with a 'Show' menu added to the menubar.
+        plotter (BackgroundPlotter): Plotter with actions for showing/hiding actors stored in a dictionary
+            as the attribute `plotter.show_actions`.
+    """
+
+    show_menu = dock.main.menubar.addMenu("Show/Hide")
+
+    plotter.show_actions = {}
+    action_names = ["Surface", "Mapping points", "Surface-projected mapping points"]
+    for action_name in action_names:
+
+        action = QtWidgets.QAction(action_name, dock.main, checkable=True)
+        show = True if action_name=="Surface" else False  # by default only display the mesh
+        action.setChecked(show)
+        show_menu.addAction(action)
+        plotter.show_actions[action_name] = action
 
     return dock, plotter
