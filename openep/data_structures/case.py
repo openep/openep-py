@@ -255,11 +255,16 @@ class Case:
 
         self.electric.unipolar_egm = unipolar_egm
 
+        # TODO: This assumes that all mapping points are on the surface, and that there is
+        #       one electrogram for each point on the surface.
+        # TODO: Calculate the normals of the surface at these points.
+        self.electric.surface.nearest_point = self.points.copy()
+
         if add_bipolar:
 
             bipolar_egm = Electrogram(
                 egm=bipolar,
-                points=self.points,
+                points=self.points.copy(),
                 voltage=np.ptp(bipolar, axis=1),
                 names=names,
             )
