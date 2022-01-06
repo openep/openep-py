@@ -115,6 +115,11 @@ class Case:
     ablation: Optional[Ablation] = None
     notes: Optional[List] = None
 
+    def __attrs_post_init__(self):
+
+        tmp_mesh = self.create_mesh(recenter=False)
+        self._mesh_center = np.asarray(tmp_mesh.center)
+
     def __repr__(self):
         return f"{self.name}( nodes: {self.points.shape} indices: {self.indices.shape} {self.fields} )"
 

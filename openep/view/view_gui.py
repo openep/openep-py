@@ -505,7 +505,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         )
 
         mesh = system.create_mesh()
-        add_mesh_kws = system._create_default_kws()
+        add_mesh_kws, add_points_kws = system._create_default_kws()
         free_boundaries = openep.mesh.get_free_boundaries(mesh)
 
         plotter.lower_limit.returnPressed.connect(lambda: self.update_colourbar_limits(system, index=index))
@@ -574,6 +574,32 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         # new point_data array as the active scalars. We need to undo this unwanted behaviour.
         mesh.set_active_scalars(active_scalars_name)
 
+        self.draw_points(
+            points=system.case.electric.bipolar_egm.points - system.case._mesh_center,
+            plotter=plotter,
+            actor_name="Mapping points",
+            add_points_kws=add_points_kws,
+        )
+        plotter.renderer._actors['Mapping points'].SetVisibility(False)
+
+        self.draw_points(
+            points=system.case.electric.surface.nearest_point - system.case._mesh_center,
+            plotter=plotter,
+            actor_name="Surface-projected mapping points",
+            add_points_kws=add_points_kws,
+        )
+        plotter.renderer._actors['Surface-projected mapping points'].SetVisibility(False)
+
+        plotter.show_actions['Surface'].triggered.connect(
+            lambda: self.update_actor_visibility(plotter, actor_name="Surface")
+        )
+        plotter.show_actions['Mapping points'].triggered.connect(
+            lambda: self.update_actor_visibility(plotter, actor_name="Mapping points")
+        )
+        plotter.show_actions['Surface-projected mapping points'].triggered.connect(
+            lambda: self.update_actor_visibility(plotter, actor_name="Surface-projected mapping points")
+        )
+
         # If this is the first 3d viewer for the first system loaded, we need to update the egms etc.
         if (system.name == self.system_manager.active_system.name) and (len(system.plotters) == 1):
             self.change_active_system(system)
@@ -601,7 +627,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         upper_limit = float(system.plotters[index].upper_limit.text())
         system.add_mesh_kws[index]["clim"] = [lower_limit, upper_limit]
 
-        actor = plotter.renderer._actors['mesh']
+        actor = plotter.renderer._actors['Surface']
         actor_mapper = actor.GetMapper()
         actor_mapper.SetScalarRange((lower_limit, upper_limit))
 
@@ -617,9 +643,21 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         plotter = system.plotters[index]
         system.add_mesh_kws[index]['opacity'] = plotter.opacity.value()
 
-        actor = plotter.renderer._actors['mesh']
-        actor_properties = actor.GetProperty()
-        actor_properties.SetOpacity(plotter.opacity.value())
+        for actor_name, actor in plotter.renderer._actors.items():
+            if actor_name=="Surface" or actor_name.startswith('free_boundary_'):
+                actor_properties = actor.GetProperty()
+                actor_properties.SetOpacity(plotter.opacity.value())
+
+    def update_actor_visibility(self, plotter, actor_name):
+        """Make an actor (e.g. a mesh or point cloud) visible or invisible."""
+
+        show = True if plotter.show_actions[actor_name].isChecked() else False
+        plotter.renderer._actors[actor_name].SetVisibility(show)
+
+        if actor_name == "Surface":
+            for actor_name, actor in plotter.renderer._actors.items():
+                if actor_name.startswith('free_boundary_'):
+                    actor.SetVisibility(show)
 
     def link_views_across_plotters(self, system, index):
         """Link or unlink the views of two plotters.
@@ -796,6 +834,13 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         Project scalar values onto the surface of the mesh.
 
         Also draw the free boundaries (anatomical structures) as black lines.
+
+        Args:
+            mesh (pyvista.PolyData): mesh to be added to the plotter
+            plotter (BackgroundPlotter): plotter to which the mesh will be added
+            data (np.ndarray): scalar values that will be used to colour the triangles of the mesh
+            add_mesh_kws (dict): keyword arguments to pass to `plotter.add_mesh`
+            free_boundaries (FreeBoundaries): the free boundaries of the mesh to add to the plotter
         """
 
         plotter = openep.draw.draw_map(
@@ -813,6 +858,21 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                 width=5,
                 plotter=plotter,
             )
+
+    def draw_points(self, points, plotter, actor_name, add_points_kws):
+        """Render mapping points as 3D spheres.
+
+        Args:
+            points (np.ndarray): 3D coordinates of points to add
+            plotter (BackgroundPlotter): plotter to which the points will be added 
+            add_points_kws (dict): keyword arguments to pass to `plotter.add_points`
+        """
+
+        plotter.add_points(
+            points,
+            name=actor_name,
+            **add_points_kws,
+        )
 
     def check_available_electrograms(self):
         """Update the electrom types that can be plotted."""
