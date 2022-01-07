@@ -154,7 +154,8 @@ class Case:
 
         if recenter:
             mesh.translate(
-                -np.asarray(mesh.center)
+                -np.asarray(mesh.center),
+                inplace=True,
             )  # recenter mesh to origin, helps with lighting in default scene
 
         return mesh
