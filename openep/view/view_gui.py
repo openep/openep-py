@@ -27,7 +27,6 @@ import re
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 import numpy as np
-import pyvista
 
 import openep
 
@@ -41,6 +40,7 @@ import openep.view.plotters
 import openep.view.system_manager
 
 import openep.view.static
+
 
 class OpenEPGUI(QtWidgets.QMainWindow):
 
@@ -78,7 +78,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.setAttribute(QtCore.Qt.WA_MacOpaqueSizeGrip, True)
 
     def _create_system_manager_ui(self):
-        """Create a dockable widget that for managing systems loaded into the GUI"""        
+        """Create a dockable widget that for managing systems loaded into the GUI"""
 
         self.system_manager_ui = openep.view.system_manager_ui.SystemManagetDockWidget(
             title="Systems"
@@ -336,7 +336,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         # We need to dynamically add option for loading data to the main menubar.
         # But we shouldn't an option to create 3d viewer yet because we have no scalar fields at the minute.
-        # Instead, this is done in self._add_data_to_openCARP
+        # Instead, this is done in self._add_data_to_openCARP
         add_data_action = self.system_manager_ui.create_add_data_action(
             system_basename=system.basename,
             data_type="Unipolar electrograms",
@@ -361,7 +361,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
             filename = dialogue.selectedFiles()[0]
 
-            if data_type=="unipolar_egm":
+            if data_type == "unipolar_egm":
                 unipolar = np.loadtxt(filename)
                 system.case.add_unipolar_electrograms(
                     unipolar=unipolar,
@@ -370,7 +370,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                 )
 
             system._determine_available_fields()  # ensure we can access the loaded data
-        
+
             if len(system.plotters) == 0:
 
                 # We need to dynamically add an option for creating 3D viewers to the main menubar
@@ -442,11 +442,11 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         new_name = system.name_widget.text()
 
-        try :
+        try:
             self.system_manager.update_system_name(system=system, new_name=new_name)
 
-        except KeyError as e:
-       
+        except KeyError:
+
             system.name_widget.setText(system.name)
 
             error = QtWidgets.QMessageBox()
@@ -459,7 +459,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             error.exec_()
 
         else:
-            for dock, mesh  in zip(system.docks, system.meshes):
+            for dock, mesh in zip(system.docks, system.meshes):
                 dock.setWindowTitle(f"{system.name}: {mesh.active_scalars_info.name}")
 
     def add_view(self, system):
@@ -529,8 +529,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         system.free_boundaries.append(free_boundaries)
 
-        # We can't put this into a for loop.
-        # For some reason, when iterating over the items in plotter.scalar_field_actions,
+        # We can't put this into a for loop.
+        # For some reason, when iterating over the items in plotter.scalar_field_actions
         # all actions are passed the key in the iteration for the scalars argument
         # TODO: Don't distinguish between Clinical and non-clinical data. Use clinical by default. If
         #       values are interpolated from mapping points onto the surface, then overwrite the
@@ -586,7 +586,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             add_points_kws=add_points_kws,
         )
         plotter.renderer._actors['Mapping points'].SetVisibility(False)
-        
+
         self.draw_nearest_points_discs(
             mesh=projected_discs,
             plotter=plotter,
@@ -648,7 +648,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         system.add_mesh_kws[index]['opacity'] = plotter.opacity.value()
 
         for actor_name, actor in plotter.renderer._actors.items():
-            if actor_name=="Surface" or actor_name.startswith('free_boundary_'):
+            if actor_name == "Surface" or actor_name.startswith('free_boundary_'):
                 actor_properties = actor.GetProperty()
                 actor_properties.SetOpacity(plotter.opacity.value())
 
@@ -678,7 +678,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
             primary_plotter = system.plotters[0]
             primary_plotter.link_views_across_plotters(other_plotter=plotter)
-           
+
             plotter.link_view_with_primary.setToolTip("3D viewer is linked with the primary 3D viewer")
             plotter.link_view_with_primary.setIcon(QtGui.QIcon(openep.view.static.LINK_ICON))
 

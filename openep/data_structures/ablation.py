@@ -133,4 +133,3 @@ def empty_ablation():
     )
 
     return ablation
-

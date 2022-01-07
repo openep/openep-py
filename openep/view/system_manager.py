@@ -20,10 +20,8 @@
 """
 Class and functions for managing OpenEP and openCARP systems loaded into the GUI.
 """
-from attr import attrs, has
+from attr import attrs
 
-from PyQt5 import QtGui, QtWidgets
-from PyQt5.QtCore import Qt
 import numpy as np
 import pyvista
 
@@ -113,7 +111,7 @@ class System:
         ]
 
         for field_name, field in zip(clinical_field_names, clinical_fields):
-            
+
             if np.isnan(field).all():
                 continue
 
@@ -213,6 +211,7 @@ class System:
 
         return add_mesh_kws, add_points_kws, add_discs_kws
 
+
 class SystemManager:
     """Keep track of all systems loaded into the GUI"""
 
@@ -297,7 +296,7 @@ class SystemManager:
 
     def electrogram_times(self):
         """Generate the electrogram times based on the number of values in each electrogram.
-        
+
         Warning
         -------
         This assumes that the number of values in each type of electrogram (reference,
@@ -309,17 +308,17 @@ class SystemManager:
 
         try:
             return np.arange(electric.reference_egm.egm.shape[1])
-        except AttributeError as e:
+        except AttributeError:
             pass
 
         try:
             return np.arange(electric.biipolar_egm.egm.shape[1])
-        except AttributeError as e:
+        except AttributeError:
             pass
 
         try:
             return np.arange(electric.unipolar_egm.egm.shape[1])
-        except AttributeError as e:
+        except AttributeError:
             pass
 
         return egm_times
