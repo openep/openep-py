@@ -23,9 +23,10 @@ Class for creating the system manager widget.
 from PyQt5 import QtGui, QtWidgets
 from .custom_widgets import CustomDockWidget
 
+
 class SystemManagetDockWidget(CustomDockWidget):
     """A dockable widget that for managing systems loaded into the GUI"""
-    
+
     def __init__(self, title: str):
 
         super().__init__(title)

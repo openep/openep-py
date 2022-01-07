@@ -207,7 +207,7 @@ class Case:
         unipolar,
         add_bipolar=True,
         add_annotations=True,
-        ):
+    ):
         """Add unipolar electrograms into the Case object.
 
         The unipolar electrograms and associated data (voltages, names, points)
@@ -272,7 +272,7 @@ class Case:
             self.electric.bipolar_egm = bipolar_egm
 
         if add_annotations:
-                        
+
             woi = np.zeros((len(names), 2), dtype=int)
             woi[:, 1] = unipolar.shape[1]
 

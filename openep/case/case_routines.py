@@ -212,7 +212,7 @@ def get_electrograms_at_points(
         names = case.electric.internal_names
     else:
         names = np.asarray([f"P{index}" for index in range(len(electrograms))], dtype=str)
-    
+
     if case.electric.annotations.local_activation_time is not None:
         local_activation_time = case.electric.annotations.local_activation_time
     else:

@@ -86,6 +86,7 @@ def extract_surface_data(surface_data):
 
     return points, indices, fields
 
+
 def empty_fields():
     """Create an empty Fields object with empty numpy arrays.
 

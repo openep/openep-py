@@ -101,7 +101,7 @@ def load_openep_mat(filename, name=None):
             extension.)
         name (str): name to give this dataset. The default is `None`, in which case
             the filename is used at the name.
-    
+
     Returns:
         case (Case): an OpenEP Case object that contains the surface, electric and
             ablation data.

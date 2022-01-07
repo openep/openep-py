@@ -19,9 +19,9 @@
 
 """
 Functions for creating the UI for BackgroundPlotters.
-"""      
-        
-from PyQt5 import  QtCore, QtWidgets, QtGui
+"""
+
+from PyQt5 import QtCore, QtWidgets, QtGui
 
 import openep.view.static
 
@@ -38,7 +38,7 @@ def create_plotter_layout(plotter, add_link_views_button=True):
         plotter [BackgrounPlotter]: Plotter for which the layout will be created
 
     Returns:
-        plotter [BackgrounPlotter]: Plotter for which the layout has been created. 
+        plotter [BackgrounPlotter]: Plotter for which the layout has been created.
         plotter_layout [QtWidgets.QVBoxLayout]: Layout for the plotter
     """
 
@@ -62,6 +62,7 @@ def create_plotter_layout(plotter, add_link_views_button=True):
     plotter_layout.addStretch()
 
     return plotter_layout, lower_limit, upper_limit, opacity, link_view_with_primary
+
 
 def _create_colourbar_layout():
     """Create a layout with widgets for setting the limits of the colourbar for a BackgroundPlotter."""
@@ -117,6 +118,7 @@ def _create_opacity_layout():
 
     return opacity_layout, opacity_selector
 
+
 def _create_control_layout(colour_bar_layout, opacity_layout):
     """Add colourbar and opacity layouts to a single horizontal layout for controlling mesh properties"""
 
@@ -125,6 +127,7 @@ def _create_control_layout(colour_bar_layout, opacity_layout):
     control_layout.addLayout(opacity_layout)
 
     return control_layout
+
 
 def _create_link_views_layout():
     """Add a button to link/unlink the view of a secondary plotter with that of the primary plotter."""
