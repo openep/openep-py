@@ -27,6 +27,7 @@ import re
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 import numpy as np
+import pyvista
 
 import openep
 
@@ -505,7 +506,9 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         )
 
         mesh = system.create_mesh()
-        add_mesh_kws, add_points_kws = system._create_default_kws()
+        mapping_points = system.create_mapping_points_mesh()
+        projected_discs = system.create_surface_discs_mesh()
+        add_mesh_kws, add_points_kws, add_discs_kws = system._create_default_kws()
         free_boundaries = openep.mesh.get_free_boundaries(mesh)
 
         plotter.lower_limit.returnPressed.connect(lambda: self.update_colourbar_limits(system, index=index))
@@ -520,7 +523,10 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         system.docks.append(dock)
         system.plotters.append(plotter)
         system.meshes.append(mesh)
+        system.mapping_points_meshes.append(mapping_points)
+        system.surface_projected_discs_meshes.append(projected_discs)
         system.add_mesh_kws.append(add_mesh_kws)
+
         system.free_boundaries.append(free_boundaries)
 
         # We can't put this into a for loop.
@@ -574,19 +580,17 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         # new point_data array as the active scalars. We need to undo this unwanted behaviour.
         mesh.set_active_scalars(active_scalars_name)
 
-        self.draw_points(
-            points=system.case.electric.bipolar_egm.points - system.case._mesh_center,
+        self.draw_mapping_points(
+            mesh=mapping_points,
             plotter=plotter,
-            actor_name="Mapping points",
             add_points_kws=add_points_kws,
         )
         plotter.renderer._actors['Mapping points'].SetVisibility(False)
-
-        self.draw_points(
-            points=system.case.electric.surface.nearest_point - system.case._mesh_center,
+        
+        self.draw_nearest_points_discs(
+            mesh=projected_discs,
             plotter=plotter,
-            actor_name="Surface-projected mapping points",
-            add_points_kws=add_points_kws,
+            add_discs_kws=add_discs_kws,
         )
         plotter.renderer._actors['Surface-projected mapping points'].SetVisibility(False)
 
@@ -859,20 +863,27 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                 plotter=plotter,
             )
 
-    def draw_points(self, points, plotter, actor_name, add_points_kws):
+    def draw_mapping_points(self, mesh, plotter, add_points_kws):
         """Render mapping points as 3D spheres.
 
         Args:
-            points (np.ndarray): 3D coordinates of points to add
-            plotter (BackgroundPlotter): plotter to which the points will be added 
-            add_points_kws (dict): keyword arguments to pass to `plotter.add_points`
+            mesh (pyvista.PolyData): mesh to be added to the plotter
+            plotter (BackgroundPlotter): plotter to which the mesh will be added
+            add_points_kws (dict): keyword arguments to pass to `plotter.add_mesh`
         """
 
-        plotter.add_points(
-            points,
-            name=actor_name,
-            **add_points_kws,
-        )
+        plotter.add_mesh(mesh, **add_points_kws)
+
+    def draw_nearest_points_discs(self, mesh, plotter, add_discs_kws):
+        """Render the surface-projected mapping points as 2D discs.
+
+        Args:
+            mesh (pyvista.PolyData): mesh to be added to the plotter
+            plotter (BackgroundPlotter): plotter to which the mesh will be added
+            add_discs_kws (dict): keyword arguments to pass to `plotter.add_mesh`
+        """
+
+        plotter.add_mesh(mesh, **add_discs_kws)
 
     def check_available_electrograms(self):
         """Update the electrom types that can be plotted."""
