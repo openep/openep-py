@@ -25,6 +25,7 @@ from attr import attrs, has
 from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 import numpy as np
+import pyvista
 
 import openep
 import openep.view.custom_widgets
@@ -52,6 +53,8 @@ class System:
         self.docks = []
         self.plotters = []
         self.meshes = []
+        self.mapping_points_meshes = []
+        self.surface_projected_discs_meshes = []
         self.free_boundaries = []
         self.add_mesh_kws = []
         self.scalar_fields = None
@@ -144,8 +147,44 @@ class System:
 
         return mesh
 
+    def create_mapping_points_mesh(self):
+        """Create a mesh that contains the mapping points."""
+
+        mapping_points_centered = self.case.electric.bipolar_egm.points - self.case._mesh_center
+        mappint_points_mesh = pyvista.PolyData(mapping_points_centered)
+        point_geometry = pyvista.Sphere(theta_resolution=8, phi_resolution=8)
+        glyphed_mesh = mappint_points_mesh.glyph(scale=False, factor=1.5, geom=point_geometry)
+
+        return glyphed_mesh
+
+    def create_surface_discs_mesh(self):
+        """Create a mesh that contains the surface-projected mapping points"""
+
+        mapping_points_centered = self.case.electric.bipolar_egm.points - self.case._mesh_center
+        surface_points_centered = self.case.points - self.case._mesh_center
+
+        distance_to_surface = openep.case.case_routines.calculate_distance(
+            origin=mapping_points_centered,
+            destination=surface_points_centered
+        )
+        nearest_point_indices = np.argmin(distance_to_surface, axis=1)
+
+        projected_mapping_points = surface_points_centered[nearest_point_indices]
+        projected_mapping_points_mesh = pyvista.PolyData(projected_mapping_points)
+
+        # TODO: we're currently plotting these points as spheres. They should be discs instead, oriented
+        #       along the surface of the mesh.
+        disc_geometry = pyvista.Sphere(theta_resolution=8, phi_resolution=8)
+        glyphed_mesh = projected_mapping_points_mesh.glyph(
+            scale=False,
+            factor=1.5,
+            geom=disc_geometry,
+        )
+
+        return glyphed_mesh
+
     def _create_default_kws(self):
-        """Create a dictionary of keyword arguments to be passed to openep.draw.draw_map and plotter.add_points"""
+        """Create a dictionary of keyword arguments for plotting meshes, points, and surface-projected discs."""
 
         add_mesh_kws = {
             "clim": [0, 5],
@@ -157,13 +196,22 @@ class System:
         }
 
         add_points_kws = {
-            "render_points_as_spheres": True,
-            "point_size": 10,
+            "name": "Mapping points",
             "opacity": 1,
             "show_scalar_bar": False,
+            "smooth_shading": True,
+            "lighting": True,
         }
 
-        return add_mesh_kws, add_points_kws
+        add_discs_kws = {
+            "name": "Surface-projected mapping points",
+            "opacity": 1,
+            "show_scalar_bar": False,
+            "smooth_shading": True,
+            "lighting": True,
+        }
+
+        return add_mesh_kws, add_points_kws, add_discs_kws
 
 class SystemManager:
     """Keep track of all systems loaded into the GUI"""
