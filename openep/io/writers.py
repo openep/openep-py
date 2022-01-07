@@ -58,6 +58,7 @@ from openep.data_structures.case import Case
 
 __all__ = ["export_openCARP"]
 
+
 def export_openCARP(
     case: Case,
     prefix: str,

@@ -25,6 +25,7 @@ from PyQt5.QtCore import Qt
 from PyQt5 import QtGui, QtWidgets
 from .custom_widgets import CustomDockWidget
 
+
 def create_system_dock(plotter):
     """Create a new dockable widget that will contain a pyvista-qt plotter for rendering 3D maps.
 
@@ -56,6 +57,7 @@ def create_system_dock(plotter):
     dock.setAllowedAreas(Qt.AllDockWidgetAreas)
 
     return dock
+
 
 def add_field_menu(dock, plotter, system_name, scalar_fields):
     """Add a Field menu to the menubar. This is used for selecting the scalar field to project onto the surface.
@@ -89,6 +91,7 @@ def add_field_menu(dock, plotter, system_name, scalar_fields):
 
     return dock, plotter
 
+
 def add_show_menu(dock, plotter):
     """Add a Show menu to the menubar. This is used for showing/hiding the mesh, mapping points, surface-projected mapping points.
 
@@ -110,7 +113,7 @@ def add_show_menu(dock, plotter):
     for action_name in action_names:
 
         action = QtWidgets.QAction(action_name, dock.main, checkable=True)
-        show = True if action_name=="Surface" else False  # by default only display the mesh
+        show = True if action_name == "Surface" else False  # by default only display the mesh
         action.setChecked(show)
         show_menu.addAction(action)
         plotter.show_actions[action_name] = action
