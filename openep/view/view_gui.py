@@ -52,6 +52,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self._init_ui()
         self._create_system_manager_ui()
         self._create_egm_canvas_dock()
+        self._create_reannotate_canvas_dock()
         self._create_analysis_canvas_dock()
         self._add_dock_widgets()
         self._disable_dock_widgets()
@@ -155,6 +156,52 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         self.egm_dock.setWidget(egm_canvas_main)
 
+    def _create_reannotate_canvas_dock(self):
+        """
+        Create a dockable widget for reannotating electrograms with matplotlib.
+
+        The user can use a dropdown menu to select which electrogram to reannotate.
+        All electrical data for that point will be plotted - electrograms, activation
+        time etc.
+        """
+
+        self.reannotate_dock = openep.view.custom_widgets.CustomDockWidget("Reannotate")
+        self.reannotate_canvas, self.reannotate_figure, self.reannotate_axis = openep.view.canvases.create_canvas()
+        reannotate_layout = QtWidgets.QVBoxLayout(self.reannotate_canvas)
+
+        # Add widget for selecting which electrogram to reannotate from point indices
+        reannotate_selection_layout, self.reannotate_selection = openep.view.canvases.create_reannotate_selection_layout()
+        #self.egm_selection.returnPressed.connect(self.update_electrograms_from_text)
+        self.reannotate_selection.currentIndexChanged[int].connect(self.update_reannotate_viewer)
+
+        reannotate_layout.addLayout(reannotate_selection_layout)
+        reannotate_layout.addStretch()
+
+        # Create toolbar for saving, zooming etc.
+        toolbar = openep.view.canvases.add_toolbar(
+            canvas=self.reannotate_canvas,
+            parent=self.reannotate_dock,
+        )
+
+        # Create a placeholder widget to hold our toolbar and canvas.
+        canvas_widget = openep.view.canvases.create_canvas_widget(
+            canvas=self.reannotate_canvas,
+            toolbar=toolbar,
+        )
+
+        # Create a placeholder widget to hold our canvas, toolbar, and selection widgets
+        # We're using a QMainWindow so we can easily add a menubar
+        reannotate_canvas_main = QtWidgets.QMainWindow()
+        reannotate_canvas_main.setCentralWidget(canvas_widget)
+
+        # The dock is set to have bold font (so the title stands out)
+        # But all other widgets should have normal weighted font
+        main_font = QtGui.QFont()
+        main_font.setBold(False)
+        reannotate_canvas_main.setFont(main_font)
+
+        self.reannotate_dock.setWidget(reannotate_canvas_main)
+
     def _create_analysis_canvas_dock(self):
         """
         Create a dockable widget for other matplotlib plots.
@@ -197,17 +244,18 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     def _add_dock_widgets(self):
         """
         Add dockable widgets to the main window.
-
-        The two BackgroundPlotters are tabified, as are the two MPL canvases.
         """
-
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.egm_dock)
 
         self.addDockWidget(Qt.RightDockWidgetArea, self.analysis_dock)
         self.addDockWidget(Qt.RightDockWidgetArea, self.system_manager_ui)
-        self.tabifyDockWidget(self.analysis_dock, self.system_manager_ui)
 
-        for dock in [self.egm_dock, self.analysis_dock, self.system_manager_ui]:
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.egm_dock)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.reannotate_dock)
+        
+        self.tabifyDockWidget(self.analysis_dock, self.system_manager_ui)
+        self.tabifyDockWidget(self.egm_dock, self.reannotate_dock)
+
+        for dock in [self.analysis_dock, self.system_manager_ui, self.egm_dock, self.reannotate_dock]:
             dock.setAllowedAreas(Qt.AllDockWidgetAreas)
 
         self.setDockOptions(self.GroupedDragging | self.AllowTabbedDocks | self.AllowNestedDocks)
@@ -223,6 +271,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         self.egm_dock.setEnabled(False)
         self.analysis_dock.setEnabled(False)
+        self.reannotate_dock.setEnabled(False)
 
     def _load_openep_mat(self):
         """
@@ -720,6 +769,13 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             self.egm_slider.on_changed(self.update_woi_slider_limits)
             self.update_electrograms_from_stored()
 
+
+            self.reannotate_axis.axis('on')
+            self.reannotate_axis.set_xlim(self.egm_times[0]-100, self.egm_times[-1]+100)
+            self.reannotate_axis.set_ylim(-1, 13)
+
+            self.initialise_reannotate_selection()
+
         else:
             self.egm_axis.cla()
             self.egm_axis.axis('off')
@@ -891,18 +947,47 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         has_reference, has_bipolar, has_unipolar = self.system_manager.check_available_electrograms()
 
         self.has_electrograms = any([has_reference, has_bipolar, has_unipolar])
+
         self.egm_dock.setEnabled(self.has_electrograms)
         self.egm_reference_checkbox.setEnabled(has_reference)
         self.egm_bipolar_checkbox.setEnabled(has_bipolar)
         self.egm_unipolar_A_checkbox.setEnabled(has_unipolar)
         self.egm_unipolar_B_checkbox.setEnabled(has_unipolar)
 
+        self.reannotate_dock.setEnabled(self.has_electrograms)
+
         self._set_electrogram_times()
 
     def _set_electrogram_times(self):
-        """Generate the electrogram times based on the """
+        """Generate the electrogram times based on the number of points in the timeseries.
+
+        Warning
+        -------
+        This assumes a 1 ms period between each point in the timeseries.
+        """
 
         self.egm_times = self.system_manager.electrogram_times()
+
+    def initialise_reannotate_selection(self):
+        """Set the available electrogram for reannotating"""
+
+        self.reannotate_selection.clear()
+
+        electric = self.system_manager.active_system.case.electric
+        if electric.internal_names is not None:
+            names = electric.internal_names
+        else:
+            names = np.asarray([f"P{index}" for index in range(len(electric.bipolar_egm.egm))], dtype=str)
+
+        self.reannotate_selection.insertItems(0, names)        
+
+    def update_reannotate_viewer(self):
+        """Update the mapping point displayed in the electrogram viewer.
+        """
+
+        current_index = self.reannotate_selection.currentIndex()
+        # Plot electrical data for this point
+        # Display this point in the 3d viewer (e.g. render as large blue sphere)
 
     def update_electrograms_from_text(self):
         """
