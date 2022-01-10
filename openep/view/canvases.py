@@ -184,3 +184,18 @@ def add_woi_set_button(figure, axis):
     )
 
     return set_woi_button
+
+
+def create_reannotate_selection_layout():
+    """Create a layout with widgets for selecting which electrogram to reannotate."""
+
+    reannotate_selection_layout = QtWidgets.QHBoxLayout()
+
+    reannotate_selection = QtWidgets.QComboBox()
+    reannotate_selection.setMinimumWidth(220)
+    reannotate_selection.setStyleSheet('border: 1px solid #d8dcd6; background-color: white;')
+
+    reannotate_selection_layout.addWidget(reannotate_selection)
+    reannotate_selection_layout.addStretch()
+
+    return reannotate_selection_layout, reannotate_selection
