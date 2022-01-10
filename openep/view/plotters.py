@@ -41,6 +41,7 @@ def create_plotter():
         title=None,
         border=False,
         update_app_icon=False,
+        auto_update=100,
     )
     plotter.background_color = '#d8dcd6'
     plotter.setMinimumSize(QtCore.QSize(50, 50))
