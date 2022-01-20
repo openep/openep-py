@@ -21,7 +21,7 @@
 Functions for creating the UI for BackgroundPlotters.
 """
 
-from PyQt5 import QtCore, QtWidgets, QtGui
+from PySide6 import QtCore, QtWidgets, QtGui
 
 import openep.view.static
 
