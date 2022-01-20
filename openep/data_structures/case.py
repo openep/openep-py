@@ -150,7 +150,7 @@ class Case:
                 [faces, faces_inverted]
             )  # include each face twice for both surfaces
 
-        mesh = pyvista.PolyData(self.points, faces.ravel())
+        mesh = pyvista.PolyData(self.points.copy(), faces.ravel())
 
         if recenter:
             mesh.translate(
