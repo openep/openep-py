@@ -149,9 +149,11 @@ class System:
         """Create a mesh that contains the mapping points."""
 
         mapping_points_centered = self.case.electric.bipolar_egm.points - self.case._mesh_center
-        mappint_points_mesh = pyvista.PolyData(mapping_points_centered)
+        mapping_points_mesh = pyvista.PolyData(mapping_points_centered)
         point_geometry = pyvista.Sphere(theta_resolution=8, phi_resolution=8)
-        glyphed_mesh = mappint_points_mesh.glyph(scale=False, factor=1.5, geom=point_geometry)
+        
+        factor = 1.5 if self.type == "OpenEP" else 1200
+        glyphed_mesh = mapping_points_mesh.glyph(scale=False, factor=factor, geom=point_geometry)
 
         return glyphed_mesh
 
@@ -173,9 +175,10 @@ class System:
         # TODO: we're currently plotting these points as spheres. They should be discs instead, oriented
         #       along the surface of the mesh.
         disc_geometry = pyvista.Sphere(theta_resolution=8, phi_resolution=8)
+        factor = 1.5 if self.type == "OpenEP" else 1200
         glyphed_mesh = projected_mapping_points_mesh.glyph(
             scale=False,
-            factor=1.5,
+            factor=factor,
             geom=disc_geometry,
         )
 
