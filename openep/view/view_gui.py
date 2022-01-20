@@ -24,8 +24,8 @@ import sys
 import pathlib
 import re
 
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt
 import numpy as np
 
 import openep
@@ -423,7 +423,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             if len(system.plotters) == 0:
 
                 # We need to dynamically add an option for creating 3D viewers to the main menubar
-                add_view_for_system_action = QtWidgets.QAction(str(system.basename), self)
+                add_view_for_system_action = QtGui.QAction(str(system.basename), self)
                 add_view_for_system_action.triggered.connect(lambda: self.add_view(system))
                 self.system_manager_ui.main.add_view_menu.addAction(add_view_for_system_action)
 
@@ -1248,7 +1248,7 @@ def main():
     window = OpenEPGUI()
     window.showMaximized()
 
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 if __name__ == '__main__':
