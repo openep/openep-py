@@ -69,7 +69,7 @@ class CustomDockWidget(QtWidgets.QDockWidget):
 class CustomNavigationToolbar(NavigationToolbar):
     """A pared-down matplotlib toolbar."""
 
-    def __init__(self, canvas_, parent_, keep_actions):
+    def __init__(self, canvas_, parent_, keep_actions=None):
 
         super().__init__(canvas_, parent_)
 
