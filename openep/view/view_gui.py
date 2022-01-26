@@ -168,7 +168,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         
         self.annotate_dock = openep.view.annotations_ui.AnnotationWidget(title="Annotate")
         self.annotate_dock.egm_selection.currentIndexChanged[int].connect(self.update_annotation_plot)
-        #self.annotate_dock.woi_slider.on_changed(self.update_annotate_woi)
 
     def _create_analysis_canvas_dock(self):
         """
@@ -731,18 +730,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             xmin = self.egm_times[0] - 100
             xmax = self.egm_times[-1] + 100
             self.annotate_dock.activate_axes(xmin, xmax)
-            
             self.initialise_annotate_egm_selection()
-            #self.update_annotate_egm_sliders()
-
-            self.annotate_dock.create_sliders(
-                valmin=self.egm_times[0],
-                valmax=self.egm_times[-1],
-                valstep=1,
-            )
-            self.initialise_annotate_slider_values()
-            self.annotate_dock.woi_slider.on_changed(self.annotate_dock.update_axvline_positions)
-            #self.update_annotate_woi()
 
             self.egm_axis.axis('on')  # make sure we can see the axes now
             self.egm_axis.set_xlim(xmin, xmax)
@@ -960,51 +948,30 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         self.annotate_dock.initialise_egm_selection(names)
 
-    '''
-    def update_annotate_egm_sliders(self):
-        """Update the limits and values of the sliders based on the currently selected electrogram."""
+    def create_annotate_sliders(self):
+        """Create slider widgets for setting woi"""
         
-        # Update the slider limits
-        xmin = self.egm_times[0]
-        xmax = self.egm_times[-1]
-        self.annotate_dock.update_slider_limits(
-            valmin=xmin,
-            valmax=xmax,
+        # We need to know the limits of the range slider
+        valmin = self.egm_times[0]
+        valmax = self.egm_times[-1]
+        
+        # We also need to know the initial values of the slider handles
+        current_index = self.annotate_dock.egm_selection.currentIndex()
+        annotations = self.system_manager.active_system.case.electric.annotations
+        start_woi, stop_woi = annotations.window_of_interest[current_index]
+        start_woi += annotations.reference_activation_time[current_index]
+        stop_woi += annotations.reference_activation_time[current_index]
+        valinit = (start_woi, stop_woi)
+        
+        self.annotate_dock.create_sliders(
+            valmin=valmin,
+            valmax=valmax,
+            valinit=valinit,
+            valstep=1,
         )
         
-        # Update the slider values
-        current_index = self.annotate_dock.egm_selection.currentIndex()
-        annotations = self.system_manager.active_system.case.electric.annotations
-        start_woi, stop_woi = annotations.window_of_interest[current_index]
-        start_woi += annotations.reference_activation_time[current_index]
-        stop_woi += annotations.reference_activation_time[current_index]
-        self.annotate_dock.update_slider_values(start_woi, stop_woi)
-    '''
-
-    def initialise_annotate_slider_values(self):
-        """Set the initial values of the slider handles."""
-        
-        current_index = self.annotate_dock.egm_selection.currentIndex()
-        annotations = self.system_manager.active_system.case.electric.annotations
-        start_woi, stop_woi = annotations.window_of_interest[current_index]
-        start_woi += annotations.reference_activation_time[current_index]
-        stop_woi += annotations.reference_activation_time[current_index]
-        self.annotate_dock.initialise_slider_values(start_woi, stop_woi)
-
-    def update_annotate_woi(self):
-        """Set the woi based on the current value of the range slider"""
-
-        # TODO: create a button/toolbar/menu option to update the woi/
-        # reference annotation/LAT based on the current values
-
-        current_index = self.annotate_dock.egm_selection.currentIndex()
-        start_woi, stop_woi = self.annotate_dock.woi_slider.val
-
-        annotations = self.system_manager.active_system.case.electric.annotations
-        reference_annotation = annotations.reference_activation_time[current_index]
-        
-        annotations.window_of_interest[current_index, 0] = start_woi - reference_annotation
-        annotations.window_of_interest[current_index, 1] = stop_woi - reference_annotation
+        self.annotate_dock.initialise_axvlines(start_woi, stop_woi)
+        self.annotate_dock.woi_slider.on_changed(self.annotate_dock.update_axvline_positions)
 
     def update_annotation_plot(self):
         """Update the data plotted in the annotation viewer."""
@@ -1021,9 +988,29 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         times = self.system_manager.electrogram_times()
         labels = np.asarray(["Ref", "Bipolar", "ECG"])
 
+        # For some reason, newer versions of matplotlib do not correctly update
+        # slider values when changing via slider.set_val
+        # So we need to destroy it and re-create it.
+        self.annotate_dock.remove_sliders()
         self.annotate_dock.plot_signals(times, signals, labels)
+        self.create_annotate_sliders()
 
         # TODO: Display this point in the 3d viewer (e.g. render as large blue sphere)
+
+    def update_annotate_woi(self):
+        """Set the woi based on the current value of the range slider"""
+
+        # TODO: create a button/toolbar/menu option to update the woi/
+        # reference annotation/LAT based on the current values
+
+        current_index = self.annotate_dock.egm_selection.currentIndex()
+        start_woi, stop_woi = self.annotate_dock.woi_slider.val
+
+        annotations = self.system_manager.active_system.case.electric.annotations
+        reference_annotation = annotations.reference_activation_time[current_index]
+        
+        annotations.window_of_interest[current_index, 0] = start_woi - reference_annotation
+        annotations.window_of_interest[current_index, 1] = stop_woi - reference_annotation
 
     def update_electrograms_from_text(self):
         """

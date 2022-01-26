@@ -79,6 +79,6 @@ class CustomNavigationToolbar(NavigationToolbar):
     def _remove_unwanted_buttons(self):
 
         # the following snippet is from: https://stackoverflow.com/a/63341907
-        for action in self.actions():
+        for action in self.actions()[:-1]:  # we always want to display the xy coordinate
             if action.text() not in self._keep_actions:
                 self.removeAction(action)
