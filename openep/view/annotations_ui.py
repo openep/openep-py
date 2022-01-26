@@ -40,7 +40,7 @@ class AnnotationWidget(CustomDockWidget):
         super().__init__(title)
         self._init_main_window()
         self.create_sliders()
-        self.initialise_slider_values()
+        self.initialise_axvlines()
     
     def _init_main_window(self):
         
@@ -64,6 +64,7 @@ class AnnotationWidget(CustomDockWidget):
         toolbar = CustomNavigationToolbar(
             canvas_=self.canvas,
             parent_=self,
+            keep_actions=['Home', 'Back', 'Forward', 'Zoom', 'Save'],
         )
 
         # Setting nested layouts
@@ -82,7 +83,7 @@ class AnnotationWidget(CustomDockWidget):
         # hide the axis until we have data to plot
         axes.axis('off')
         # and only display x coordinate in the toolbar when hovering over the axis
-        axes.format_coord = lambda x, y: f"{x} ms"
+        axes.format_coord = lambda x, y: f"{x:.1f} ms"
 
         canvas = FigureCanvas(figure)
         
@@ -125,8 +126,7 @@ class AnnotationWidget(CustomDockWidget):
         
         return central_widget
 
-
-    def create_sliders(self, valmin=0, valmax=1, valstep=1):
+    def create_sliders(self, valmin=0, valmax=1, valinit=(0, 1), valstep=1):
         """Add a window of interest range slider to the canvas"""
         
         # location of the RangeSlider on the figure
@@ -138,6 +138,7 @@ class AnnotationWidget(CustomDockWidget):
             label="WOI",
             valmin=valmin,
             valmax=valmax,
+            valinit=valinit,
             valstep=valstep,
             closedmin=True,
             closedmax=True,
@@ -145,13 +146,8 @@ class AnnotationWidget(CustomDockWidget):
             facecolor="xkcd:light grey",
         )
     
-    def initialise_slider_values(self, start_woi=0, stop_woi=1):
+    def initialise_axvlines(self, start_woi=0, stop_woi=1):
         """Set default values for the sliders and plot the axvlines"""
-        
-        #self.woi_slider.set_val([start_woi, stop_woi])
-        #self.woi_slider.set_val([start_woi, stop_woi])
-        self.woi_slider.set_max(stop_woi)
-        self.woi_slider.set_min(start_woi)
 
         self.woi_slider_lower_limit = self.axes.axvline(
             start_woi,
@@ -168,13 +164,6 @@ class AnnotationWidget(CustomDockWidget):
             linewidth=3,
             alpha=1,
         )
-
-    def remove_sliders(self):
-        """Remove the sliders form the canvas, if they exist"""    
-        try:
-            self.woi_slider.ax.remove()
-        except AttributeError:
-            pass
     
     def update_axvline_positions(self, values):
         """Plot vertical lines designating the window of interest"""
@@ -183,6 +172,13 @@ class AnnotationWidget(CustomDockWidget):
         self.woi_slider_lower_limit.set_xdata([start_woi, start_woi])
         self.woi_slider_upper_limit.set_xdata([stop_woi, stop_woi])
         self.figure.canvas.draw_idle()
+
+    def remove_sliders(self):
+        """Remove the sliders form the canvas, if they exist"""    
+        try:
+            self.woi_slider.ax.remove()
+        except ValueError:
+            pass
 
     def initialise_egm_selection(self, selections):
         """Set the selections available in the QComboBox"""
@@ -238,35 +234,3 @@ class AnnotationWidget(CustomDockWidget):
         self.axes.cla()
         self.axes.axis('off')
         self.canvas.draw()
-
-
-
-
-
-
-
-
-
-
-
-
-    def update_slider_limits(self, valmin=0, valmax=1):
-        """Update the min/max values of the slider"""
-
-        self.woi_slider.valmin = valmin
-        self.woi_slider.valmax = valmax
-        self.woi_slider.ax.set_xlim(valmin, valmax)
-
-    def update_slider_values(
-        self,
-        start_woi=0,
-        stop_woi=1,
-    ):
-        """Update the slider values.
-        
-        Move the range slider values.
-        Plot vertical lines at these x values.
-        """
-        
-        self.woi_slider.set_max(stop_woi)
-        self.update_axvline_positions(start_woi, stop_woi)
