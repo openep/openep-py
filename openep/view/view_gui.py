@@ -32,6 +32,7 @@ import openep
 
 import openep.view.custom_widgets
 import openep.view.canvases
+import openep.view.annotations_ui
 import openep.view.plotters_ui
 import openep.view.system_manager_ui
 import openep.view.system_ui
@@ -52,7 +53,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self._init_ui()
         self._create_system_manager_ui()
         self._create_egm_canvas_dock()
-        self._create_reannotate_canvas_dock()
+        self._create_annotate_dock()
         self._create_analysis_canvas_dock()
         self._add_dock_widgets()
         self._disable_dock_widgets()
@@ -155,52 +156,19 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         egm_canvas_main.setFont(main_font)
 
         self.egm_dock.setWidget(egm_canvas_main)
-
-    def _create_reannotate_canvas_dock(self):
+    
+    def _create_annotate_dock(self):
         """
-        Create a dockable widget for reannotating electrograms with matplotlib.
+        Create a dockable widget for annotating electrograms with matplotlib.
 
-        The user can use a dropdown menu to select which electrogram to reannotate.
+        The user can use a dropdown menu to select which electrogram to annotate.
         All electrical data for that point will be plotted - electrograms, activation
         time etc.
         """
-
-        self.reannotate_dock = openep.view.custom_widgets.CustomDockWidget("Reannotate")
-        self.reannotate_canvas, self.reannotate_figure, self.reannotate_axis = openep.view.canvases.create_canvas()
-        reannotate_layout = QtWidgets.QVBoxLayout(self.reannotate_canvas)
-
-        # Add widget for selecting which electrogram to reannotate from point indices
-        reannotate_selection_layout, self.reannotate_selection = openep.view.canvases.create_reannotate_selection_layout()
-        #self.egm_selection.returnPressed.connect(self.update_electrograms_from_text)
-        self.reannotate_selection.currentIndexChanged[int].connect(self.update_reannotate_viewer)
-
-        reannotate_layout.addLayout(reannotate_selection_layout)
-        reannotate_layout.addStretch()
-
-        # Create toolbar for saving, zooming etc.
-        toolbar = openep.view.canvases.add_toolbar(
-            canvas=self.reannotate_canvas,
-            parent=self.reannotate_dock,
-        )
-
-        # Create a placeholder widget to hold our toolbar and canvas.
-        canvas_widget = openep.view.canvases.create_canvas_widget(
-            canvas=self.reannotate_canvas,
-            toolbar=toolbar,
-        )
-
-        # Create a placeholder widget to hold our canvas, toolbar, and selection widgets
-        # We're using a QMainWindow so we can easily add a menubar
-        reannotate_canvas_main = QtWidgets.QMainWindow()
-        reannotate_canvas_main.setCentralWidget(canvas_widget)
-
-        # The dock is set to have bold font (so the title stands out)
-        # But all other widgets should have normal weighted font
-        main_font = QtGui.QFont()
-        main_font.setBold(False)
-        reannotate_canvas_main.setFont(main_font)
-
-        self.reannotate_dock.setWidget(reannotate_canvas_main)
+        
+        self.annotate_dock = openep.view.annotations_ui.AnnotationWidget(title="Annotate")
+        self.annotate_dock.egm_selection.currentIndexChanged[int].connect(self.update_annotation_plot)
+        #self.annotate_dock.woi_slider.on_changed(self.update_annotate_woi)
 
     def _create_analysis_canvas_dock(self):
         """
@@ -250,12 +218,12 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.system_manager_ui)
 
         self.addDockWidget(Qt.LeftDockWidgetArea, self.egm_dock)
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.reannotate_dock)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.annotate_dock)
         
         self.tabifyDockWidget(self.analysis_dock, self.system_manager_ui)
-        self.tabifyDockWidget(self.egm_dock, self.reannotate_dock)
+        self.tabifyDockWidget(self.egm_dock, self.annotate_dock)
 
-        for dock in [self.analysis_dock, self.system_manager_ui, self.egm_dock, self.reannotate_dock]:
+        for dock in [self.analysis_dock, self.system_manager_ui, self.egm_dock,  self.annotate_dock]:
             dock.setAllowedAreas(Qt.AllDockWidgetAreas)
 
         self.setDockOptions(self.GroupedDragging | self.AllowTabbedDocks | self.AllowNestedDocks)
@@ -271,7 +239,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         self.egm_dock.setEnabled(False)
         self.analysis_dock.setEnabled(False)
-        self.reannotate_dock.setEnabled(False)
+        self.annotate_dock.setEnabled(False)
 
     def _load_openep_mat(self):
         """
@@ -756,30 +724,42 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.highlight_menubars_of_active_plotters()
 
         self.remove_woi_slider()
+        self.annotate_dock.remove_sliders()
         self.check_available_electrograms()
         if self.has_electrograms:
+            
+            xmin = self.egm_times[0] - 100
+            xmax = self.egm_times[-1] + 100
+            self.annotate_dock.activate_axes(xmin, xmax)
+            
+            self.initialise_annotate_egm_selection()
+            #self.update_annotate_egm_sliders()
+
+            self.annotate_dock.create_sliders(
+                valmin=self.egm_times[0],
+                valmax=self.egm_times[-1],
+                valstep=1,
+            )
+            self.initialise_annotate_slider_values()
+            self.annotate_dock.woi_slider.on_changed(self.annotate_dock.update_axvline_positions)
+            #self.update_annotate_woi()
 
             self.egm_axis.axis('on')  # make sure we can see the axes now
-            self.egm_axis.set_xlim(self.egm_times[0]-100, self.egm_times[-1]+100)
+            self.egm_axis.set_xlim(xmin, xmax)
             self.egm_axis.set_ylim(-1, 13)
 
             # We can't create the slider earlier because we need to know the min and max egm times
             self.create_woi_slider()
             self.initialise_woi_slider_limits()
-            self.egm_slider.on_changed(self.update_woi_slider_limits)
+            self.egm_slider.on_changed(self.update_egm_woi)
             self.update_electrograms_from_stored()
-
-
-            self.reannotate_axis.axis('on')
-            self.reannotate_axis.set_xlim(self.egm_times[0]-100, self.egm_times[-1]+100)
-            self.reannotate_axis.set_ylim(-1, 13)
-
-            self.initialise_reannotate_selection()
 
         else:
             self.egm_axis.cla()
             self.egm_axis.axis('off')
             self.egm_canvas.draw()
+            
+            self.annotate_dock.deactivate_axes()
 
     def change_active_scalars(self, system, index, scalars):
         """Cahnge the scalar values that are being projected onto the mesh."""
@@ -954,7 +934,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.egm_unipolar_A_checkbox.setEnabled(has_unipolar)
         self.egm_unipolar_B_checkbox.setEnabled(has_unipolar)
 
-        self.reannotate_dock.setEnabled(self.has_electrograms)
+        self.annotate_dock.setEnabled(self.has_electrograms)
 
         self._set_electrogram_times()
 
@@ -968,26 +948,82 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         self.egm_times = self.system_manager.electrogram_times()
 
-    def initialise_reannotate_selection(self):
-        """Set the available electrogram for reannotating"""
-
-        self.reannotate_selection.clear()
+    def initialise_annotate_egm_selection(self):
+        """Set the available electrogram for annotating"""
 
         electric = self.system_manager.active_system.case.electric
+        
         if electric.internal_names is not None:
             names = electric.internal_names
         else:
             names = np.asarray([f"P{index}" for index in range(len(electric.bipolar_egm.egm))], dtype=str)
 
-        self.reannotate_selection.insertItems(0, names)        
+        self.annotate_dock.initialise_egm_selection(names)
 
-    def update_reannotate_viewer(self):
-        """Update the mapping point displayed in the electrogram viewer.
-        """
+    '''
+    def update_annotate_egm_sliders(self):
+        """Update the limits and values of the sliders based on the currently selected electrogram."""
+        
+        # Update the slider limits
+        xmin = self.egm_times[0]
+        xmax = self.egm_times[-1]
+        self.annotate_dock.update_slider_limits(
+            valmin=xmin,
+            valmax=xmax,
+        )
+        
+        # Update the slider values
+        current_index = self.annotate_dock.egm_selection.currentIndex()
+        annotations = self.system_manager.active_system.case.electric.annotations
+        start_woi, stop_woi = annotations.window_of_interest[current_index]
+        start_woi += annotations.reference_activation_time[current_index]
+        stop_woi += annotations.reference_activation_time[current_index]
+        self.annotate_dock.update_slider_values(start_woi, stop_woi)
+    '''
 
-        current_index = self.reannotate_selection.currentIndex()
+    def initialise_annotate_slider_values(self):
+        """Set the initial values of the slider handles."""
+        
+        current_index = self.annotate_dock.egm_selection.currentIndex()
+        annotations = self.system_manager.active_system.case.electric.annotations
+        start_woi, stop_woi = annotations.window_of_interest[current_index]
+        start_woi += annotations.reference_activation_time[current_index]
+        stop_woi += annotations.reference_activation_time[current_index]
+        self.annotate_dock.initialise_slider_values(start_woi, stop_woi)
+
+    def update_annotate_woi(self):
+        """Set the woi based on the current value of the range slider"""
+
+        # TODO: create a button/toolbar/menu option to update the woi/
+        # reference annotation/LAT based on the current values
+
+        current_index = self.annotate_dock.egm_selection.currentIndex()
+        start_woi, stop_woi = self.annotate_dock.woi_slider.val
+
+        annotations = self.system_manager.active_system.case.electric.annotations
+        reference_annotation = annotations.reference_activation_time[current_index]
+        
+        annotations.window_of_interest[current_index, 0] = start_woi - reference_annotation
+        annotations.window_of_interest[current_index, 1] = stop_woi - reference_annotation
+
+    def update_annotation_plot(self):
+        """Update the data plotted in the annotation viewer."""
+        
         # Plot electrical data for this point
-        # Display this point in the 3d viewer (e.g. render as large blue sphere)
+        current_index = self.annotate_dock.egm_selection.currentIndex()
+        electric = self.system_manager.active_system.case.electric
+        
+        reference = electric.reference_egm.egm[current_index]
+        bipolar = electric.bipolar_egm.egm[current_index]
+        ecg = electric.ecg[current_index]
+        signals = np.asarray([reference, bipolar, ecg])
+        
+        times = self.system_manager.electrogram_times()
+        labels = np.asarray(["Ref", "Bipolar", "ECG"])
+
+        self.annotate_dock.plot_signals(times, signals, labels)
+
+        # TODO: Display this point in the 3d viewer (e.g. render as large blue sphere)
 
     def update_electrograms_from_text(self):
         """
@@ -1078,7 +1114,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             _, self.egm_axis.axes = openep.draw.plot_electrograms(
                 self.egm_times,
                 self.egm_reference_traces,
-                axis=self.egm_axis.axes,
+                axes=self.egm_axis.axes,
                 colour="xkcd:scarlet",
                 y_separation=2,
             )
@@ -1089,7 +1125,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             _, self.egm_axis.axes = openep.draw.plot_electrograms(
                 self.egm_times,
                 self.egm_bipolar_traces,
-                axis=self.egm_axis.axes,
+                axes=self.egm_axis.axes,
                 colour="xkcd:cerulean",
                 y_separation=2,
             )
@@ -1100,7 +1136,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             _, self.egm_axis.axes = openep.draw.plot_electrograms(
                 self.egm_times,
                 self.egm_unipolar_A_traces,
-                axis=self.egm_axis.axes,
+                axes=self.egm_axis.axes,
                 colour="xkcd:tree green",
                 y_start=1,
                 y_separation=2,
@@ -1112,7 +1148,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             _, self.egm_axis.axes = openep.draw.plot_electrograms(
                 self.egm_times,
                 self.egm_unipolar_B_traces,
-                axis=self.egm_axis.axes,
+                axes=self.egm_axis.axes,
                 colour="xkcd:pumpkin",
                 y_start=1,
                 y_separation=2,
@@ -1190,7 +1226,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             alpha=0.6,
         )
 
-    def update_woi_slider_limits(self, val):
+    def update_egm_woi(self, val):
         """
         Take the min and max values from the RangeSlider widget.
         Use this to set the window of interest and to change the x location
@@ -1207,6 +1243,25 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         reference_annotation = annotations.reference_activation_time[0]
         annotations.window_of_interest[:, 0] = start_woi - reference_annotation
         annotations.window_of_interest[:, 1] = stop_woi - reference_annotation
+    '''
+    def initialise_annotate_slider_limits(self):
+        """Set the limits of the sliders in the annotation viewer."""
+
+        annotations = self.system_manager.active_system.case.electric.annotations
+
+        # Note, the window of interest/reference activation times
+        # may differ between mapping points.
+        # The below works because the first mapping point (index=0)
+        # is always the first to be selected when activating a new system
+        start_woi, stop_woi = annotations.window_of_interest[0]
+        start_woi += annotations.reference_activation_time[0]
+        stop_woi += annotations.reference_activation_time[0]
+
+        self.annotate_dock.update_slider_limits(
+            start_woi=start_woi,
+            stop_woi=stop_woi,
+        )
+        '''
 
     def highlight_menubars_of_active_plotters(self):
         """Make the menubars of all docks in the active system blue."""
