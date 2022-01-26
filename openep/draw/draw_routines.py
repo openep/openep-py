@@ -178,7 +178,7 @@ def plot_electrograms(
     y_separation=1,
     y_start=0,
     colour=None,
-    axis=None,
+    axes=None,
 ):
     """
     Plot electrogram traces.
@@ -206,32 +206,32 @@ def plot_electrograms(
     separations = y_start + np.arange(electrograms.shape[0]) * y_separation
     colour = "xkcd:cerulean" if colour is None else colour
 
-    if axis is None:
-        figure, axis = plt.subplots(constrained_layout=True, figsize=(6, 0.4*len(electrograms)))
+    if axes is None:
+        figure, axes = plt.subplots(constrained_layout=True, figsize=(6, 0.4*len(electrograms)))
     else:
-        figure = axis.get_figure()
+        figure = axes.get_figure()
 
     # Plot electrograms
-    axis.plot(times, electrograms.T + separations, label=names, color=colour)
+    axes.plot(times, electrograms.T + separations, label=names, color=colour)
 
     # Add names
     if names is not None:
-        axis.set_yticks(separations)
-        axis.set_yticklabels(names)
+        axes.set_yticks(separations)
+        axes.set_yticklabels(names)
 
     # Add a horizontal line for each electrogram at its zero voltage position
     for y in separations:
-        axis.axhline(y, color='grey', linestyle='--', linewidth=0.8, alpha=0.6)
+        axes.axhline(y, color='grey', linestyle='--', linewidth=0.8, alpha=0.6)
 
     # Vertical line at the window of interest
     if woi is not None:
         woi_start, woi_stop = woi
-        axis.axvline(woi_start, color="grey", linestyle='--', linewidth=0.8, alpha=0.6)
-        axis.axvline(woi_stop, color="grey", linestyle='--', linewidth=0.8, alpha=0.6)
+        axes.axvline(woi_start, color="grey", linestyle='--', linewidth=0.8, alpha=0.6)
+        axes.axvline(woi_stop, color="grey", linestyle='--', linewidth=0.8, alpha=0.6)
 
     # Remove the border and ticks
     plt.tick_params(axis='both', which='both', length=0)
     for spine in ['left', 'right', 'top']:
-        axis.spines[spine].set_visible(False)
+        axes.spines[spine].set_visible(False)
 
-    return figure, axis
+    return figure, axes
