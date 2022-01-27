@@ -25,7 +25,7 @@ import sys
 
 from PySide6 import QtCore, QtGui, QtWidgets
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
-import matplotlib.widgets
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -34,7 +34,8 @@ from .custom_widgets import CustomDockWidget, CustomNavigationToolbar
 from ._mpl_key_bindings import disable_all_bindings
 
 
-#plt.style.use('ggplot')
+plt.style.use('ggplot')
+mpl.rcParams['font.size'] = 8
 disable_all_bindings()
 
 class AnnotationWidget(CustomDockWidget):
