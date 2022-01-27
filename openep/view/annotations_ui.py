@@ -71,7 +71,7 @@ class AnnotationWidget(CustomDockWidget):
         toolbar = CustomNavigationToolbar(
             canvas_=self.canvas,
             parent_=self,
-            keep_actions=['Home', 'Back', 'Forward', 'Zoom', 'Save'],
+            keep_actions=['Home', 'Zoom', 'Pan', 'Save'],
         )
 
         # Setting nested layouts

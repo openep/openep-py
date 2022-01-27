@@ -48,11 +48,11 @@ def disable_all_bindings():
 
     mpl.rcParams['keymap.help'].remove('f1')
 
-    mpl.rcParams['keymap.home'].remove('h')
+    #mpl.rcParams['keymap.home'].remove('h')
     mpl.rcParams['keymap.home'].remove('r')
     mpl.rcParams['keymap.home'].remove('home')
     
-    mpl.rcParams['keymap.pan'].remove('p')
+    #mpl.rcParams['keymap.pan'].remove('p')
 
     mpl.rcParams['keymap.quit'].remove('ctrl+w')
     mpl.rcParams['keymap.quit'].remove('cmd+w')
@@ -67,6 +67,7 @@ def disable_all_bindings():
     mpl.rcParams['keymap.yscale'].remove('l')
 
     mpl.rcParams['keymap.zoom'].remove('o')
+    mpl.rcParams['keymap.zoom'].append('z')
 
 if __name__ == '__main__':
 
