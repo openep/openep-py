@@ -21,7 +21,9 @@
 Create a dock widget for the annotation viewer.
 """
 
-from PySide6 import QtGui, QtWidgets
+import sys
+
+from PySide6 import QtCore, QtGui, QtWidgets
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.widgets
 import matplotlib.pyplot as plt
@@ -41,6 +43,8 @@ class AnnotationWidget(CustomDockWidget):
         self._init_main_window()
         self.create_sliders()
         self.initialise_axvlines()
+        self._initialise_reference_annotation()
+        self._initialise_local_annotation()
     
     def _init_main_window(self):
         
@@ -72,21 +76,27 @@ class AnnotationWidget(CustomDockWidget):
         self.main.setCentralWidget(central_widget)
         self.setWidget(self.main)
         
+        
+        # Needed so we can detect key press events
+        # See https://github.com/matplotlib/matplotlib/issues/707/#issuecomment-4181799
+        self.canvas.setParent(central_widget)
+        self.canvas.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.canvas.setFocus()
+        
     def _init_canvas(self):
         """
         Create an interactive matploblib canvas.
         """
 
         figure, axes = plt.subplots(ncols=1, nrows=1)
-        figure.set_facecolor("white")
-
-        # hide the axis until we have data to plot
-        axes.axis('off')
-        # and only display x coordinate in the toolbar when hovering over the axis
+        #figure.set_facecolor("white")
+        figure.set_visible('off') # hide the figure until we have data to plot
+        
+        # only display x coordinate in the toolbar when hovering over the axis
         axes.format_coord = lambda x, y: f"{x:.1f} ms"
 
         canvas = FigureCanvas(figure)
-        
+
         return canvas, figure, axes
 
     def _init_selection(self):
@@ -153,16 +163,16 @@ class AnnotationWidget(CustomDockWidget):
             start_woi,
             color='grey',
             linestyle='-',
-            linewidth=3,
-            alpha=1,
+            linewidth=1.2,
+            alpha=0.6,
         )
         
         self.woi_slider_upper_limit = self.axes.axvline(
             stop_woi,
             color='grey',
             linestyle='-',
-            linewidth=3,
-            alpha=1,
+            linewidth=1.2,
+            alpha=0.6,
         )
     
     def update_axvline_positions(self, values):
@@ -172,9 +182,55 @@ class AnnotationWidget(CustomDockWidget):
         self.woi_slider_lower_limit.set_xdata([start_woi, start_woi])
         self.woi_slider_upper_limit.set_xdata([stop_woi, stop_woi])
         self.figure.canvas.draw_idle()
+    
+    def _initialise_reference_annotation(self, time=0.5, voltage=6):
+        """Plot a point at the reference activation time"""
+        
+        self.reference_annotation, = self.axes.plot(
+            time,
+            voltage,
+            color='red',
+            linewidth=0,
+            marker='o',
+            markersize=4,
+            zorder=5,
+        )
+        self.canvas.draw_idle()
+    
+    def update_reference_annotation(self, time, voltage):
+        """Plot the reference activation time"""
+        
+        # For some reason, newer versions of matplotlib does not
+        # draw the point when its coordinates are changed.
+        # So we need to destroy it and re-create it.
+        # TODO: Look at using blitting instead:
+        #       https://matplotlib.org/devdocs/tutorials/advanced/blitting.html?highlight=blitting#class-based-example
+        self.reference_annotation.remove()
+        self._initialise_reference_annotation(time, voltage)
+
+    def _initialise_local_annotation(self, time=0.5, voltage=6):
+        """Plot a point at the local activation time"""
+        
+        self.local_annotation, = self.axes.plot(
+            time,
+            voltage,
+            color='green',
+            linewidth=0,
+            marker='o',
+            markersize=4,
+            zorder=5,
+        )
+        self.canvas.draw_idle()
+
+    def update_local_annotation(self, time, voltage):
+        """Plot the local activation time"""
+        
+        self.local_annotation.remove()
+        self._initialise_local_annotation(time, voltage)
 
     def remove_sliders(self):
         """Remove the sliders form the canvas, if they exist"""    
+        
         try:
             self.woi_slider.ax.remove()
         except ValueError:
@@ -209,7 +265,12 @@ class AnnotationWidget(CustomDockWidget):
         y_separation = 4
         separations = y_start + np.arange(signals.shape[0]) * y_separation
         
-        self.axes.plot(times, signals.T + separations, color="blue")
+        self.axes.plot(
+            times,
+            signals.T + separations,
+            color="blue",
+            linewidth=0.8,
+        )
         self.axes.set_yticks(separations)
         self.axes.set_yticklabels(labels)
 
@@ -221,16 +282,18 @@ class AnnotationWidget(CustomDockWidget):
         
         self.canvas.draw_idle()
 
-    def activate_axes(self, xmin, xmax):
-        """Show the axes"""
+    def activate_figure(self, xmin, xmax):
+        """Show the figure"""
         
+        self.figure.set_visible('on')
         self.axes.axis('on')
         self.axes.set_xlim(xmin, xmax)
         self.axes.set_ylim(0, 12)
     
-    def deactivate_axes(self):
-        """Clear and hide the axes"""
+    def deactivate_figure(self):
+        """Clear the axes and hide the figure"""
         
         self.axes.cla()
         self.axes.axis('off')
+        self.figure.set_visible('off')
         self.canvas.draw()
