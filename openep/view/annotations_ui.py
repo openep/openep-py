@@ -31,8 +31,11 @@ import numpy as np
 
 import openep.draw.draw_routines
 from .custom_widgets import CustomDockWidget, CustomNavigationToolbar
+from ._mpl_key_bindings import disable_all_bindings
+
 
 plt.style.use('ggplot')
+disable_all_bindings()
 
 class AnnotationWidget(CustomDockWidget):
     """A dockable widget for annotating electrograms."""
