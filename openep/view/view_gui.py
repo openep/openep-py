@@ -735,7 +735,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.highlight_menubars_of_active_plotters()
 
         self.remove_woi_slider()
-        self.annotate_dock.remove_sliders()
         self.check_available_electrograms()
         if self.has_electrograms:
             
@@ -953,7 +952,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         
         sys.stdout.flush()
         
-        if event.key not in ['r', 'w', 'l']:
+        if event.key not in ['r', 'w', 'W', 'l']:
             return
         elif event.xdata is None:
             None
@@ -964,16 +963,36 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         
         electric = self.system_manager.active_system.case.electric
 
+        # TODO: Check whether these should be set to the time_index or to actual time.
+        #       Is the time always in units of 1 ms? If so then time_index and
+        #       time will be equal.
         if event.key == 'r':
             
-            # TODO: Check whether this should be set to the time_index or to actual time.
-            #       Is the time always in units of 1 ms? If so then time_index and
-            #       time will be equal.
             electric.annotations.reference_activation_time[current_index] = time_index
             
             voltage = electric.reference_egm.egm[current_index, time_index] + 2  # y offset
             self.annotate_dock.update_reference_annotation(time, voltage)
+
+        elif event.key == 'w':
+            
+            # move the lower window boundary
+            reference_annotation = electric.annotations.reference_activation_time[current_index]
+            woi = electric.annotations.window_of_interest[current_index]
+            woi[0] = time_index - reference_annotation
+            woi = np.sort(woi)
+            electric.annotations.window_of_interest[current_index] = woi
+            self.annotate_dock.update_window_of_interest(*woi + reference_annotation)
         
+        elif event.key == 'W':
+            
+            # move the upper boundary
+            reference_annotation = electric.annotations.reference_activation_time[current_index]
+            woi = electric.annotations.window_of_interest[current_index]
+            woi[1] = time_index - reference_annotation
+            woi = np.sort(woi)
+            electric.annotations.window_of_interest[current_index] = woi
+            self.annotate_dock.update_window_of_interest(*woi + reference_annotation)
+
         elif event.key == 'l':
             
             electric.annotations.local_activation_time[current_index] = time_index
@@ -993,42 +1012,12 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         self.annotate_dock.initialise_egm_selection(names)
 
-    def create_annotate_sliders(self):
-        """Create slider widgets for setting woi"""
-        
-        # We need to know the limits of the range slider
-        valmin = self.egm_times[0]
-        valmax = self.egm_times[-1]
-        
-        # We also need to know the initial values of the slider handles
-        current_index = self.annotate_dock.egm_selection.currentIndex()
-        electric = self.system_manager.active_system.case.electric
-        annotations = electric.annotations
-        start_woi, stop_woi = annotations.window_of_interest[current_index]
-        
-        reference_annotation = annotations.reference_activation_time[current_index]
-        start_woi += reference_annotation
-        stop_woi += reference_annotation
-        valinit = (start_woi, stop_woi)
-        
-        self.annotate_dock.create_sliders(
-            valmin=valmin,
-            valmax=valmax,
-            valinit=valinit,
-            valstep=1,
-        )
-        
-        self.annotate_dock.initialise_axvlines(start_woi, stop_woi)
-        self.annotate_dock.woi_slider.on_changed(self.annotate_dock.update_axvline_positions)
-        
-        voltage_at_reference_annotation = electric.reference_egm.egm[current_index, reference_annotation]
-        self.annotate_dock.update_reference_annotation(
-            time=reference_annotation,
-            voltage=voltage_at_reference_annotation
-        )
-
     def update_annotation_plot(self):
         """Update the data plotted in the annotation viewer."""
+        
+        # TODO: this will currently fail unless there is both reference
+        # and bipolar electrograms as well as ecgs. Annotations
+        # are also required.
         
         # Plot electrical data for this point
         current_index = self.annotate_dock.egm_selection.currentIndex()
@@ -1042,12 +1031,34 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         times = self.system_manager.electrogram_times()
         labels = np.asarray(["Ref", "Bipolar", "ECG"])
 
-        # For some reason, newer versions of matplotlib do not correctly update
-        # slider values when changing via slider.set_val
-        # So we need to destroy it and re-create it.
-        self.annotate_dock.remove_sliders()
         self.annotate_dock.plot_signals(times, signals, labels)
-        self.create_annotate_sliders()
+        
+        # Also plot the annotations and window of interest
+        annotations = electric.annotations
+        
+        local_annotation = annotations.local_activation_time[current_index]
+        local_annotation_index = np.searchsorted(times, local_annotation)
+        self.annotate_dock._initialise_local_annotation(
+            time=local_annotation,
+            voltage=bipolar[local_annotation_index] + 6,
+        )
+        print(local_annotation, bipolar[local_annotation_index] + 6)
+        
+        reference_annotation = annotations.reference_activation_time[current_index]
+        reference_annotation_index = np.searchsorted(times, reference_annotation)
+        self.annotate_dock._initialise_reference_annotation(
+            time=reference_annotation,
+            voltage=reference[reference_annotation_index] + 2,
+        )
+        print(reference_annotation, reference[reference_annotation_index] + 6)
+        
+        start_woi, stop_woi = annotations.window_of_interest[current_index]
+        start_woi += reference_annotation
+        stop_woi += reference_annotation
+        self.annotate_dock._initialise_window_of_interest(start_woi, stop_woi)
+        print(start_woi, stop_woi)
+        
+        self.annotate_dock.canvas.draw()
 
         # TODO: Display this point in the 3d viewer (e.g. render as large blue sphere)
 

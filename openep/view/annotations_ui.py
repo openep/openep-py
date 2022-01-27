@@ -34,7 +34,7 @@ from .custom_widgets import CustomDockWidget, CustomNavigationToolbar
 from ._mpl_key_bindings import disable_all_bindings
 
 
-plt.style.use('ggplot')
+#plt.style.use('ggplot')
 disable_all_bindings()
 
 class AnnotationWidget(CustomDockWidget):
@@ -44,8 +44,7 @@ class AnnotationWidget(CustomDockWidget):
 
         super().__init__(title)
         self._init_main_window()
-        self.create_sliders()
-        self.initialise_axvlines()
+        self._initialise_window_of_interest()
         self._initialise_reference_annotation()
         self._initialise_local_annotation()
     
@@ -138,28 +137,8 @@ class AnnotationWidget(CustomDockWidget):
         central_widget.setStyleSheet("border-width: 0px; border: 0px; background-color: #d8dcd6;")
         
         return central_widget
-
-    def create_sliders(self, valmin=0, valmax=1, valinit=(0, 1), valstep=1):
-        """Add a window of interest range slider to the canvas"""
-        
-        # location of the RangeSlider on the figure
-        #axes_loc = [0.175, 0.1, 0.65, 0.022]
-        axes_loc = [0.1535, 0.05, 0.7185, 0.01]
-        slider_axes = self.figure.add_axes(axes_loc)
-        self.woi_slider = matplotlib.widgets.RangeSlider(
-            ax=slider_axes,
-            label="WOI",
-            valmin=valmin,
-            valmax=valmax,
-            valinit=valinit,
-            valstep=valstep,
-            closedmin=True,
-            closedmax=True,
-            dragging=True,
-            facecolor="xkcd:light grey",
-        )
     
-    def initialise_axvlines(self, start_woi=0, stop_woi=1):
+    def _initialise_window_of_interest(self, start_woi=0, stop_woi=1):
         """Set default values for the sliders and plot the axvlines"""
 
         self.woi_slider_lower_limit = self.axes.axvline(
@@ -178,10 +157,9 @@ class AnnotationWidget(CustomDockWidget):
             alpha=0.6,
         )
     
-    def update_axvline_positions(self, values):
+    def update_window_of_interest(self, start_woi, stop_woi):
         """Plot vertical lines designating the window of interest"""
         
-        start_woi, stop_woi = values
         self.woi_slider_lower_limit.set_xdata([start_woi, start_woi])
         self.woi_slider_upper_limit.set_xdata([stop_woi, stop_woi])
         self.figure.canvas.draw_idle()
@@ -231,14 +209,6 @@ class AnnotationWidget(CustomDockWidget):
         self.local_annotation.remove()
         self._initialise_local_annotation(time, voltage)
 
-    def remove_sliders(self):
-        """Remove the sliders form the canvas, if they exist"""    
-        
-        try:
-            self.woi_slider.ax.remove()
-        except ValueError:
-            pass
-
     def initialise_egm_selection(self, selections):
         """Set the selections available in the QComboBox"""
         
@@ -283,7 +253,7 @@ class AnnotationWidget(CustomDockWidget):
             self.axes.spines[spine].set_visible(False)
         self.axes.spines['bottom'].set_alpha(0.4)
         
-        self.canvas.draw_idle()
+        #self.canvas.draw_idle()
 
     def activate_figure(self, xmin, xmax):
         """Show the figure"""
