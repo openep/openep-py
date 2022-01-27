@@ -167,7 +167,19 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         """
         
         self.annotate_dock = openep.view.annotations_ui.AnnotationWidget(title="Annotate")
+    
         self.annotate_dock.egm_selection.currentIndexChanged[int].connect(self.update_annotation_plot)
+        self.annotate_dock.canvas.mpl_connect('key_press_event', self._annotate_on_press)
+        
+        # remove all default key bindings
+        # see https://stackoverflow.com/a/35631062/17623640
+        # self.annotate_dock.canvas.mpl_disconnect(self.annotate_dock.canvas.manager.key_press_handler_id)
+        # But this doesn't work.
+        # See 
+        
+        # hide the figure until we have data to plot
+        self.annotate_dock.deactivate_figure()
+    
 
     def _create_analysis_canvas_dock(self):
         """
@@ -729,7 +741,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             
             xmin = self.egm_times[0] - 100
             xmax = self.egm_times[-1] + 100
-            self.annotate_dock.activate_axes(xmin, xmax)
+            self.annotate_dock.activate_figure(xmin, xmax)
             self.initialise_annotate_egm_selection()
 
             self.egm_axis.axis('on')  # make sure we can see the axes now
@@ -747,7 +759,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             self.egm_axis.axis('off')
             self.egm_canvas.draw()
             
-            self.annotate_dock.deactivate_axes()
+            self.annotate_dock.deactivate_figure()
 
     def change_active_scalars(self, system, index, scalars):
         """Cahnge the scalar values that are being projected onto the mesh."""
@@ -935,6 +947,39 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         """
 
         self.egm_times = self.system_manager.electrogram_times()
+    
+    def _annotate_on_press(self, event):
+        """Bindings for key press events in the annotation viewer"""
+        
+        sys.stdout.flush()
+        
+        if event.key not in ['r', 'w', 'l']:
+            return
+        elif event.xdata is None:
+            None
+        
+        current_index = self.annotate_dock.egm_selection.currentIndex()
+        time_index = np.searchsorted(self.egm_times, event.xdata)
+        time = self.egm_times[time_index]
+        
+        electric = self.system_manager.active_system.case.electric
+
+        if event.key == 'r':
+            
+            # TODO: Check whether this should be set to the time_index or to actual time.
+            #       Is the time always in units of 1 ms? If so then time_index and
+            #       time will be equal.
+            electric.annotations.reference_activation_time[current_index] = time_index
+            
+            voltage = electric.reference_egm.egm[current_index, time_index] + 2  # y offset
+            self.annotate_dock.update_reference_annotation(time, voltage)
+        
+        elif event.key == 'l':
+            
+            electric.annotations.local_activation_time[current_index] = time_index
+            
+            voltage = electric.bipolar_egm.egm[current_index, time_index] + 6  # y offset
+            self.annotate_dock.update_local_annotation(time, voltage)
 
     def initialise_annotate_egm_selection(self):
         """Set the available electrogram for annotating"""
@@ -957,10 +1002,13 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         
         # We also need to know the initial values of the slider handles
         current_index = self.annotate_dock.egm_selection.currentIndex()
-        annotations = self.system_manager.active_system.case.electric.annotations
+        electric = self.system_manager.active_system.case.electric
+        annotations = electric.annotations
         start_woi, stop_woi = annotations.window_of_interest[current_index]
-        start_woi += annotations.reference_activation_time[current_index]
-        stop_woi += annotations.reference_activation_time[current_index]
+        
+        reference_annotation = annotations.reference_activation_time[current_index]
+        start_woi += reference_annotation
+        stop_woi += reference_annotation
         valinit = (start_woi, stop_woi)
         
         self.annotate_dock.create_sliders(
@@ -972,6 +1020,12 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         
         self.annotate_dock.initialise_axvlines(start_woi, stop_woi)
         self.annotate_dock.woi_slider.on_changed(self.annotate_dock.update_axvline_positions)
+        
+        voltage_at_reference_annotation = electric.reference_egm.egm[current_index, reference_annotation]
+        self.annotate_dock.update_reference_annotation(
+            time=reference_annotation,
+            voltage=voltage_at_reference_annotation
+        )
 
     def update_annotation_plot(self):
         """Update the data plotted in the annotation viewer."""
