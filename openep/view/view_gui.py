@@ -952,12 +952,28 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         
         sys.stdout.flush()
         
-        if event.key not in ['r', 'w', 'W', 'l']:
+        if event.key not in [ 'down', 'up', 'r', 'w', 'W', 'l']:
             return
-        elif event.xdata is None:
-            None
-        
+
+        # First check whether we need to change the electrogram that is displayed
         current_index = self.annotate_dock.egm_selection.currentIndex()
+
+        if event.key == 'down':
+            # move the the next electrogram
+            n_items = self.annotate_dock.egm_selection.count()
+            new_index = min(n_items-1, current_index+1)
+            self.annotate_dock.egm_selection.setCurrentIndex(new_index)
+            
+        
+        elif event.key == 'up':
+            # move to the previous electrogram
+            new_index = max(0, current_index - 1)
+            self.annotate_dock.egm_selection.setCurrentIndex(new_index)
+
+        # If we're chaning a point/line, ensure the key press was inside the figure
+        if event.xdata is None:
+            return
+        
         time_index = np.searchsorted(self.egm_times, event.xdata)
         time = self.egm_times[time_index]
         
@@ -972,6 +988,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             
             voltage = electric.reference_egm.egm[current_index, time_index] + 2  # y offset
             self.annotate_dock.update_reference_annotation(time, voltage)
+            return
 
         elif event.key == 'w':
             
@@ -982,6 +999,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             woi = np.sort(woi)
             electric.annotations.window_of_interest[current_index] = woi
             self.annotate_dock.update_window_of_interest(*woi + reference_annotation)
+            return
         
         elif event.key == 'W':
             
@@ -992,6 +1010,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             woi = np.sort(woi)
             electric.annotations.window_of_interest[current_index] = woi
             self.annotate_dock.update_window_of_interest(*woi + reference_annotation)
+            return
 
         elif event.key == 'l':
             
@@ -999,6 +1018,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             
             voltage = electric.bipolar_egm.egm[current_index, time_index] + 6  # y offset
             self.annotate_dock.update_local_annotation(time, voltage)
+            return
 
     def initialise_annotate_egm_selection(self):
         """Set the available electrogram for annotating"""
