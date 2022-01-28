@@ -27,6 +27,7 @@ from PySide2 import QtCore, QtGui, QtWidgets
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.backend_bases import MouseButton
 import numpy as np
 
 import openep.draw.draw_routines
@@ -63,6 +64,9 @@ class AnnotationWidget(CustomDockWidget):
         # The canvas widget will also contain a QComboBox for selecting
         # the electrogram to annnotate.
         self.canvas, self.figure, self.axes = self._init_canvas()
+        self.artists = {}  # dictionary of artists (lines, points, etc.)
+        self.active_artist_label = None
+        
         self.egm_selection, egm_selection_layout = self._init_selection()
         canvas_layout = QtWidgets.QVBoxLayout(self.canvas)
         canvas_layout.addLayout(egm_selection_layout)
@@ -99,6 +103,8 @@ class AnnotationWidget(CustomDockWidget):
         axes.format_coord = lambda x, y: f"{x:.1f} ms"
 
         canvas = FigureCanvas(figure)
+        canvas.mpl_connect('draw_event', self._on_draw)
+        canvas.mpl_connect('pick_event', self._on_pick)
 
         return canvas, figure, axes
 
@@ -139,32 +145,87 @@ class AnnotationWidget(CustomDockWidget):
         
         return central_widget
     
+    def _on_draw(self, event):
+        """Store the background and blit other artists."""
+        
+        self.background = self.canvas.copy_from_bbox(self.axes.bbox)
+        self._blit_artists()
+
+    def _blit_artists(self):
+        """Reload the stored background and blit the artists"""
+        
+        self.canvas.restore_region(self.background)
+        for artist in self.artists.values():            
+            self.axes.draw_artist(artist)
+        
+        self.axes.draw_artist(self.reference_annotation)
+        self.axes.draw_artist(self.local_annotation)
+        
+        self.canvas.blit(self.axes.bbox)
+    
+    def _on_pick(self, event):
+        """Set the active artist"""
+        
+        label = event.artist.get_label()
+        if self.active_artist_label == label:
+            return
+        self.active_artist_label = label
+        
+        
+        if event.artist.get_label() in ['woi_start', 'woi_stop']:
+            self._update_window_of_interest(event)
+            return
+        
+        self._update_active_artist()
+    
     def _initialise_window_of_interest(self, start_woi=0, stop_woi=1):
         """Set default values for the sliders and plot the axvlines"""
 
-        self.woi_slider_lower_limit = self.axes.axvline(
+        woi_slider_lower_limit = self.axes.axvline(
             start_woi,
             color='grey',
             linestyle='-',
             linewidth=1.2,
             alpha=0.6,
+            label='woi_start',
+            picker=True,
         )
+        woi_slider_lower_limit.set_animated(True)
+        self.artists['woi_start'] = woi_slider_lower_limit
         
-        self.woi_slider_upper_limit = self.axes.axvline(
+        
+        woi_slider_upper_limit = self.axes.axvline(
             stop_woi,
             color='grey',
             linestyle='-',
             linewidth=1.2,
             alpha=0.6,
+            label='woi_stop',
+            picker=True,
         )
+        woi_slider_upper_limit.set_animated(True)
+        self.artists['woi_stop'] = woi_slider_upper_limit
     
     def update_window_of_interest(self, start_woi, stop_woi):
         """Plot vertical lines designating the window of interest"""
+
+        self.artists['woi_start'].set_xdata([start_woi, start_woi])
+        self.artists['woi_stop'].set_xdata([stop_woi, stop_woi])
+        self._blit_artists()
+
+    def _update_window_of_interest(self, event):
+        """This is called when the woi line is picked"""
+        pass
+
+    def _update_active_artist(self):
+        """Increase the linewidth of the active artist"""
         
-        self.woi_slider_lower_limit.set_xdata([start_woi, start_woi])
-        self.woi_slider_upper_limit.set_xdata([stop_woi, stop_woi])
-        self.figure.canvas.draw_idle()
-    
+        for artist_label, artist in self.artists.items():
+            lw = 3 if artist_label == self.active_artist_label else 1.5
+            artist.set_linewidth(lw)
+        
+        self._blit_artists()
+        
     def _initialise_reference_annotation(self, time=0.5, voltage=6):
         """Plot a point at the reference activation time"""
         
@@ -176,19 +237,15 @@ class AnnotationWidget(CustomDockWidget):
             marker='o',
             markersize=4,
             zorder=5,
+            picker=False,
         )
-        self.canvas.draw_idle()
+        self.reference_annotation.set_animated(True)
     
     def update_reference_annotation(self, time, voltage):
         """Plot the reference activation time"""
         
-        # For some reason, newer versions of matplotlib does not
-        # draw the point when its coordinates are changed.
-        # So we need to destroy it and re-create it.
-        # TODO: Look at using blitting instead:
-        #       https://matplotlib.org/devdocs/tutorials/advanced/blitting.html?highlight=blitting#class-based-example
-        self.reference_annotation.remove()
-        self._initialise_reference_annotation(time, voltage)
+        self.reference_annotation.set_data([time], [voltage])
+        self._blit_artists()
 
     def _initialise_local_annotation(self, time=0.5, voltage=6):
         """Plot a point at the local activation time"""
@@ -201,14 +258,15 @@ class AnnotationWidget(CustomDockWidget):
             marker='o',
             markersize=4,
             zorder=5,
+            picker=False,
         )
-        self.canvas.draw_idle()
+        self.local_annotation.set_animated(True)
 
     def update_local_annotation(self, time, voltage):
         """Plot the local activation time"""
         
-        self.local_annotation.remove()
-        self._initialise_local_annotation(time, voltage)
+        self.local_annotation.set_data([time], [voltage])
+        self._blit_artists()
 
     def initialise_egm_selection(self, selections):
         """Set the selections available in the QComboBox"""
@@ -239,12 +297,20 @@ class AnnotationWidget(CustomDockWidget):
         y_separation = 4
         separations = y_start + np.arange(signals.shape[0]) * y_separation
         
-        self.axes.plot(
+        lines = self.axes.plot(
             times,
             signals.T + separations,
             color="blue",
             linewidth=0.8,
+            label=labels,
+            picker=True,
         )
+        # store the artists so we can blit later on
+        for line, label in zip(lines, labels):
+            self.artists[label] = line
+            line.set_animated(True)
+        self.active_artist_label = labels[-1]
+        
         self.axes.set_yticks(separations)
         self.axes.set_yticklabels(labels)
 
@@ -253,8 +319,6 @@ class AnnotationWidget(CustomDockWidget):
         for spine in ['left', 'right', 'top']:
             self.axes.spines[spine].set_visible(False)
         self.axes.spines['bottom'].set_alpha(0.4)
-        
-        #self.canvas.draw_idle()
 
     def activate_figure(self, xmin, xmax):
         """Show the figure"""
