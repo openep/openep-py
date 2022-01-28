@@ -21,7 +21,7 @@
 Custom Qt Widgets for the OpenEP-Py GUI.
 """
 
-from PySide6 import QtCore, QtWidgets, QtGui
+from PySide2 import QtCore, QtWidgets, QtGui
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 
 

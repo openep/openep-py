@@ -21,11 +21,13 @@
 A GUI for OpenEP-Py.
 """
 import sys
+import os
 import pathlib
 import re
 
-from PySide6 import QtCore, QtGui, QtWidgets
-from PySide6.QtCore import Qt
+from PySide2 import QtCore, QtGui, QtWidgets
+from PySide2.QtCore import Qt
+from PySide2.QtWidgets import QAction
 import numpy as np
 
 import openep
@@ -42,6 +44,8 @@ import openep.view.system_manager
 
 import openep.view.static
 
+
+os.environ['QT_API'] = "pyside2"
 
 class OpenEPGUI(QtWidgets.QMainWindow):
 
@@ -260,6 +264,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         """
 
         dialogue = QtWidgets.QFileDialog()
+        dialogue.DontUseNativeDialog = True
         dialogue.setWindowTitle('Load an OpenEP file')
         dialogue.setDirectory(QtCore.QDir.currentPath())
         dialogue.setFileMode(QtWidgets.QFileDialog.ExistingFile)
@@ -309,6 +314,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         """
 
         dialogue = QtWidgets.QFileDialog()
+        dialogue.DontUseNativeDialog = True
         dialogue.setWindowTitle('Load a set of openCARP files')
         dialogue.setDirectory(QtCore.QDir.currentPath())
         dialogue.setFileMode(QtWidgets.QFileDialog.ExistingFiles)
@@ -380,6 +386,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         """
 
         dialogue = QtWidgets.QFileDialog()
+        dialogue.DontUseNativeDialog = True
         dialogue.setWindowTitle('Add an openCARP data file')
         dialogue.setDirectory(QtCore.QDir.currentPath())
         dialogue.setFileMode(QtWidgets.QFileDialog.ExistingFile)
@@ -402,7 +409,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             if len(system.plotters) == 0:
 
                 # We need to dynamically add an option for creating 3D viewers to the main menubar
-                add_view_for_system_action = QtGui.QAction(str(system.basename), self)
+                add_view_for_system_action = QAction(str(system.basename), self)
                 add_view_for_system_action.triggered.connect(lambda: self.add_view(system))
                 self.system_manager_ui.main.add_view_menu.addAction(add_view_for_system_action)
 
@@ -413,6 +420,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         """Export mesh data form an OpenEP dataset into openCARP format."""
 
         dialogue = QtWidgets.QFileDialog()
+        dialogue.DontUseNativeDialog = True
         dialogue.setWindowTitle('Save As (prefix only)')
         dialogue.setDirectory(QtCore.QDir.currentPath())
         dialogue.setFileMode(QtWidgets.QFileDialog.AnyFile)
@@ -1375,7 +1383,7 @@ def main():
     window = OpenEPGUI()
     window.showMaximized()
 
-    sys.exit(app.exec())
+    sys.exit(app.exec_())
 
 
 if __name__ == '__main__':

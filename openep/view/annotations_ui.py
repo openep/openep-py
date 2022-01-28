@@ -23,7 +23,7 @@ Create a dock widget for the annotation viewer.
 
 import sys
 
-from PySide6 import QtCore, QtGui, QtWidgets
+from PySide2 import QtCore, QtGui, QtWidgets
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib as mpl
 import matplotlib.pyplot as plt

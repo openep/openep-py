@@ -20,7 +20,8 @@
 """
 Class for creating the system manager widget.
 """
-from PySide6 import QtGui, QtWidgets
+from PySide2 import QtGui, QtWidgets
+from PySide2.QtWidgets import QAction
 from .custom_widgets import CustomDockWidget
 
 
@@ -74,9 +75,9 @@ class SystemManagetDockWidget(CustomDockWidget):
         file_menu = self.main.menubar.addMenu("File")
 
         load_menu = QtWidgets.QMenu("Load", self.main)
-        load_openep_mat_action = QtGui.QAction("OpenEP", self.main)
+        load_openep_mat_action = QAction("OpenEP", self.main)
         load_menu.addAction(load_openep_mat_action)
-        load_opencarp_action = QtGui.QAction("openCARP", self.main)
+        load_opencarp_action = QAction("openCARP", self.main)
         load_menu.addAction(load_opencarp_action)
 
         self.main.load_openep_mat_action = load_openep_mat_action
@@ -160,12 +161,12 @@ class SystemManagetDockWidget(CustomDockWidget):
             export_name (str): Name of the export action action (will appear under 'File > export > `system.basename`')
 
         Returns:
-            export_action (QtWidgets.QAction): Action to perform for exporting the data
+            export_action (QAction): Action to perform for exporting the data
         """
 
         # TODO: the menu should be created separately from the action
         export_menu = QtWidgets.QMenu(system_basename, self)
-        export_action = QtGui.QAction(export_name, self)
+        export_action = QAction(export_name, self)
         export_menu.addAction(export_action)
 
         self.main.export_data_menu.addMenu(export_menu)
@@ -179,10 +180,10 @@ class SystemManagetDockWidget(CustomDockWidget):
             system_basename (str): Basename of the system to be exported (i.e. system.basename)
 
         Returns:
-            view_action (QtGui.QAction): Action to open a new 3d viewer
+            view_action (QAction): Action to open a new 3d viewer
         """
 
-        view_action = QtGui.QAction(system_basename, self)
+        view_action = QAction(system_basename, self)
         self.main.add_view_menu.addAction(view_action)
 
         return view_action
@@ -197,7 +198,7 @@ class SystemManagetDockWidget(CustomDockWidget):
 
         # TODO: the menu should be created separately from the action
         add_data_menu = QtWidgets.QMenu(system_basename, self)
-        add_data_action = QtGui.QAction(data_type, self)
+        add_data_action = QAction(data_type, self)
         add_data_menu.addAction(add_data_action)
         self.main.add_data_menu.addMenu(add_data_menu)
 
