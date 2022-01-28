@@ -9,7 +9,7 @@ scikit-learn
 matplotlib>3.5
 pyvista>=0.33
 pyvistaqt>=0.6
-PySide6
+PySide2
 pymeshfix
 trimesh
 shapely
