@@ -21,8 +21,9 @@
 Functions for creating widgets for individual systems
 """
 
-from PySide6.QtCore import Qt
-from PySide6 import QtGui, QtWidgets
+from PySide2.QtCore import Qt
+from PySide2 import QtGui, QtWidgets
+from PySide2.QtWidgets import QAction, QActionGroup
 from .custom_widgets import CustomDockWidget
 
 
@@ -76,13 +77,13 @@ def add_field_menu(dock, plotter, system_name, scalar_fields):
     """
 
     field_menu = dock.main.menubar.addMenu("Field")
-    field_group = QtGui.QActionGroup(dock.main)
+    field_group = QActionGroup(dock.main)
 
     plotter.scalar_field_actions = {}
     for field_name in scalar_fields:
 
         dock.setWindowTitle(f"{system_name}: {field_name}")
-        action = QtGui.QAction(field_name, dock.main, checkable=True)
+        action = QAction(field_name, dock.main, checkable=True)
         action.setChecked(False)
 
         field_menu.addAction(action)
@@ -112,7 +113,7 @@ def add_show_menu(dock, plotter):
     action_names = ["Surface", "Mapping points", "Surface-projected mapping points"]
     for action_name in action_names:
 
-        action = QtGui.QAction(action_name, dock.main, checkable=True)
+        action = QAction(action_name, dock.main, checkable=True)
         show = True if action_name == "Surface" else False  # by default only display the mesh
         action.setChecked(show)
         show_menu.addAction(action)

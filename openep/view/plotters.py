@@ -21,7 +21,7 @@
 Create and manipulate PyVista-Qt BackgroundPlotters.
 """
 
-from PySide6 import QtCore, QtWidgets
+from PySide2 import QtCore, QtWidgets
 from pyvistaqt import BackgroundPlotter
 
 
