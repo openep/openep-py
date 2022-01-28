@@ -7,7 +7,6 @@ scipy
 pandas
 scikit-learn
 matplotlib>3.5
-plotly
 pyvista>=0.33
 pyvistaqt>=0.6
 PySide6
