@@ -1066,27 +1066,25 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         
         local_annotation = annotations.local_activation_time[current_index]
         local_annotation_index = np.searchsorted(times, local_annotation)
-        self.annotate_dock._initialise_local_annotation(
+        self.annotate_dock.update_local_annotation(
             time=local_annotation,
             voltage=bipolar[local_annotation_index] + 6,
         )
-        print(local_annotation, bipolar[local_annotation_index] + 6)
         
         reference_annotation = annotations.reference_activation_time[current_index]
         reference_annotation_index = np.searchsorted(times, reference_annotation)
-        self.annotate_dock._initialise_reference_annotation(
+        self.annotate_dock.update_reference_annotation(
             time=reference_annotation,
             voltage=reference[reference_annotation_index] + 2,
         )
-        print(reference_annotation, reference[reference_annotation_index] + 6)
         
         start_woi, stop_woi = annotations.window_of_interest[current_index]
         start_woi += reference_annotation
         stop_woi += reference_annotation
-        self.annotate_dock._initialise_window_of_interest(start_woi, stop_woi)
-        print(start_woi, stop_woi)
-        
+        self.annotate_dock.update_window_of_interest(start_woi, stop_woi)
+
         self.annotate_dock.canvas.draw()
+        self.annotate_dock._update_active_artist()  # ensure the annotations/woi are added to the background
 
         # TODO: Display this point in the 3d viewer (e.g. render as large blue sphere)
 
@@ -1323,25 +1321,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         reference_annotation = annotations.reference_activation_time[0]
         annotations.window_of_interest[:, 0] = start_woi - reference_annotation
         annotations.window_of_interest[:, 1] = stop_woi - reference_annotation
-    '''
-    def initialise_annotate_slider_limits(self):
-        """Set the limits of the sliders in the annotation viewer."""
-
-        annotations = self.system_manager.active_system.case.electric.annotations
-
-        # Note, the window of interest/reference activation times
-        # may differ between mapping points.
-        # The below works because the first mapping point (index=0)
-        # is always the first to be selected when activating a new system
-        start_woi, stop_woi = annotations.window_of_interest[0]
-        start_woi += annotations.reference_activation_time[0]
-        stop_woi += annotations.reference_activation_time[0]
-
-        self.annotate_dock.update_slider_limits(
-            start_woi=start_woi,
-            stop_woi=stop_woi,
-        )
-        '''
 
     def highlight_menubars_of_active_plotters(self):
         """Make the menubars of all docks in the active system blue."""
