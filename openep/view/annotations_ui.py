@@ -163,6 +163,21 @@ class AnnotationWidget(CustomDockWidget):
         
         self.canvas.blit(self.axes.bbox)
     
+    def _on_scroll(self, event):
+        """Set the gain of the active line"""
+        
+        print(event.button)
+        
+        _, original_y_data = self.artists[self.active_artist_label]
+        current_gain = self.artists[f"{self.active_artist_label}_gain"]
+        gain_diff = event.step * - 1  # scrolling up will decrease gain, down will increase gain
+        new_gain = current_gain + gain_diff
+        
+        self.artists[self.active_artist_label].ydata = original_y_data * np.exp(new_gain)
+        self.artists[f"{self.active_artist_label}_gain"] = new_gain
+
+        self._blit_artists()
+    
     def _on_pick(self, event):
         """Set the active artist"""
         
@@ -308,6 +323,7 @@ class AnnotationWidget(CustomDockWidget):
         # store the artists so we can blit later on
         for line, label in zip(lines, labels):
             self.artists[label] = line
+            self.artists[f"{label}_gain"] = 0  # will be used to control the gain of the signal
             line.set_animated(True)
         self.active_artist_label = labels[-1]
         
@@ -325,7 +341,6 @@ class AnnotationWidget(CustomDockWidget):
         
         self.figure.set_visible(True)
         self.axes.set_xlim(xmin, xmax)
-        self.axes.set_ylim(0, 12)
     
     def deactivate_figure(self):
         """Clear the axes and hide the figure"""
