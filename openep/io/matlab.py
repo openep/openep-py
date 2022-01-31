@@ -102,6 +102,7 @@ def _mat_v73_transform_arrays(data):
         'userdata/electric/annotations/woi',
         'userdata/surface/isVertexAtRim',
         'userdata/surface/triRep/Triangulation',
+        'userdata/surface/triRep/Connectivity',
     }
 
     for key in data:
@@ -221,6 +222,18 @@ def _load_mat_below_v73(filename):
 
     data['electric']['impedances']['time'] = _cast_to_float(data['electric']['impedances']['time'])
     data['electric']['impedances']['value'] = _cast_to_float(data['electric']['impedances']['value'])
+
+    try:
+        # this will only exist if triRep is a struct, not TriRep or Triangulation object
+        data['surface']['triRep']['Triangulation']
+        
+    except ValueError as e:
+        
+        if str(e) != 'no field of name Triangulation':
+            raise e
+        else:
+            message = 'MATLAB classes cannot be read. Please use OpenEP MATLAB to save the triRep data as a struct.'
+            raise TypeError(message) from e
 
     # rfindex is a matlab class - not readable with Python
     data.pop('rfindex', None)
