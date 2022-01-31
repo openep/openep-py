@@ -323,15 +323,11 @@ class AnnotationWidget(CustomDockWidget):
     def activate_figure(self, xmin, xmax):
         """Show the figure"""
         
-        self.figure.set_visible('on')
-        self.axes.axis('on')
+        self.figure.set_visible(True)
         self.axes.set_xlim(xmin, xmax)
         self.axes.set_ylim(0, 12)
     
     def deactivate_figure(self):
         """Clear the axes and hide the figure"""
         
-        self.axes.cla()
-        self.axes.axis('off')
-        self.figure.set_visible('off')
-        self.canvas.draw()
+        self.figure.set_visible(False)
