@@ -22,6 +22,7 @@ Create a dock widget for the annotation viewer.
 """
 
 import sys
+from weakref import ref
 
 from PySide2 import QtCore, QtGui, QtWidgets
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
@@ -168,21 +169,22 @@ class AnnotationWidget(CustomDockWidget):
     def _on_scroll(self, event):
         """Set the gain of the active line"""
         
-        print(event.button, event.step)
-        
         label = self.active_artist_label
         artist = self.artists[label]
         artist_gain = artist._gain
         original_ydata = artist._original_ydata
         
-        gain_diff = 0.1 * (event.step * - 1)  # scrolling up will decrease gain, down will increase gain
+        gain_diff = 0.2 * (event.step * - 1)  # scrolling up will decrease gain, down will increase gain
         new_gain = artist_gain + gain_diff
         
         artist.set_ydata(artist._ystart + original_ydata * np.exp(new_gain))
         artist._gain = new_gain
         
-        print(label, artist, artist_gain, artist.get_ydata(), artist._original_ydata + artist._ystart)
-
+        if label == "Ref":
+            self._update_annotation_ydata(signal=artist, annotation=self.reference_annotation)
+        elif label == "Bipolar":
+            self._update_annotation_ydata(signal=artist, annotation=self.local_annotation)
+        
         self._blit_artists()
     
     def _on_pick(self, event):
@@ -268,7 +270,7 @@ class AnnotationWidget(CustomDockWidget):
         
         self.reference_annotation.set_data([time], [voltage])
         self._blit_artists()
-
+        
     def _initialise_local_annotation(self, time=0.5, voltage=6):
         """Plot a point at the local activation time"""
         
@@ -289,6 +291,16 @@ class AnnotationWidget(CustomDockWidget):
         
         self.local_annotation.set_data([time], [voltage])
         self._blit_artists()
+
+    def _update_annotation_ydata(self, signal, annotation):
+        """After changing the gain of the signal, the ydata need to be modified"""
+            
+        timeseries, voltages = signal.get_data()
+        activation_time = annotation.get_xdata()
+        
+        time_index = np.searchsorted(timeseries, activation_time)
+        voltage = voltages[time_index]
+        annotation.set_ydata(voltage)
 
     def initialise_egm_selection(self, selections):
         """Set the selections available in the QComboBox"""
