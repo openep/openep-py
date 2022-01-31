@@ -329,7 +329,7 @@ class AnnotationWidget(CustomDockWidget):
             self.artists[label] = line
             self.artists_gain[label] = 0
             line.set_animated(True)
-        self.active_artist_label = labels[-1]
+        self.active_artist_label = labels[0]
 
         self.axes.set_yticks(separations)
         self.axes.set_yticklabels(labels)
