@@ -20,10 +20,6 @@
 """
 Create a dock widget for the annotation viewer.
 """
-
-import sys
-from weakref import ref
-
 from PySide2 import QtCore, QtGui, QtWidgets
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib as mpl
@@ -31,13 +27,11 @@ import matplotlib.pyplot as plt
 from matplotlib.backend_bases import MouseButton
 import numpy as np
 
-import openep.draw.draw_routines
 from .custom_widgets import CustomDockWidget, CustomNavigationToolbar
 from ._mpl_key_bindings import disable_all_bindings
 
 
-plt.style.use('ggplot')
-mpl.rcParams['font.size'] = 8
+mpl.rcParams['font.size'] = 9
 disable_all_bindings()
 
 class AnnotationWidget(CustomDockWidget):
@@ -242,11 +236,11 @@ class AnnotationWidget(CustomDockWidget):
         pass
 
     def _update_active_artist(self):
-        """Increase the linewidth of the active artist"""
+        """Change the colour of the active artist"""
         
         for artist_label, artist in self.artists.items():
-            lw = 3 if artist_label == self.active_artist_label else 1.5
-            artist.set_linewidth(lw)
+            colour = 'xkcd:azure' if artist_label == self.active_artist_label else 'xkcd:steel blue'
+            artist.set_color(colour)
         
         self._blit_artists()
         
@@ -268,7 +262,10 @@ class AnnotationWidget(CustomDockWidget):
     def update_reference_annotation(self, time, voltage):
         """Plot the reference activation time"""
         
-        self.reference_annotation.set_data([time], [voltage])
+        gain = self.artists['Ref']._gain
+        ystart = self.artists['Ref']._ystart
+        scaled_voltage = ystart + np.exp(gain) * voltage
+        self.reference_annotation.set_data([time], [scaled_voltage])
         self._blit_artists()
         
     def _initialise_local_annotation(self, time=0.5, voltage=6):
@@ -334,7 +331,7 @@ class AnnotationWidget(CustomDockWidget):
         lines = self.axes.plot(
             times,
             signals.T + separations,
-            color="blue",
+            color='xkcd:steel blue',
             linewidth=0.8,
             label=labels,
             picker=True,
@@ -347,15 +344,17 @@ class AnnotationWidget(CustomDockWidget):
             line._ystart = separation
             line.set_animated(True)
         self.active_artist_label = labels[0]
+        lines[0].set_color('xkcd:azure')
 
-        self.axes.set_yticks(separations)
-        self.axes.set_yticklabels(labels)
+        self.axes.set_yticks(separations, labels)
 
         # Remove the border and ticks
         plt.tick_params(axis='both', which='both', length=0)
         for spine in ['left', 'right', 'top']:
             self.axes.spines[spine].set_visible(False)
         self.axes.spines['bottom'].set_alpha(0.4)
+        self.axes.tick_params(axis=u'both', which=u'both',length=0)
+        self.axes.grid(axis='y')
 
     def activate_figure(self, xmin, xmax):
         """Show the figure"""
