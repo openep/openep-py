@@ -106,6 +106,7 @@ class AnnotationWidget(CustomDockWidget):
         canvas = FigureCanvas(figure)
         canvas.mpl_connect('draw_event', self._on_draw)
         canvas.mpl_connect('pick_event', self._on_pick)
+        canvas.mpl_connect('scroll_event', self._on_scroll)
 
         return canvas, figure, axes
 
@@ -171,14 +172,16 @@ class AnnotationWidget(CustomDockWidget):
         
         label = self.active_artist_label
         artist = self.artists[label]
-        artist_gain = self.artists_gain[label]
+        artist_gain = artist._gain
+        original_ydata = artist._original_ydata
         
-        _, original_y_data = artist.get_data(orig="True")
-        gain_diff = event.step * - 1  # scrolling up will decrease gain, down will increase gain
+        gain_diff = 0.1 * (event.step * - 1)  # scrolling up will decrease gain, down will increase gain
         new_gain = artist_gain + gain_diff
         
-        artist.ydata = original_y_data * np.exp(new_gain)
-        self.artists[label] = new_gain
+        artist.set_ydata(artist._ystart + original_ydata * np.exp(new_gain))
+        artist._gain = new_gain
+        
+        print(label, artist, artist_gain, artist.get_ydata(), artist._original_ydata + artist._ystart)
 
         self._blit_artists()
     
@@ -325,9 +328,11 @@ class AnnotationWidget(CustomDockWidget):
             picker=True,
         )
         # store the artists so we can blit later on
-        for line, label in zip(lines, labels):
+        for line, label, separation in zip(lines, labels, separations):
             self.artists[label] = line
-            self.artists_gain[label] = 0
+            line._gain = 0
+            line._original_ydata = line.get_ydata().copy() - separation
+            line._ystart = separation
             line.set_animated(True)
         self.active_artist_label = labels[0]
 
