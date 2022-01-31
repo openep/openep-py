@@ -63,7 +63,7 @@ from ..data_structures.electric import extract_electric_data, empty_electric
 from ..data_structures.ablation import extract_ablation_data, empty_ablation
 from ..data_structures.case import Case
 
-__all__ = ["load_openep_mat", "load_mat", "load_opencarp"]
+__all__ = ["load_openep_mat", "_load_mat", "load_opencarp"]
 
 
 def _check_mat_version_73(filename):
@@ -75,7 +75,7 @@ def _check_mat_version_73(filename):
     return major_version == 2
 
 
-def load_mat(filename):
+def _load_mat(filename):
     """Load a MATLAB file."""
 
     if _check_mat_version_73(filename):
@@ -106,7 +106,7 @@ def load_openep_mat(filename, name=None):
         case (Case): an OpenEP Case object that contains the surface, electric and
             ablation data.
     """
-    data = load_mat(filename)
+    data = _load_mat(filename)
 
     if name is None:
         name = os.path.basename(filename)
