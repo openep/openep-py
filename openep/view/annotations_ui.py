@@ -60,7 +60,6 @@ class AnnotationWidget(CustomDockWidget):
         # the electrogram to annnotate.
         self.canvas, self.figure, self.axes = self._init_canvas()
         self.artists = {}  # dictionary of artists (lines, points, etc.)
-        self.artists_gain = {}  # will be used to control the gain of the signal
         self.active_artist_label = None
         
         self.egm_selection, egm_selection_layout = self._init_selection()
@@ -101,7 +100,6 @@ class AnnotationWidget(CustomDockWidget):
         canvas = FigureCanvas(figure)
         canvas.mpl_connect('draw_event', self._on_draw)
         canvas.mpl_connect('pick_event', self._on_pick)
-        canvas.mpl_connect('scroll_event', self._on_scroll)
 
         return canvas, figure, axes
 
@@ -160,19 +158,14 @@ class AnnotationWidget(CustomDockWidget):
         
         self.canvas.blit(self.axes.bbox)
     
-    def _on_scroll(self, event):
+    def update_gain(self, gain):
         """Set the gain of the active line"""
-        
+
         label = self.active_artist_label
         artist = self.artists[label]
-        artist_gain = artist._gain
         original_ydata = artist._original_ydata
         
-        gain_diff = 0.2 * (event.step * - 1)  # scrolling up will decrease gain, down will increase gain
-        new_gain = artist_gain + gain_diff
-        
-        artist.set_ydata(artist._ystart + original_ydata * np.exp(new_gain))
-        artist._gain = new_gain
+        artist.set_ydata(artist._ystart + original_ydata * np.exp(gain))
         
         if label == "Ref":
             self._update_annotation_ydata(signal=artist, annotation=self.reference_annotation)
@@ -259,10 +252,10 @@ class AnnotationWidget(CustomDockWidget):
         )
         self.reference_annotation.set_animated(True)
     
-    def update_reference_annotation(self, time, voltage):
+    def update_reference_annotation(self, time, voltage, gain):
         """Plot the reference activation time"""
         
-        gain = self.artists['Ref']._gain
+        #gain = self.artists['Ref']._gain
         ystart = self.artists['Ref']._ystart
         scaled_voltage = ystart + np.exp(gain) * voltage
         self.reference_annotation.set_data([time], [scaled_voltage])
@@ -283,11 +276,20 @@ class AnnotationWidget(CustomDockWidget):
         )
         self.local_annotation.set_animated(True)
 
-    def update_local_annotation(self, time, voltage):
+    def update_local_annotation(self, time, voltage, gain):
         """Plot the local activation time"""
         
-        self.local_annotation.set_data([time], [voltage])
+        ystart = self.artists['Bipolar']._ystart
+        scaled_voltage = ystart + np.exp(gain) * voltage
+        self.local_annotation.set_data([time], [scaled_voltage])
         self._blit_artists()
+    
+    def update_annotation(self, signal, annotation, index):
+        """Set the location of an annotation"""
+        
+        time = signal.get_xdata()[index]
+        voltage = signal.get_ydata()[index]
+        annotation.set_data([time], [voltage])
 
     def _update_annotation_ydata(self, signal, annotation):
         """After changing the gain of the signal, the ydata need to be modified"""
@@ -305,7 +307,7 @@ class AnnotationWidget(CustomDockWidget):
         self.egm_selection.clear()
         self.egm_selection.insertItems(0, selections)
 
-    def plot_signals(self, times, signals, labels):
+    def plot_signals(self, times, signals, labels, gains):
         """Plot electrogram/ecg signals.
         
         Args:
@@ -328,23 +330,25 @@ class AnnotationWidget(CustomDockWidget):
         y_separation = 4
         separations = y_start + np.arange(signals.shape[0]) * y_separation
         
-        lines = self.axes.plot(
-            times,
-            signals.T + separations,
-            color='xkcd:steel blue',
-            linewidth=0.8,
-            label=labels,
-            picker=True,
-        )
-        # store the artists so we can blit later on
-        for line, label, separation in zip(lines, labels, separations):
+        for signal, label, separation, gain in zip(signals, labels, separations, gains):
+            
+            line, = self.axes.plot(
+                times,
+                separation + np.exp(gain) * signal,
+                linewidth=0.8,
+                label=label,
+                picker=True
+            )
+            
+            # store the artists so we can blit later on
             self.artists[label] = line
-            line._gain = 0
-            line._original_ydata = line.get_ydata().copy() - separation
+            line._original_ydata = signal.copy()
             line._ystart = separation
             line.set_animated(True)
+
+        # Set an active artists (has a different colour to to others. The gain can be set by scrolling).
         self.active_artist_label = labels[0]
-        lines[0].set_color('xkcd:azure')
+        self.artists[self.active_artist_label].set_color('xkcd:azure')
 
         self.axes.set_yticks(separations, labels)
 
