@@ -93,7 +93,7 @@ def _visit_mat_v73_(file_pointer):
     return data
 
 
-def _math_v73_transform_arrays(data):
+def _mat_v73_transform_arrays(data):
     """Flatten or transpose arrays if necessary. Cast arrays from float to int if necessary."""
 
     cast_to_int = {
@@ -181,7 +181,7 @@ def _load_mat_v73(filename):
     data.pop('userdata/rfindex/grid', None)
 
     # Some arrays need to be flattened or transposed
-    data = _math_v73_transform_arrays(data)
+    data = _mat_v73_transform_arrays(data)
 
     # make the flat dictionary nested
     data = _mat_v73_flat_to_nested(data)
