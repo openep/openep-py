@@ -65,6 +65,7 @@ class AnnotationWidget(CustomDockWidget):
         # the electrogram to annnotate.
         self.canvas, self.figure, self.axes = self._init_canvas()
         self.artists = {}  # dictionary of artists (lines, points, etc.)
+        self.artists_gain = {}  # will be used to control the gain of the signal
         self.active_artist_label = None
         
         self.egm_selection, egm_selection_layout = self._init_selection()
@@ -166,15 +167,18 @@ class AnnotationWidget(CustomDockWidget):
     def _on_scroll(self, event):
         """Set the gain of the active line"""
         
-        print(event.button)
+        print(event.button, event.step)
         
-        _, original_y_data = self.artists[self.active_artist_label]
-        current_gain = self.artists[f"{self.active_artist_label}_gain"]
+        label = self.active_artist_label
+        artist = self.artists[label]
+        artist_gain = self.artists_gain[label]
+        
+        _, original_y_data = artist.get_data(orig="True")
         gain_diff = event.step * - 1  # scrolling up will decrease gain, down will increase gain
-        new_gain = current_gain + gain_diff
+        new_gain = artist_gain + gain_diff
         
-        self.artists[self.active_artist_label].ydata = original_y_data * np.exp(new_gain)
-        self.artists[f"{self.active_artist_label}_gain"] = new_gain
+        artist.ydata = original_y_data * np.exp(new_gain)
+        self.artists[label] = new_gain
 
         self._blit_artists()
     
@@ -323,10 +327,10 @@ class AnnotationWidget(CustomDockWidget):
         # store the artists so we can blit later on
         for line, label in zip(lines, labels):
             self.artists[label] = line
-            self.artists[f"{label}_gain"] = 0  # will be used to control the gain of the signal
+            self.artists_gain[label] = 0
             line.set_animated(True)
         self.active_artist_label = labels[-1]
-        
+
         self.axes.set_yticks(separations)
         self.axes.set_yticklabels(labels)
 
@@ -341,6 +345,8 @@ class AnnotationWidget(CustomDockWidget):
         
         self.figure.set_visible(True)
         self.axes.set_xlim(xmin, xmax)
+        self.axes.set_ylim(0, 12)
+        self.canvas.draw()  # ensure the figure background is stored in self.background
     
     def deactivate_figure(self):
         """Clear the axes and hide the figure"""
