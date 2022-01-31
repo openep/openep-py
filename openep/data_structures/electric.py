@@ -33,17 +33,45 @@ class Electrogram:
         egm (np.ndarray): Electrograms
         points (np.ndarray): 3D coordinates of the associated mapping points.
         voltage (np.ndarray): The voltage at each mapping point.
+        gain (np.ndarray): gain to apply to each signal
         names (np.ndarray): Names of the associated electrodes.
     """
 
     egm: np.ndarray
     points: np.ndarray = None
     voltage: np.ndarray = None
+    gain: np.ndarray = None
     names: np.ndarray = None
+
+    def __attrs_post_init__(self):
+        if self.egm is not None and self.gain is None:
+            self.gain = np.zeros(self.egm.shape[0])
 
     def __repr__(self):
         n_points = len(self.egm) if self.egm is not None else 0
         return f"Electrograms with {n_points} mapping points."
+
+
+@attrs(auto_attribs=True, auto_detect=True)
+class ECG:
+    """
+    Class for storing information about ECGs
+
+    Args:
+        egm (np.ndarray): ECGs
+        gain (np.ndarray): gain to apply to each signal
+    """
+
+    ecg: np.ndarray
+    gain: np.ndarray = None
+
+    def __attrs_post_init__(self):
+        if self.ecg is not None and self.gain is None:
+            self.gain = np.zeros(self.ecg.shape[0])
+
+    def __repr__(self):
+        n_points = len(self.ecg) if self.ecg is not None else 0
+        return f"ECGs with {n_points} signals."
 
 
 @attrs(auto_attribs=True, auto_detect=True)
@@ -160,19 +188,25 @@ def extract_electric_data(electric_data):
         egm=electric_data['egm'],
         points=electric_data['egmX'],
         voltage=electric_data['voltages']['bipolar'],
+        gain=None,
         names=electric_data['electrodeNames_bip'],
     )
     unipolar_egm = Electrogram(
         egm=electric_data['egmUni'],
         points=electric_data['egmUniX'],
         voltage=electric_data['voltages']['unipolar'],
+        gain=None,
         names=electric_data['electrodeNames_uni'],
     )
     reference_egm = Electrogram(
         egm=electric_data['egmRef'],
+        gain=None,
     )
 
-    ecg = electric_data['ecg']
+    ecg = ECG(
+        ecg=electric_data['ecg'],
+        gain=None,
+    )
 
     impedance = Impedance(
         times=electric_data['impedances']['time'],
@@ -220,19 +254,22 @@ def empty_electric():
         egm=None,
         points=None,
         voltage=None,
+        gain=None,
         names=None,
     )
     unipolar_egm = Electrogram(
         egm=None,
         points=None,
         voltage=None,
+        gain=None,
         names=None,
     )
     reference_egm = Electrogram(
         egm=None,
+        gain=None,
     )
 
-    ecg = None,
+    ecg = None
 
     impedance = Impedance(
         times=None,

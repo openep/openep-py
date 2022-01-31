@@ -173,7 +173,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.annotate_dock = openep.view.annotations_ui.AnnotationWidget(title="Annotate")
     
         self.annotate_dock.egm_selection.currentIndexChanged[int].connect(self.update_annotation_plot)
-        self.annotate_dock.canvas.mpl_connect('key_press_event', self._annotate_on_press)
+        self.annotate_dock.canvas.mpl_connect('key_press_event', self.annotation_on_press)
+        self.annotate_dock.canvas.mpl_connect('scroll_event', self.annotation_on_scroll)
         
         # remove all default key bindings
         # see https://stackoverflow.com/a/35631062/17623640
@@ -749,7 +750,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             xmin = self.egm_times[0] - 100
             xmax = self.egm_times[-1] + 100
             self.annotate_dock.activate_figure(xmin, xmax)
-            self.initialise_annotate_egm_selection()
+            self.initialise_annotation_egm_selection()
 
             self.egm_axis.axis('on')  # make sure we can see the axes now
             self.egm_axis.set_xlim(xmin, xmax)
@@ -955,7 +956,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         self.egm_times = self.system_manager.electrogram_times()
     
-    def _annotate_on_press(self, event):
+    def annotation_on_press(self, event):
         """Bindings for key press events in the annotation viewer"""
         
         sys.stdout.flush()
@@ -987,15 +988,16 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         
         electric = self.system_manager.active_system.case.electric
 
-        # TODO: Check whether these should be set to the time_index or to actual time.
-        #       Is the time always in units of 1 ms? If so then time_index and
-        #       time will be equal.
+        # TODO: Annotation times are signal indices. Collected at a specific frequency.
+        #       Should be plotted a ms on the x-axis, taking into accoutnt the paper size
+        #       and paper speed.
         if event.key == 'r':
             
             electric.annotations.reference_activation_time[current_index] = time_index
             
-            voltage = electric.reference_egm.egm[current_index, time_index] + 2  # y offset
-            self.annotate_dock.update_reference_annotation(time, voltage)
+            voltage = electric.reference_egm.egm[current_index, time_index]  # + 2  # y offset
+            gain = electric.reference_egm.gain[current_index]
+            self.annotate_dock.update_reference_annotation(time, voltage, gain)
             return
 
         elif event.key == 'w':
@@ -1024,11 +1026,33 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             
             electric.annotations.local_activation_time[current_index] = time_index
             
-            voltage = electric.bipolar_egm.egm[current_index, time_index] + 6  # y offset
-            self.annotate_dock.update_local_annotation(time, voltage)
+            voltage = electric.bipolar_egm.egm[current_index, time_index]  # + 6  # y offset
+            gain = electric.bipolar_egm.gain[current_index]
+            self.annotate_dock.update_local_annotation(time, voltage, gain)
             return
 
-    def initialise_annotate_egm_selection(self):
+    def annotation_on_scroll(self, event):
+        """Set the gain of the active line in the annotation viewer"""
+        
+        current_index = self.annotate_dock.egm_selection.currentIndex()
+        electric = self.system_manager.active_system.case.electric
+        gain_diff = 0.2 * (event.step * -1)  # scrolling up will decrease gain, down will increase gain
+        
+        if self.annotate_dock.active_artist_label == "Ref":
+            electric.reference_egm.gain[current_index] += gain_diff
+            gain = electric.reference_egm.gain[current_index]
+            
+        elif self.annotate_dock.active_artist_label == "Bipolar":
+            electric.bipolar_egm.gain[current_index] += gain_diff
+            gain = electric.bipolar_egm.gain[current_index]
+            
+        elif self.annotate_dock.active_artist_label == "ECG":
+            electric.ecg.gain[current_index] += gain_diff
+            gain = electric.ecg.gain[current_index]
+        
+        self.annotate_dock.update_gain(gain)
+
+    def initialise_annotation_egm_selection(self):
         """Set the available electrogram for annotating"""
 
         electric = self.system_manager.active_system.case.electric
@@ -1045,7 +1069,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         
         # TODO: this will currently fail unless there is both reference
         # and bipolar electrograms as well as ecgs. Annotations
-        # are also required.
+        # are also required. And the gain of each signal.
         
         # Plot electrical data for this point
         current_index = self.annotate_dock.egm_selection.currentIndex()
@@ -1053,30 +1077,48 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         
         reference = electric.reference_egm.egm[current_index]
         bipolar = electric.bipolar_egm.egm[current_index]
-        ecg = electric.ecg[current_index]
+        ecg = electric.ecg.ecg[current_index]
         signals = np.asarray([reference, bipolar, ecg])
+        
+        reference_gain = electric.reference_egm.gain[current_index]
+        bipolar_gain = electric.bipolar_egm.gain[current_index]
+        ecg_gain = electric.ecg.gain[current_index]
+        signal_gains = np.asarray([reference_gain, bipolar_gain, ecg_gain])
         
         times = self.system_manager.electrogram_times()
         labels = np.asarray(["Ref", "Bipolar", "ECG"])
 
-        self.annotate_dock.plot_signals(times, signals, labels)
+        self.annotate_dock.plot_signals(times, signals, labels, signal_gains)
         
         # Also plot the annotations and window of interest
         annotations = electric.annotations
         
         local_annotation = annotations.local_activation_time[current_index]
         local_annotation_index = np.searchsorted(times, local_annotation)
+        self.annotate_dock.update_annotation(
+            signal=self.annotate_dock.artists['Bipolar'],
+            annotation=self.annotate_dock.local_annotation,
+            index=local_annotation_index,
+        )
+        """
         self.annotate_dock.update_local_annotation(
             time=local_annotation,
             voltage=bipolar[local_annotation_index] + 6,
         )
-        
+        """
         reference_annotation = annotations.reference_activation_time[current_index]
         reference_annotation_index = np.searchsorted(times, reference_annotation)
+        self.annotate_dock.update_annotation(
+            signal=self.annotate_dock.artists['Ref'],
+            annotation=self.annotate_dock.reference_annotation,
+            index=reference_annotation_index,
+        )
+        """
         self.annotate_dock.update_reference_annotation(
             time=reference_annotation,
             voltage=reference[reference_annotation_index] + 2,
         )
+        """
         
         start_woi, stop_woi = annotations.window_of_interest[current_index]
         start_woi += reference_annotation
@@ -1088,7 +1130,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         # TODO: Display this point in the 3d viewer (e.g. render as large blue sphere)
 
-    def update_annotate_woi(self):
+    def update_annotation_woi(self):
         """Set the woi based on the current value of the range slider"""
 
         # TODO: create a button/toolbar/menu option to update the woi/
