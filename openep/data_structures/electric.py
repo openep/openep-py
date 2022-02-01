@@ -184,11 +184,12 @@ def extract_electric_data(electric_data):
     names = electric_data['tags'].astype(str)
     internal_names = electric_data['names'].astype(str)
 
+    # TODO: check if gain values are stored in electric_data before creating the default values
     bipolar_egm = Electrogram(
         egm=electric_data['egm'],
         points=electric_data['egmX'],
         voltage=electric_data['voltages']['bipolar'],
-        gain=None,
+        gain=np.full_like(electric_data['voltages']['bipolar'], fill_value=1),
         names=electric_data['electrodeNames_bip'],
     )
     unipolar_egm = Electrogram(
@@ -200,12 +201,12 @@ def extract_electric_data(electric_data):
     )
     reference_egm = Electrogram(
         egm=electric_data['egmRef'],
-        gain=None,
+        gain=np.full(electric_data['egmRef'].shape[0], fill_value=-5),
     )
 
     ecg = ECG(
         ecg=electric_data['ecg'],
-        gain=None,
+        gain=np.full(electric_data['ecg'].shape[0], fill_value=1),
     )
 
     impedance = Impedance(

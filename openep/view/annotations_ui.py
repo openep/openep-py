@@ -41,10 +41,8 @@ class AnnotationWidget(CustomDockWidget):
 
         super().__init__(title)
         self._init_main_window()
-        self._initialise_window_of_interest()
-        self._initialise_reference_annotation()
-        self._initialise_local_annotation()
-    
+        self.initialise_annotations()
+
     def _init_main_window(self):
         
         self.main  = QtWidgets.QMainWindow()
@@ -139,7 +137,15 @@ class AnnotationWidget(CustomDockWidget):
         central_widget.setStyleSheet("border-width: 0px; border: 0px; background-color: #d8dcd6;")
         
         return central_widget
+
+    def initialise_annotations(self):
+        """Create the annotations"""
+
+        self._initialise_window_of_interest()
+        self._initialise_reference_annotation()
+        self._initialise_local_annotation()
     
+
     def _on_draw(self, event):
         """Store the background and blit other artists."""
         
@@ -180,10 +186,10 @@ class AnnotationWidget(CustomDockWidget):
         """Set the active artist"""
         
         label = event.artist.get_label()
+ 
         if self.active_artist_label == label:
             return
         self.active_artist_label = label
-        
         
         if event.artist.get_label() in ['woi_start', 'woi_stop']:
             self._update_window_of_interest(event)
