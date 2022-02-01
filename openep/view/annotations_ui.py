@@ -154,7 +154,9 @@ class AnnotationWidget(CustomDockWidget):
             self.axes.draw_artist(artist)
         
         self.axes.draw_artist(self.reference_annotation)
+        self.axes.draw_artist(self._reference_annotation_line)
         self.axes.draw_artist(self.local_annotation)
+        self.axes.draw_artist(self._local_annotation_line)
         
         self.canvas.blit(self.axes.bbox)
     
@@ -195,10 +197,11 @@ class AnnotationWidget(CustomDockWidget):
         woi_slider_lower_limit = self.axes.axvline(
             start_woi,
             color='grey',
-            linestyle='-',
-            linewidth=1.2,
+            linestyle='--',
+            linewidth=0.6,
             alpha=0.6,
             label='woi_start',
+            zorder=1,
             picker=True,
         )
         woi_slider_lower_limit.set_animated(True)
@@ -208,10 +211,11 @@ class AnnotationWidget(CustomDockWidget):
         woi_slider_upper_limit = self.axes.axvline(
             stop_woi,
             color='grey',
-            linestyle='-',
-            linewidth=1.2,
+            linestyle='--',
+            linewidth=0.6,
             alpha=0.6,
             label='woi_stop',
+            zorder=1,
             picker=True,
         )
         woi_slider_upper_limit.set_animated(True)
@@ -247,18 +251,29 @@ class AnnotationWidget(CustomDockWidget):
             linewidth=0,
             marker='o',
             markersize=4,
-            zorder=5,
+            zorder=3,
             picker=False,
         )
         self.reference_annotation.set_animated(True)
+        
+        self._reference_annotation_line = self.axes.axvline(
+            time,
+            color='red',
+            linestyle='--',
+            linewidth=0.6,
+            alpha=0.6,
+            zorder=1,
+            picker=False,
+        )
+        self._reference_annotation_line.set_animated(True)
     
     def update_reference_annotation(self, time, voltage, gain):
         """Plot the reference activation time"""
         
-        #gain = self.artists['Ref']._gain
         ystart = self.artists['Ref']._ystart
         scaled_voltage = ystart + np.exp(gain) * voltage
         self.reference_annotation.set_data([time], [scaled_voltage])
+        self._reference_annotation_line.set_xdata([time, time])
         self._blit_artists()
         
     def _initialise_local_annotation(self, time=0.5, voltage=6):
@@ -271,10 +286,21 @@ class AnnotationWidget(CustomDockWidget):
             linewidth=0,
             marker='o',
             markersize=4,
-            zorder=5,
+            zorder=3,
             picker=False,
         )
         self.local_annotation.set_animated(True)
+
+        self._local_annotation_line = self.axes.axvline(
+            time,
+            color='green',
+            linestyle='--',
+            linewidth=0.6,
+            alpha=0.6,
+            zorder=1,
+            picker=False,
+        )
+        self._local_annotation_line.set_animated(True)
 
     def update_local_annotation(self, time, voltage, gain):
         """Plot the local activation time"""
@@ -282,14 +308,17 @@ class AnnotationWidget(CustomDockWidget):
         ystart = self.artists['Bipolar']._ystart
         scaled_voltage = ystart + np.exp(gain) * voltage
         self.local_annotation.set_data([time], [scaled_voltage])
+        self._local_annotation_line.set_xdata([time, time])
         self._blit_artists()
     
-    def update_annotation(self, signal, annotation, index):
+    def update_annotation(self, signal, annotation, annotation_line, index):
         """Set the location of an annotation"""
         
         time = signal.get_xdata()[index]
         voltage = signal.get_ydata()[index]
         annotation.set_data([time], [voltage])
+        annotation_line.set_xdata([time, time])
+        
 
     def _update_annotation_ydata(self, signal, annotation):
         """After changing the gain of the signal, the ydata need to be modified"""
@@ -337,7 +366,9 @@ class AnnotationWidget(CustomDockWidget):
                 separation + np.exp(gain) * signal,
                 linewidth=0.8,
                 label=label,
-                picker=True
+                zorder=2,
+                picker=True,
+                alpha=1,
             )
             
             # store the artists so we can blit later on
