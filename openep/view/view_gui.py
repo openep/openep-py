@@ -1036,11 +1036,12 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         
         current_index = self.annotate_dock.egm_selection.currentIndex()
         electric = self.system_manager.active_system.case.electric
-        gain_diff = 0.2 * (event.step * -1)  # scrolling up will decrease gain, down will increase gain
+        gain_diff = 0.1 * (event.step * -1)  # scrolling up will decrease gain, down will increase gain
         
         if self.annotate_dock.active_artist_label == "Ref":
             electric.reference_egm.gain[current_index] += gain_diff
             gain = electric.reference_egm.gain[current_index]
+            print(gain)
             
         elif self.annotate_dock.active_artist_label == "Bipolar":
             electric.bipolar_egm.gain[current_index] += gain_diff
