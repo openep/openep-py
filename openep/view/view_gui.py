@@ -1089,7 +1089,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         labels = np.asarray(["Ref", "Bipolar", "ECG"])
 
         self.annotate_dock.plot_signals(times, signals, labels, signal_gains)
-        self.annotate_dock.initialise_annotations()
+        #self.annotate_dock._initialise_annotations()
         
         # Also plot the annotations and window of interest
         annotations = electric.annotations
