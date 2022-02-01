@@ -1030,6 +1030,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             gain = electric.bipolar_egm.gain[current_index]
             self.annotate_dock.update_local_annotation(time, voltage, gain)
             return
+    
+        self.annotate_dock.blit_artists()
 
     def annotation_on_scroll(self, event):
         """Set the gain of the active line in the annotation viewer"""
@@ -1102,12 +1104,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             annotation_line=self.annotate_dock._local_annotation_line,
             index=local_annotation_index,
         )
-        """
-        self.annotate_dock.update_local_annotation(
-            time=local_annotation,
-            voltage=bipolar[local_annotation_index] + 6,
-        )
-        """
+
         reference_annotation = annotations.reference_activation_time[current_index]
         reference_annotation_index = np.searchsorted(times, reference_annotation)
         self.annotate_dock.update_annotation(
@@ -1116,12 +1113,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             annotation_line=self.annotate_dock._reference_annotation_line,
             index=reference_annotation_index,
         )
-        """
-        self.annotate_dock.update_reference_annotation(
-            time=reference_annotation,
-            voltage=reference[reference_annotation_index] + 2,
-        )
-        """
         
         start_woi, stop_woi = annotations.window_of_interest[current_index]
         start_woi += reference_annotation
@@ -1129,7 +1120,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.annotate_dock.update_window_of_interest(start_woi, stop_woi)
 
         self.annotate_dock.canvas.draw()
-        self.annotate_dock._update_active_artist()  # ensure the annotations/woi are added to the background
+        self.annotate_dock.update_active_artist()  # ensure the annotations/woi are added to the background
 
         # TODO: Display this point in the 3d viewer (e.g. render as large blue sphere)
 
