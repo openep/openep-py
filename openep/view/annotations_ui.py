@@ -41,7 +41,7 @@ class AnnotationWidget(CustomDockWidget):
 
         super().__init__(title)
         self._init_main_window()
-        self.initialise_annotations()
+        self._initialise_annotations()
 
     def _init_main_window(self):
         
@@ -138,65 +138,13 @@ class AnnotationWidget(CustomDockWidget):
         
         return central_widget
 
-    def initialise_annotations(self):
+    def _initialise_annotations(self):
         """Create the annotations"""
 
         self._initialise_window_of_interest()
         self._initialise_reference_annotation()
         self._initialise_local_annotation()
-    
 
-    def _on_draw(self, event):
-        """Store the background and blit other artists."""
-        
-        self.background = self.canvas.copy_from_bbox(self.axes.bbox)
-        self._blit_artists()
-
-    def _blit_artists(self):
-        """Reload the stored background and blit the artists"""
-        
-        self.canvas.restore_region(self.background)
-        for artist in self.artists.values():            
-            self.axes.draw_artist(artist)
-        
-        self.axes.draw_artist(self.reference_annotation)
-        self.axes.draw_artist(self._reference_annotation_line)
-        self.axes.draw_artist(self.local_annotation)
-        self.axes.draw_artist(self._local_annotation_line)
-        
-        self.canvas.blit(self.axes.bbox)
-    
-    def update_gain(self, gain):
-        """Set the gain of the active line"""
-
-        label = self.active_artist_label
-        artist = self.artists[label]
-        original_ydata = artist._original_ydata
-        
-        artist.set_ydata(artist._ystart + original_ydata * np.exp(gain))
-        
-        if label == "Ref":
-            self._update_annotation_ydata(signal=artist, annotation=self.reference_annotation)
-        elif label == "Bipolar":
-            self._update_annotation_ydata(signal=artist, annotation=self.local_annotation)
-        
-        self._blit_artists()
-    
-    def _on_pick(self, event):
-        """Set the active artist"""
-        
-        label = event.artist.get_label()
- 
-        if self.active_artist_label == label:
-            return
-        self.active_artist_label = label
-        
-        if event.artist.get_label() in ['woi_start', 'woi_stop']:
-            self._update_window_of_interest(event)
-            return
-        
-        self._update_active_artist()
-    
     def _initialise_window_of_interest(self, start_woi=0, stop_woi=1):
         """Set default values for the sliders and plot the axvlines"""
 
@@ -226,27 +174,7 @@ class AnnotationWidget(CustomDockWidget):
         )
         woi_slider_upper_limit.set_animated(True)
         self.artists['woi_stop'] = woi_slider_upper_limit
-    
-    def update_window_of_interest(self, start_woi, stop_woi):
-        """Plot vertical lines designating the window of interest"""
 
-        self.artists['woi_start'].set_xdata([start_woi, start_woi])
-        self.artists['woi_stop'].set_xdata([stop_woi, stop_woi])
-        self._blit_artists()
-
-    def _update_window_of_interest(self, event):
-        """This is called when the woi line is picked"""
-        pass
-
-    def _update_active_artist(self):
-        """Change the colour of the active artist"""
-        
-        for artist_label, artist in self.artists.items():
-            colour = 'xkcd:azure' if artist_label == self.active_artist_label else 'xkcd:steel blue'
-            artist.set_color(colour)
-        
-        self._blit_artists()
-        
     def _initialise_reference_annotation(self, time=0.5, voltage=6):
         """Plot a point at the reference activation time"""
         
@@ -272,16 +200,7 @@ class AnnotationWidget(CustomDockWidget):
             picker=False,
         )
         self._reference_annotation_line.set_animated(True)
-    
-    def update_reference_annotation(self, time, voltage, gain):
-        """Plot the reference activation time"""
-        
-        ystart = self.artists['Ref']._ystart
-        scaled_voltage = ystart + np.exp(gain) * voltage
-        self.reference_annotation.set_data([time], [scaled_voltage])
-        self._reference_annotation_line.set_xdata([time, time])
-        self._blit_artists()
-        
+
     def _initialise_local_annotation(self, time=0.5, voltage=6):
         """Plot a point at the local activation time"""
         
@@ -307,6 +226,70 @@ class AnnotationWidget(CustomDockWidget):
             picker=False,
         )
         self._local_annotation_line.set_animated(True)
+
+    def _on_draw(self, event):
+        """Store the background and blit other artists."""
+        
+        self.background = self.canvas.copy_from_bbox(self.axes.bbox)
+        self._blit_artists()
+
+    def _blit_artists(self):
+        """Reload the stored background and blit the artists"""
+        
+        self.canvas.restore_region(self.background)
+        for artist in self.artists.values():            
+            self.axes.draw_artist(artist)
+        
+        self.axes.draw_artist(self.reference_annotation)
+        self.axes.draw_artist(self._reference_annotation_line)
+        self.axes.draw_artist(self.local_annotation)
+        self.axes.draw_artist(self._local_annotation_line)
+        
+        self.canvas.blit(self.axes.bbox)
+    
+    def _on_pick(self, event):
+        """Set the active artist"""
+        
+        label = event.artist.get_label()
+ 
+        if self.active_artist_label == label:
+            return
+        self.active_artist_label = label
+        
+        if event.artist.get_label() in ['woi_start', 'woi_stop']:
+            self._update_window_of_interest(event)
+            return
+        
+        self._update_active_artist()
+
+    def update_window_of_interest(self, start_woi, stop_woi):
+        """Plot vertical lines designating the window of interest"""
+
+        self.artists['woi_start'].set_xdata([start_woi, start_woi])
+        self.artists['woi_stop'].set_xdata([stop_woi, stop_woi])
+        self._blit_artists()
+
+    def _update_window_of_interest(self, event):
+        """This is called when the woi line is picked"""
+        pass
+
+    def _update_active_artist(self):
+        """Change the colour of the active artist"""
+        
+        for artist_label, artist in self.artists.items():
+            colour = 'xkcd:azure' if artist_label == self.active_artist_label else 'xkcd:steel blue'
+            artist.set_color(colour)
+        
+        self._blit_artists()
+    
+    def update_reference_annotation(self, time, voltage, gain):
+        """Plot the reference activation time"""
+        
+        ystart = self.artists['Ref']._ystart
+        scaled_voltage = ystart + np.exp(gain) * voltage
+        self.reference_annotation.set_data([time], [scaled_voltage])
+        self._reference_annotation_line.set_xdata([time, time])
+        self._blit_artists()
 
     def update_local_annotation(self, time, voltage, gain):
         """Plot the local activation time"""
@@ -335,6 +318,22 @@ class AnnotationWidget(CustomDockWidget):
         time_index = np.searchsorted(timeseries, activation_time)
         voltage = voltages[time_index]
         annotation.set_ydata(voltage)
+
+    def update_gain(self, gain):
+        """Set the gain of the active line"""
+
+        label = self.active_artist_label
+        artist = self.artists[label]
+        original_ydata = artist._original_ydata
+        
+        artist.set_ydata(artist._ystart + original_ydata * np.exp(gain))
+        
+        if label == "Ref":
+            self._update_annotation_ydata(signal=artist, annotation=self.reference_annotation)
+        elif label == "Bipolar":
+            self._update_annotation_ydata(signal=artist, annotation=self.local_annotation)
+        
+        self._blit_artists()
 
     def initialise_egm_selection(self, selections):
         """Set the selections available in the QComboBox"""
