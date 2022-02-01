@@ -1041,7 +1041,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         if self.annotate_dock.active_artist_label == "Ref":
             electric.reference_egm.gain[current_index] += gain_diff
             gain = electric.reference_egm.gain[current_index]
-            print(gain)
             
         elif self.annotate_dock.active_artist_label == "Bipolar":
             electric.bipolar_egm.gain[current_index] += gain_diff
@@ -1099,6 +1098,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.annotate_dock.update_annotation(
             signal=self.annotate_dock.artists['Bipolar'],
             annotation=self.annotate_dock.local_annotation,
+            annotation_line=self.annotate_dock._local_annotation_line,
             index=local_annotation_index,
         )
         """
@@ -1112,6 +1112,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.annotate_dock.update_annotation(
             signal=self.annotate_dock.artists['Ref'],
             annotation=self.annotate_dock.reference_annotation,
+            annotation_line=self.annotate_dock._reference_annotation_line,
             index=reference_annotation_index,
         )
         """
