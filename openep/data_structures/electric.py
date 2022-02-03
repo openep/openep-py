@@ -189,7 +189,7 @@ def extract_electric_data(electric_data):
         egm=electric_data['egm'],
         points=electric_data['egmX'],
         voltage=electric_data['voltages']['bipolar'],
-        gain=np.full_like(electric_data['voltages']['bipolar'], fill_value=1),
+        gain=np.full_like(electric_data['voltages']['bipolar'], fill_value=1.0),
         names=electric_data['electrodeNames_bip'],
     )
     unipolar_egm = Electrogram(
@@ -201,12 +201,12 @@ def extract_electric_data(electric_data):
     )
     reference_egm = Electrogram(
         egm=electric_data['egmRef'],
-        gain=np.full(electric_data['egmRef'].shape[0], fill_value=-5),
+        gain=np.full(electric_data['egmRef'].shape[0], fill_value=-4.0),
     )
 
     ecg = ECG(
         ecg=electric_data['ecg'],
-        gain=np.full(electric_data['ecg'].shape[0], fill_value=1),
+        gain=np.full(electric_data['ecg'].shape[0], fill_value=1.0),
     )
 
     impedance = Impedance(
