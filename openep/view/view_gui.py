@@ -188,8 +188,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         # remove all default key bindings
         # see https://stackoverflow.com/a/35631062/17623640
         # self.annotate_dock.canvas.mpl_disconnect(self.annotate_dock.canvas.manager.key_press_handler_id)
-        # But this doesn't work.
-        # See 
+        # But this doesn't work for some reason
         
         # hide the figure until we have data to plot
         self.annotate_dock.deactivate_figure()
@@ -730,7 +729,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
             return
 
-        # TODO: submit a PR to pyvist to add a 'keep_camera_position' argument to 'plotter.unlink_views'
+        # TODO: submit a PR to pyvista to add a 'keep_camera_position' argument to 'plotter.unlink_views'
         original_camera_position = plotter.camera_position.to_list()
         plotter.unlink_views()
         plotter.camera_position = original_camera_position
@@ -993,6 +992,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             return
         
         time_index = np.searchsorted(self.egm_times, event.xdata)
+        if time_index == self.egm_times.size:
+            time_index -= 1
         time = self.egm_times[time_index]
         
         electric = self.system_manager.active_system.case.electric
@@ -1051,17 +1052,19 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         electric = self.system_manager.active_system.case.electric
         gain_diff = 0.1 * (event.step * -1)  # scrolling up will decrease gain, down will increase gain
         
-        if self.annotate_dock.active_artist_label == "Ref":
+        if self.annotate_dock.active_signal_label == "Ref":
             electric.reference_egm.gain[current_index] += gain_diff
             gain = electric.reference_egm.gain[current_index]
             
-        elif self.annotate_dock.active_artist_label == "Bipolar":
+        elif self.annotate_dock.active_signal_label == "Bipolar":
             electric.bipolar_egm.gain[current_index] += gain_diff
             gain = electric.bipolar_egm.gain[current_index]
             
-        elif self.annotate_dock.active_artist_label == "ECG":
+        elif self.annotate_dock.active_signal_label == "ECG":
             electric.ecg.gain[current_index] += gain_diff
             gain = electric.ecg.gain[current_index]
+        else:
+            print(self.annotate_dock.active_signal_label)
         
         self.annotate_dock.update_gain(gain)
         self.annotate_dock.blit_artists()
@@ -1110,19 +1113,23 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         
         local_annotation = annotations.local_activation_time[current_index]
         local_annotation_index = np.searchsorted(times, local_annotation)
+        if local_annotation_index == times.size:
+            local_annotation -= 1
         self.annotate_dock.update_annotation(
-            signal=self.annotate_dock.artists['Bipolar'],
-            annotation=self.annotate_dock.local_annotation,
-            annotation_line=self.annotate_dock._local_annotation_line,
+            signal=self.annotate_dock.signal_artists['Bipolar'],
+            annotation=self.annotate_dock.annotation_artists['local_annotation'],
+            annotation_line=self.annotate_dock.annotation_artists['local_annotation_line'],
             index=local_annotation_index,
         )
 
         reference_annotation = annotations.reference_activation_time[current_index]
         reference_annotation_index = np.searchsorted(times, reference_annotation)
+        if reference_annotation_index == times.size:
+            reference_annotation_index -= 1
         self.annotate_dock.update_annotation(
-            signal=self.annotate_dock.artists['Ref'],
-            annotation=self.annotate_dock.reference_annotation,
-            annotation_line=self.annotate_dock._reference_annotation_line,
+            signal=self.annotate_dock.signal_artists['Ref'],
+            annotation=self.annotate_dock.annotation_artists['reference_annotation'],
+            annotation_line=self.annotate_dock.annotation_artists['reference_annotation_line'],
             index=reference_annotation_index,
         )
         
