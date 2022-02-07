@@ -63,10 +63,6 @@ class AnnotationWidget(CustomDockWidget):
         self.annotation_artists = {}  # dictionary of artists (for woi, annotations, etc.)
         
         self.egm_selection, egm_selection_layout = self._init_selection()
-        canvas_layout = QtWidgets.QVBoxLayout(self.canvas)
-        canvas_layout.addLayout(egm_selection_layout)
-        canvas_layout.addStretch()
-
         toolbar = CustomNavigationToolbar(
             canvas_=self.canvas,
             parent_=self,
@@ -74,7 +70,7 @@ class AnnotationWidget(CustomDockWidget):
         )
 
         # Setting nested layouts
-        central_widget = self._init_central_widget(self.canvas, toolbar)
+        central_widget = self._init_central_widget(egm_selection_layout, self.canvas, toolbar)
         self.main.setCentralWidget(central_widget)
         self.setWidget(self.main)
         
@@ -123,11 +119,12 @@ class AnnotationWidget(CustomDockWidget):
 
         return annotate_selection, annotate_selection_layout
 
-    def _init_central_widget(self, canvas, toolbar):
+    def _init_central_widget(self, egm_selection_layout, canvas, toolbar):
         """Create a placeholder widget to hold the toolbar and canvas.
         """
         
         central_layout = QtWidgets.QVBoxLayout()
+        central_layout.addLayout(egm_selection_layout)
         central_layout.addWidget(canvas)
         central_layout.addWidget(toolbar)
         central_widget = QtWidgets.QWidget()
