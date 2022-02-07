@@ -47,12 +47,11 @@ import openep.view.system_manager
 import openep.view.static
 
 
-os.environ['QT_API'] = "pyside2"
-
 # Fixes issues with window not displaying on Big Sur
 # https://bugreports.qt.io/browse/QTBUG-87014
 if (sys.platform == 'darwin' and
         LooseVersion(platform.mac_ver()[0]) >= LooseVersion("10.16") and
+        LooseVersion(QtCore.qVersion()) < LooseVersion("6") and
         "QT_MAC_WANTS_LAYER" not in os.environ):
             os.environ["QT_MAC_WANTS_LAYER"] = "1"
 
