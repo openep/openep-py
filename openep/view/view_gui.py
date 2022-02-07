@@ -1063,8 +1063,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         elif self.annotate_dock.active_signal_label == "ECG":
             electric.ecg.gain[current_index] += gain_diff
             gain = electric.ecg.gain[current_index]
-        else:
-            print(self.annotate_dock.active_signal_label)
         
         self.annotate_dock.update_gain(gain)
         self.annotate_dock.blit_artists()
@@ -1139,6 +1137,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.annotate_dock.update_window_of_interest(start_woi, stop_woi)
 
         self.annotate_dock.canvas.draw()
+        self.annotate_dock._initialise_scrollbar()
         self.annotate_dock.update_active_artist()  # ensure the annotations/woi are added to the background
 
         # TODO: Display this point in the 3d viewer (e.g. render as large blue sphere)

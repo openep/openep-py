@@ -63,6 +63,9 @@ class AnnotationWidget(CustomDockWidget):
         self.annotation_artists = {}  # dictionary of artists (for woi, annotations, etc.)
         
         self.egm_selection, egm_selection_layout = self._init_selection()
+        self.scrollbar = QtWidgets.QScrollBar(QtCore.Qt.Horizontal)
+        self.scrollbar.actionTriggered.connect(self._update_scroll_view)
+        self.scrollbar_step = 0.1
         toolbar = CustomNavigationToolbar(
             canvas_=self.canvas,
             parent_=self,
@@ -70,7 +73,9 @@ class AnnotationWidget(CustomDockWidget):
         )
 
         # Setting nested layouts
-        central_widget = self._init_central_widget(egm_selection_layout, self.canvas, toolbar)
+        central_widget = self._init_central_widget(
+            egm_selection_layout, self.canvas, self.scrollbar, toolbar,
+        )
         self.main.setCentralWidget(central_widget)
         self.setWidget(self.main)
         
@@ -119,13 +124,14 @@ class AnnotationWidget(CustomDockWidget):
 
         return annotate_selection, annotate_selection_layout
 
-    def _init_central_widget(self, egm_selection_layout, canvas, toolbar):
+    def _init_central_widget(self, egm_selection_layout, canvas, scrollbar, toolbar):
         """Create a placeholder widget to hold the toolbar and canvas.
         """
         
         central_layout = QtWidgets.QVBoxLayout()
         central_layout.addLayout(egm_selection_layout)
         central_layout.addWidget(canvas)
+        central_layout.addWidget(scrollbar)
         central_layout.addWidget(toolbar)
         central_widget = QtWidgets.QWidget()
         central_widget.setLayout(central_layout)
@@ -242,6 +248,22 @@ class AnnotationWidget(CustomDockWidget):
             label="local_annotation_line",
             signal=False,
         )
+    
+    def _initialise_scrollbar(self):
+        """Set up the range and initial values of the scrollbar"""
+        
+        self.scrollbar_limits = np.asarray(self.axes.get_xlim()).astype(int)
+        self.scrollbar.setPageStep(self.scrollbar_step * 100)
+        self._update_scroll_view()
+    
+    def _update_scroll_view(self, event=None):
+        """Update the displayed view of the scrollbar"""
+        
+        range = self.scrollbar.value() / ((1 + self.scrollbar_step) * 100)
+        lower_limit = self.scrollbar_limits[0] + range * np.diff(self.scrollbar_limits)
+        upper_limit = lower_limit + np.diff(self.scrollbar_limits) * self.scrollbar_step
+        self.axes.set_xlim(lower_limit, upper_limit)
+        self.canvas.draw_idle()
 
     def _on_draw(self, event=None):
         """Store the background and blit other artists."""
