@@ -1007,6 +1007,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             voltage = electric.reference_egm.egm[current_index, time_index]  # + 2  # y offset
             gain = electric.reference_egm.gain[current_index]
             self.annotate_dock.update_reference_annotation(time, voltage, gain)
+            self.annotate_dock.blit_artists()
             return
 
         elif event.key == 'w':
@@ -1018,6 +1019,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             woi = np.sort(woi)
             electric.annotations.window_of_interest[current_index] = woi
             self.annotate_dock.update_window_of_interest(*woi + reference_annotation)
+            self.annotate_dock.blit_artists()
             return
         
         elif event.key == 'W':
@@ -1029,6 +1031,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             woi = np.sort(woi)
             electric.annotations.window_of_interest[current_index] = woi
             self.annotate_dock.update_window_of_interest(*woi + reference_annotation)
+            self.annotate_dock.blit_artists()
             return
 
         elif event.key == 'l':
@@ -1038,9 +1041,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             voltage = electric.bipolar_egm.egm[current_index, time_index]  # + 6  # y offset
             gain = electric.bipolar_egm.gain[current_index]
             self.annotate_dock.update_local_annotation(time, voltage, gain)
+            self.annotate_dock.blit_artists()
             return
-    
-        self.annotate_dock.blit_artists()
 
     def annotation_on_scroll(self, event):
         """Set the gain of the active line in the annotation viewer"""
@@ -1062,6 +1064,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             gain = electric.ecg.gain[current_index]
         
         self.annotate_dock.update_gain(gain)
+        self.annotate_dock.blit_artists()
 
     def initialise_annotation_egm_selection(self):
         """Set the available electrogram for annotating"""

@@ -34,6 +34,7 @@ from ._mpl_key_bindings import disable_all_bindings
 mpl.rcParams['font.size'] = 9
 disable_all_bindings()
 
+
 class AnnotationWidget(CustomDockWidget):
     """A dockable widget for annotating electrograms."""
 
@@ -329,8 +330,6 @@ class AnnotationWidget(CustomDockWidget):
             self._update_annotation_ydata(signal=artist, annotation=self.reference_annotation)
         elif label == "Bipolar":
             self._update_annotation_ydata(signal=artist, annotation=self.local_annotation)
-        
-        self.blit_artists()
 
     def initialise_egm_selection(self, selections):
         """Set the selections available in the QComboBox"""
