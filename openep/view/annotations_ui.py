@@ -22,6 +22,7 @@ Create a dock widget for the annotation viewer.
 """
 from PySide2 import QtCore, QtGui, QtWidgets
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backend_tools import Cursors
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.backend_bases import MouseButton
@@ -60,8 +61,9 @@ class AnnotationWidget(CustomDockWidget):
         # the electrogram to annnotate.
         self.canvas, self.figure, self.axes = self._init_canvas()
         self.signal_artists = {}  # dictionary of artists (lines, points, etc.)
-        self.active_signal_label = None
         self.annotation_artists = {}  # dictionary of artists (for woi, annotations, etc.)
+        self.active_signal_artist = None
+        self.active_annotation_artist = None
         
         self.egm_selection, egm_selection_layout = self._init_selection()
         self.scrollbar = QtWidgets.QScrollBar(QtCore.Qt.Horizontal)
@@ -101,6 +103,7 @@ class AnnotationWidget(CustomDockWidget):
         canvas = FigureCanvas(figure)
         self.cid_draw_event = canvas.mpl_connect('draw_event', self._on_draw)
         self.cid_button_press_event = canvas.mpl_connect('button_press_event', self._on_button_press)
+        self.cid_motion_notify_event_cursor_style = canvas.mpl_connect('motion_notify_event', self._on_mouse_move_cursor_style)
 
         return canvas, figure, axes
 
@@ -191,12 +194,13 @@ class AnnotationWidget(CustomDockWidget):
             linewidth=0,
             marker='o',
             markersize=4,
+            label="reference_annotation_point",
             zorder=3,
             picker=False,
         )
         self.add_artist(
             artist=reference_annotation,
-            label="reference_annotation",
+            label="reference_annotation_point",
             signal=False,
         )
         
@@ -206,6 +210,7 @@ class AnnotationWidget(CustomDockWidget):
             linestyle='--',
             linewidth=0.6,
             alpha=0.6,
+            label="reference_annotation_point",
             zorder=1,
             picker=False,
         )
@@ -230,7 +235,7 @@ class AnnotationWidget(CustomDockWidget):
         )
         self.add_artist(
             artist=local_annotation,
-            label="local_annotation",
+            label="local_annotation_point",
             signal=False,
         )
 
@@ -298,8 +303,32 @@ class AnnotationWidget(CustomDockWidget):
         # let the GUI event loop process anything it has to do
         canvas.flush_events()
     
+    def _on_button_release(self, event):
+        """Disconnect callbacks for moving annotaitons, and set up callback for selecting active signal artist"""
+        
+        self.canvas.mpl_disconnect(self.cid_motion_notify_event_annotation_position)
+        self.cid_motion_notify_event_cursor_style = self.canvas.mpl_connect(
+            'motion_notify_event',
+            self._on_mouse_move_cursor_style,
+        )
+        self.canvas.mpl_disconnect(self.cid_button_release_event)
+    
     def _on_button_press(self, event):
-        """Update active artist on mouse button press."""
+        """Update active artist on mouse button press, or set up call backs for moving annotations."""
+        
+        if self.active_annotation_artist is not None:
+            
+            self.canvas.mpl_disconnect(self.cid_motion_notify_event_cursor_style)
+            self.cid_motion_notify_event_annotation_position = self.canvas.mpl_connect(
+                'motion_notify_event',
+                self._on_mouse_move_annotation_position,
+            )
+            self.cid_button_release_event = self.canvas.mpl_connect(
+                'button_release_event',
+                self._on_button_release,
+            )
+            
+            return
         
         # Don't do anything if the zoom/pan tools have been enabled.
         if self.canvas.widgetlock.locked():
@@ -308,24 +337,18 @@ class AnnotationWidget(CustomDockWidget):
         if event.inaxes is None or event.button != MouseButton.LEFT:
             return
         
-        artist = self._get_artist_under_point(
+        artist = self._get_signal_artist_under_point(
             cursor_position=np.asarray([[event.x, event.y]]),
         )
         
         # Don't do anything if the click is too far from an artist
         if artist is None:
             return
-        
-        label = artist.get_label()
-        
-        # Don't do anything artist is not a signal (i.e. it is an annotation)
-        if label not in self.signal_artists:
-            return
-        
-        self.active_signal_label = artist.get_label()
+
+        self.active_signal_artist = artist.get_label()
         self.update_active_artist()
-    
-    def _get_artist_under_point(self, cursor_position):
+
+    def _get_signal_artist_under_point(self, cursor_position):
         """Find the nearest artist to a given point.
         
         If it is within a given cutoff distance, return that artist.
@@ -345,6 +368,47 @@ class AnnotationWidget(CustomDockWidget):
                 nearest_artist = artist
         
         return nearest_artist
+
+    def _on_mouse_move_cursor_style(self, event):
+        """Change the cursor style if the mouse moves over an annotation line"""
+        
+        artist = self._get_annotation_artist_under_point(
+            cursor_position=np.asarray([[event.x, event.y]]),
+        )
+        
+        if artist is None:
+            self.active_annotation_artist = None
+            self.canvas.set_cursor(Cursors.POINTER)
+            return
+
+        self.active_annotation_artist = artist.get_label()
+        self.canvas.set_cursor(Cursors.RESIZE_HORIZONTAL)
+    
+    def _get_annotation_artist_under_point(self, cursor_position):
+        """Find the nearest annotation artist to a given point"""
+        
+        min_distance = 6
+        nearest_artist = None
+        artists = [artist for artist_label, artist in self.annotation_artists.items() if not '_point' in artist_label]  # ignore points
+    
+        y0, y1 = self.axes.get_ylim()
+        artist_y_position = np.linspace(y0, y1, 101)  # the artists are axvlines, so we need to generate the ydata
+
+        for artist in artists:
+            
+            artist_x_position = np.repeat(artist.get_xdata()[0], repeats=artist_y_position.size)
+            artist_position = np.vstack([artist_x_position, artist_y_position]).T  # axes coordinates, must transform to pixel coordinates
+            distance = np.min(calculate_distance(cursor_position, self.axes.transData.transform(artist_position)))
+            
+            if distance < min_distance:
+                min_distance = distance
+                nearest_artist = artist
+
+        return nearest_artist
+    
+    def _on_mouse_move_annotation_position(self, event):
+        """Update the active annotation line"""
+        pass
 
     def add_artist(self, artist, label, signal=True):
         """Add an artist to be managed.
@@ -368,7 +432,7 @@ class AnnotationWidget(CustomDockWidget):
         """Change the colour of the active artist"""
         
         for artist_label, artist in self.signal_artists.items():
-            colour = 'xkcd:azure' if artist_label == self.active_signal_label else 'xkcd:steel blue'
+            colour = 'xkcd:azure' if artist_label == self.active_signal_artist else 'xkcd:steel blue'
             artist.set_color(colour)
         
         self.blit_artists()
@@ -388,7 +452,7 @@ class AnnotationWidget(CustomDockWidget):
         
         ystart = self.signal_artists['Ref']._ystart
         scaled_voltage = ystart + np.exp(gain) * voltage
-        self.annotation_artists['reference_annotation'].set_data([time], [scaled_voltage])
+        self.annotation_artists['reference_annotation_point'].set_data([time], [scaled_voltage])
         self.annotation_artists['reference_annotation_line'].set_xdata([time, time])
 
     def update_local_annotation(self, time, voltage, gain):
@@ -396,7 +460,7 @@ class AnnotationWidget(CustomDockWidget):
         
         ystart = self.signal_artists['Bipolar']._ystart
         scaled_voltage = ystart + np.exp(gain) * voltage
-        self.annotation_artists['local_annotation'].set_data([time], [scaled_voltage])
+        self.annotation_artists['local_annotation_point'].set_data([time], [scaled_voltage])
         self.annotation_artists['local_annotation_line'].set_xdata([time, time])
     
     def update_annotation(self, signal, annotation, annotation_line, index):
@@ -421,7 +485,7 @@ class AnnotationWidget(CustomDockWidget):
         """Set the gain of the active line"""
 
         # Update the signal
-        label = self.active_signal_label
+        label = self.active_signal_artist
         artist = self.signal_artists[label]
         original_ydata = artist._original_ydata
         artist.set_ydata(artist._ystart + original_ydata * np.exp(gain))
@@ -482,8 +546,8 @@ class AnnotationWidget(CustomDockWidget):
             self.signal_artists[label] = line
 
         # Set an active artists (has a different colour to to others. The gain can be set by scrolling).
-        self.active_signal_label = labels[0]
-        self.signal_artists[self.active_signal_label].set_color('xkcd:azure')
+        self.active_signal_artist = labels[0]
+        self.signal_artists[self.active_signal_artist].set_color('xkcd:azure')
 
         self.axes.set_yticks(separations, labels)
 
