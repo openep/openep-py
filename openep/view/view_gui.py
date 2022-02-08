@@ -1052,15 +1052,15 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         electric = self.system_manager.active_system.case.electric
         gain_diff = 0.1 * (event.step * -1)  # scrolling up will decrease gain, down will increase gain
         
-        if self.annotate_dock.active_signal_label == "Ref":
+        if self.annotate_dock.active_signal_artist == "Ref":
             electric.reference_egm.gain[current_index] += gain_diff
             gain = electric.reference_egm.gain[current_index]
             
-        elif self.annotate_dock.active_signal_label == "Bipolar":
+        elif self.annotate_dock.active_signal_artist == "Bipolar":
             electric.bipolar_egm.gain[current_index] += gain_diff
             gain = electric.bipolar_egm.gain[current_index]
             
-        elif self.annotate_dock.active_signal_label == "ECG":
+        elif self.annotate_dock.active_signal_artist == "ECG":
             electric.ecg.gain[current_index] += gain_diff
             gain = electric.ecg.gain[current_index]
         
@@ -1115,7 +1115,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             local_annotation -= 1
         self.annotate_dock.update_annotation(
             signal=self.annotate_dock.signal_artists['Bipolar'],
-            annotation=self.annotate_dock.annotation_artists['local_annotation'],
+            annotation=self.annotate_dock.annotation_artists['local_annotation_point'],
             annotation_line=self.annotate_dock.annotation_artists['local_annotation_line'],
             index=local_annotation_index,
         )
@@ -1126,7 +1126,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             reference_annotation_index -= 1
         self.annotate_dock.update_annotation(
             signal=self.annotate_dock.signal_artists['Ref'],
-            annotation=self.annotate_dock.annotation_artists['reference_annotation'],
+            annotation=self.annotate_dock.annotation_artists['reference_annotation_point'],
             annotation_line=self.annotate_dock.annotation_artists['reference_annotation_line'],
             index=reference_annotation_index,
         )
