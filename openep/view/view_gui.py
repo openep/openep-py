@@ -30,6 +30,7 @@ import re
 from PySide2 import QtCore, QtGui, QtWidgets
 from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QAction
+from matplotlib.backend_bases import MouseButton
 import numpy as np
 
 import openep
@@ -182,8 +183,18 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.annotate_dock = openep.view.annotations_ui.AnnotationWidget(title="Annotate")
     
         self.annotate_dock.egm_selection.currentIndexChanged[int].connect(self.update_annotation_plot)
-        self.annotate_dock.canvas.mpl_connect('key_press_event', self.annotation_on_press)
+        self.annotate_dock.canvas.mpl_connect('key_press_event', self.annotation_on_key_press)
         self.annotate_dock.canvas.mpl_connect('scroll_event', self.annotation_on_scroll_wheel)  # this is scrolling with the wheel, not scrollbar
+        
+        # We will need to disconnect and reconnect these events through uesr interaction
+        self.annotate_dock.cid_button_press_event = self.annotate_dock.canvas.mpl_connect(
+            'button_press_event',
+            self.annotation_on_button_press,
+        )
+        self.annotate_dock.cid_motion_notify_event_cursor_style = self.annotate_dock.canvas.mpl_connect(
+            'motion_notify_event',
+            self.annotate_dock._on_mouse_move_cursor_style,
+        )
         
         # remove all default key bindings
         # see https://stackoverflow.com/a/35631062/17623640
@@ -1039,7 +1050,61 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         # TODO: Display this point in the 3d viewer (e.g. render as large blue sphere)
 
-    def annotation_on_press(self, event):
+    def annotation_on_button_press(self, event):
+        """Update active artist on mouse button press, or set up call backs for moving annotations."""
+        
+        annotater = self.annotate_dock
+        
+        if annotater.active_annotation_artist is not None:
+            
+            annotater.canvas.mpl_disconnect(annotater.cid_motion_notify_event_cursor_style)
+            annotater.cid_motion_notify_event_annotation_position = annotater.canvas.mpl_connect(
+                'motion_notify_event',
+                self._annotation_on_mouse_move_position,
+            )
+            annotater.cid_button_release_event = annotater.canvas.mpl_connect(
+                'button_release_event',
+                self._annotation_on_button_release,
+            )
+            
+            return
+        
+        # Don't do anything if the zoom/pan tools have been enabled.
+        if annotater.canvas.widgetlock.locked():
+            return
+            
+        if event.inaxes is None or event.button != MouseButton.LEFT:
+            return
+        
+        artist = annotater._get_signal_artist_under_point(
+            cursor_position=np.asarray([[event.x, event.y]]),
+        )
+        
+        # Don't do anything if the click is too far from an artist
+        if artist is None:
+            return
+
+        annotater.active_signal_artist = artist.get_label()
+        annotater.update_active_artist()
+
+    def _annotation_on_mouse_move_position(self, event):
+        """Update the active annotation line"""
+        
+        pass
+
+    def _annotation_on_button_release(self, event):
+        """Disconnect callbacks for moving annotaitons, and set up callback for selecting active signal artist"""
+        
+        annotater = self.annotate_dock
+        
+        annotater.canvas.mpl_disconnect(annotater.cid_motion_notify_event_annotation_position)
+        annotater.cid_motion_notify_event_cursor_style = annotater.canvas.mpl_connect(
+            'motion_notify_event',
+            annotater._on_mouse_move_cursor_style,
+        )
+        annotater.canvas.mpl_disconnect(annotater.cid_button_release_event)
+
+    def annotation_on_key_press(self, event):
         """Bindings for key press events in the annotation viewer"""
         
         sys.stdout.flush()
