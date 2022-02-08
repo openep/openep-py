@@ -446,10 +446,10 @@ class AnnotationWidget(CustomDockWidget):
         
         # Update the y position of the annotation if necessary
         if label == "Ref":
-            annotation_artist = self.annotation_artists['reference_annotation']
+            annotation_artist = self.annotation_artists['reference_annotation_point']
             self._update_annotation_ydata(signal=artist, annotation=annotation_artist)
         elif label == "Bipolar":
-            annotation_artist = self.annotation_artists['local_annotation']
+            annotation_artist = self.annotation_artists['local_annotation_point']
             self._update_annotation_ydata(signal=artist, annotation=annotation_artist)
 
     def initialise_egm_selection(self, selections):
