@@ -102,8 +102,6 @@ class AnnotationWidget(CustomDockWidget):
 
         canvas = FigureCanvas(figure)
         self.cid_draw_event = canvas.mpl_connect('draw_event', self._on_draw)
-        self.cid_button_press_event = canvas.mpl_connect('button_press_event', self._on_button_press)
-        self.cid_motion_notify_event_cursor_style = canvas.mpl_connect('motion_notify_event', self._on_mouse_move_cursor_style)
 
         return canvas, figure, axes
 
@@ -302,51 +300,6 @@ class AnnotationWidget(CustomDockWidget):
 
         # let the GUI event loop process anything it has to do
         canvas.flush_events()
-    
-    def _on_button_release(self, event):
-        """Disconnect callbacks for moving annotaitons, and set up callback for selecting active signal artist"""
-        
-        self.canvas.mpl_disconnect(self.cid_motion_notify_event_annotation_position)
-        self.cid_motion_notify_event_cursor_style = self.canvas.mpl_connect(
-            'motion_notify_event',
-            self._on_mouse_move_cursor_style,
-        )
-        self.canvas.mpl_disconnect(self.cid_button_release_event)
-    
-    def _on_button_press(self, event):
-        """Update active artist on mouse button press, or set up call backs for moving annotations."""
-        
-        if self.active_annotation_artist is not None:
-            
-            self.canvas.mpl_disconnect(self.cid_motion_notify_event_cursor_style)
-            self.cid_motion_notify_event_annotation_position = self.canvas.mpl_connect(
-                'motion_notify_event',
-                self._on_mouse_move_annotation_position,
-            )
-            self.cid_button_release_event = self.canvas.mpl_connect(
-                'button_release_event',
-                self._on_button_release,
-            )
-            
-            return
-        
-        # Don't do anything if the zoom/pan tools have been enabled.
-        if self.canvas.widgetlock.locked():
-            return
-            
-        if event.inaxes is None or event.button != MouseButton.LEFT:
-            return
-        
-        artist = self._get_signal_artist_under_point(
-            cursor_position=np.asarray([[event.x, event.y]]),
-        )
-        
-        # Don't do anything if the click is too far from an artist
-        if artist is None:
-            return
-
-        self.active_signal_artist = artist.get_label()
-        self.update_active_artist()
 
     def _get_signal_artist_under_point(self, cursor_position):
         """Find the nearest artist to a given point.
@@ -409,10 +362,6 @@ class AnnotationWidget(CustomDockWidget):
                 nearest_artist = artist
 
         return nearest_artist
-    
-    def _on_mouse_move_annotation_position(self, event):
-        """Update the active annotation line"""
-        pass
 
     def add_artist(self, artist, label, signal=True):
         """Add an artist to be managed.
