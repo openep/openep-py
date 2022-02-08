@@ -963,7 +963,82 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         """
 
         self.egm_times = self.system_manager.electrogram_times()
-    
+
+    def initialise_annotation_egm_selection(self):
+        """Set the available electrogram for annotating"""
+
+        electric = self.system_manager.active_system.case.electric
+        
+        if electric.internal_names is not None:
+            names = electric.internal_names
+        else:
+            names = np.asarray([f"P{index}" for index in range(len(electric.bipolar_egm.egm))], dtype=str)
+
+        self.annotate_dock.initialise_egm_selection(names)
+
+    def update_annotation_plot(self):
+        """Update the data plotted in the annotation viewer."""
+        
+        # TODO: this will currently fail unless there is both reference
+        # and bipolar electrograms as well as ecgs. Annotations
+        # are also required. And the gain of each signal.
+        
+        # Plot electrical data for this point
+        current_index = self.annotate_dock.egm_selection.currentIndex()
+        electric = self.system_manager.active_system.case.electric
+        
+        reference = electric.reference_egm.egm[current_index]
+        bipolar = electric.bipolar_egm.egm[current_index]
+        ecg = electric.ecg.ecg[current_index]
+        signals = np.asarray([reference, bipolar, ecg])
+        
+        reference_gain = electric.reference_egm.gain[current_index]
+        bipolar_gain = electric.bipolar_egm.gain[current_index]
+        ecg_gain = electric.ecg.gain[current_index]
+        signal_gains = np.asarray([reference_gain, bipolar_gain, ecg_gain])
+        
+        times = self.system_manager.electrogram_times()
+        labels = np.asarray(["Ref", "Bipolar", "ECG"])
+
+        self.annotate_dock.plot_signals(times, signals, labels, signal_gains)
+        self.annotate_dock._initialise_annotations()
+        
+        # Also plot the annotations and window of interest
+        annotations = electric.annotations
+        
+        local_annotation = annotations.local_activation_time[current_index]
+        local_annotation_index = np.searchsorted(times, local_annotation)
+        if local_annotation_index == times.size:
+            local_annotation -= 1
+        self.annotate_dock.update_annotation(
+            signal=self.annotate_dock.signal_artists['Bipolar'],
+            annotation=self.annotate_dock.annotation_artists['local_annotation_point'],
+            annotation_line=self.annotate_dock.annotation_artists['local_annotation_line'],
+            index=local_annotation_index,
+        )
+
+        reference_annotation = annotations.reference_activation_time[current_index]
+        reference_annotation_index = np.searchsorted(times, reference_annotation)
+        if reference_annotation_index == times.size:
+            reference_annotation_index -= 1
+        self.annotate_dock.update_annotation(
+            signal=self.annotate_dock.signal_artists['Ref'],
+            annotation=self.annotate_dock.annotation_artists['reference_annotation_point'],
+            annotation_line=self.annotate_dock.annotation_artists['reference_annotation_line'],
+            index=reference_annotation_index,
+        )
+        
+        start_woi, stop_woi = annotations.window_of_interest[current_index]
+        start_woi += reference_annotation
+        stop_woi += reference_annotation
+        self.annotate_dock.update_window_of_interest(start_woi, stop_woi)
+
+        self.annotate_dock.canvas.draw()
+        self.annotate_dock._initialise_scrollbar()
+        self.annotate_dock.update_active_artist()  # ensure the annotations/woi are added to the background
+
+        # TODO: Display this point in the 3d viewer (e.g. render as large blue sphere)
+
     def annotation_on_press(self, event):
         """Bindings for key press events in the annotation viewer"""
         
@@ -1066,81 +1141,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         
         self.annotate_dock.update_gain(gain)
         self.annotate_dock.blit_artists()
-
-    def initialise_annotation_egm_selection(self):
-        """Set the available electrogram for annotating"""
-
-        electric = self.system_manager.active_system.case.electric
-        
-        if electric.internal_names is not None:
-            names = electric.internal_names
-        else:
-            names = np.asarray([f"P{index}" for index in range(len(electric.bipolar_egm.egm))], dtype=str)
-
-        self.annotate_dock.initialise_egm_selection(names)
-
-    def update_annotation_plot(self):
-        """Update the data plotted in the annotation viewer."""
-        
-        # TODO: this will currently fail unless there is both reference
-        # and bipolar electrograms as well as ecgs. Annotations
-        # are also required. And the gain of each signal.
-        
-        # Plot electrical data for this point
-        current_index = self.annotate_dock.egm_selection.currentIndex()
-        electric = self.system_manager.active_system.case.electric
-        
-        reference = electric.reference_egm.egm[current_index]
-        bipolar = electric.bipolar_egm.egm[current_index]
-        ecg = electric.ecg.ecg[current_index]
-        signals = np.asarray([reference, bipolar, ecg])
-        
-        reference_gain = electric.reference_egm.gain[current_index]
-        bipolar_gain = electric.bipolar_egm.gain[current_index]
-        ecg_gain = electric.ecg.gain[current_index]
-        signal_gains = np.asarray([reference_gain, bipolar_gain, ecg_gain])
-        
-        times = self.system_manager.electrogram_times()
-        labels = np.asarray(["Ref", "Bipolar", "ECG"])
-
-        self.annotate_dock.plot_signals(times, signals, labels, signal_gains)
-        self.annotate_dock._initialise_annotations()
-        
-        # Also plot the annotations and window of interest
-        annotations = electric.annotations
-        
-        local_annotation = annotations.local_activation_time[current_index]
-        local_annotation_index = np.searchsorted(times, local_annotation)
-        if local_annotation_index == times.size:
-            local_annotation -= 1
-        self.annotate_dock.update_annotation(
-            signal=self.annotate_dock.signal_artists['Bipolar'],
-            annotation=self.annotate_dock.annotation_artists['local_annotation_point'],
-            annotation_line=self.annotate_dock.annotation_artists['local_annotation_line'],
-            index=local_annotation_index,
-        )
-
-        reference_annotation = annotations.reference_activation_time[current_index]
-        reference_annotation_index = np.searchsorted(times, reference_annotation)
-        if reference_annotation_index == times.size:
-            reference_annotation_index -= 1
-        self.annotate_dock.update_annotation(
-            signal=self.annotate_dock.signal_artists['Ref'],
-            annotation=self.annotate_dock.annotation_artists['reference_annotation_point'],
-            annotation_line=self.annotate_dock.annotation_artists['reference_annotation_line'],
-            index=reference_annotation_index,
-        )
-        
-        start_woi, stop_woi = annotations.window_of_interest[current_index]
-        start_woi += reference_annotation
-        stop_woi += reference_annotation
-        self.annotate_dock.update_window_of_interest(start_woi, stop_woi)
-
-        self.annotate_dock.canvas.draw()
-        self.annotate_dock._initialise_scrollbar()
-        self.annotate_dock.update_active_artist()  # ensure the annotations/woi are added to the background
-
-        # TODO: Display this point in the 3d viewer (e.g. render as large blue sphere)
 
     def update_annotation_woi(self):
         """Set the woi based on the current value of the range slider"""
