@@ -372,6 +372,10 @@ class AnnotationWidget(CustomDockWidget):
     def _on_mouse_move_cursor_style(self, event):
         """Change the cursor style if the mouse moves over an annotation line"""
         
+        # Don't do anything if the zoom/pan tools have been enabled.
+        if self.canvas.widgetlock.locked():
+            return
+        
         artist = self._get_annotation_artist_under_point(
             cursor_position=np.asarray([[event.x, event.y]]),
         )
