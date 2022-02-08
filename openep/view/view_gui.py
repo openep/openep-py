@@ -1090,7 +1090,11 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     def _annotation_on_mouse_move_position(self, event):
         """Update the active annotation line"""
         
-        pass
+        artist = self.annotate_dock.annotation_artists[self.annotate_dock.active_annotation_artist]
+        
+        time = int(event.xdata)
+        artist.set_xdata([time, time])
+        self.annotate_dock.blit_artists()
 
     def _annotation_on_button_release(self, event):
         """Disconnect callbacks for moving annotaitons, and set up callback for selecting active signal artist"""
