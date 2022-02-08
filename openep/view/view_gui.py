@@ -1090,10 +1090,37 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     def _annotation_on_mouse_move_position(self, event):
         """Update the active annotation line"""
         
-        artist = self.annotate_dock.annotation_artists[self.annotate_dock.active_annotation_artist]
+        artist_label = self.annotate_dock.active_annotation_artist
+        artist = self.annotate_dock.annotation_artists[artist_label]
+        new_time = int(event.xdata)
+        print(artist_label)
         
-        time = int(event.xdata)
-        artist.set_xdata([time, time])
+        if artist_label == "reference_annotation_line":
+            
+            current_time = np.asarray(artist.get_xdata())
+            time_difference = new_time - current_time
+
+            woi_start = self.annotate_dock.annotation_artists["woi_start"]
+            woi_start.set_xdata(np.asarray(woi_start.get_xdata()) + time_difference)
+            
+            woi_stop = self.annotate_dock.annotation_artists["woi_stop"]
+            woi_stop.set_xdata(np.asarray(woi_stop.get_xdata()) + time_difference)            
+
+            self.annotate_dock.annotation_artists["reference_annotation_point"].set_xdata([new_time, new_time])
+            self.annotate_dock._update_annotation_ydata(
+                signal=self.annotate_dock.signal_artists["Ref"],
+                annotation=self.annotate_dock.annotation_artists["reference_annotation_point"],
+            )
+        
+        elif artist_label == "local_annotation_line":
+            
+            self.annotate_dock.annotation_artists["local_annotation_point"].set_xdata([new_time, new_time])
+            self.annotate_dock._update_annotation_ydata(
+                signal=self.annotate_dock.signal_artists["Bipolar"],
+                annotation=self.annotate_dock.annotation_artists["local_annotation_point"],
+            )
+
+        artist.set_xdata([new_time, new_time])
         self.annotate_dock.blit_artists()
 
     def _annotation_on_button_release(self, event):
@@ -1107,6 +1134,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             annotater._on_mouse_move_cursor_style,
         )
         annotater.canvas.mpl_disconnect(annotater.cid_button_release_event)
+        
+        
 
     def annotation_on_key_press(self, event):
         """Bindings for key press events in the annotation viewer"""
