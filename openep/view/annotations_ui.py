@@ -67,7 +67,7 @@ class AnnotationWidget(CustomDockWidget):
         
         self.egm_selection, egm_selection_layout = self._init_selection()
         self.scrollbar = QtWidgets.QScrollBar(QtCore.Qt.Horizontal)
-        self.scrollbar.actionTriggered.connect(self._update_scroll_view)
+        self.scrollbar.actionTriggered.connect(self._update_limits_from_scrollbar)
         self.scrollbar_step = 0.1
         self.toolbar = CustomNavigationToolbar(
             canvas_=self.canvas,
@@ -259,9 +259,9 @@ class AnnotationWidget(CustomDockWidget):
         
         self.scrollbar_limits = np.asarray(self.axes.get_xlim()).astype(int)
         self.scrollbar.setPageStep(self.scrollbar_step * 100)
-        self._update_scroll_view()
+        self._update_limits_from_scrollbar()
     
-    def _update_scroll_view(self, event=None):
+    def _update_limits_from_scrollbar(self, event=None):
         """Update the displayed view of the scrollbar"""
         
         slider_position = self.scrollbar.sliderPosition() / ((1 + self.scrollbar_step) * 100)
