@@ -92,7 +92,6 @@ class AnnotationWidget(CustomDockWidget):
         """
 
         figure, axes = plt.subplots(ncols=1, nrows=1)
-        #figure.set_facecolor("white")
         figure.set_visible('off') # hide the figure until we have data to plot
         
         # only display x coordinate in the toolbar when hovering over the axis
@@ -259,8 +258,8 @@ class AnnotationWidget(CustomDockWidget):
     def _update_scroll_view(self, event=None):
         """Update the displayed view of the scrollbar"""
         
-        range = self.scrollbar.value() / ((1 + self.scrollbar_step) * 100)
-        lower_limit = self.scrollbar_limits[0] + range * np.diff(self.scrollbar_limits)
+        slider_position = self.scrollbar.sliderPosition() / ((1 + self.scrollbar_step) * 100)
+        lower_limit = self.scrollbar_limits[0] + slider_position * np.diff(self.scrollbar_limits)
         upper_limit = lower_limit + np.diff(self.scrollbar_limits) * self.scrollbar_step
         self.axes.set_xlim(lower_limit, upper_limit)
         self.canvas.draw_idle()
