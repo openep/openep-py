@@ -29,6 +29,7 @@ import numpy as np
 
 from .custom_widgets import CustomDockWidget, CustomNavigationToolbar
 from ._mpl_key_bindings import disable_all_bindings
+from openep.case.case_routines import calculate_distance
 
 
 mpl.rcParams['font.size'] = 9
@@ -66,7 +67,7 @@ class AnnotationWidget(CustomDockWidget):
         self.scrollbar = QtWidgets.QScrollBar(QtCore.Qt.Horizontal)
         self.scrollbar.actionTriggered.connect(self._update_scroll_view)
         self.scrollbar_step = 0.1
-        toolbar = CustomNavigationToolbar(
+        self.toolbar = CustomNavigationToolbar(
             canvas_=self.canvas,
             parent_=self,
             keep_actions=['Home', 'Zoom', 'Pan', 'Save'],
@@ -74,7 +75,7 @@ class AnnotationWidget(CustomDockWidget):
 
         # Setting nested layouts
         central_widget = self._init_central_widget(
-            egm_selection_layout, self.canvas, self.scrollbar, toolbar,
+            egm_selection_layout, self.canvas, self.scrollbar, self.toolbar,
         )
         self.main.setCentralWidget(central_widget)
         self.setWidget(self.main)
@@ -99,7 +100,7 @@ class AnnotationWidget(CustomDockWidget):
 
         canvas = FigureCanvas(figure)
         self.cid_draw_event = canvas.mpl_connect('draw_event', self._on_draw)
-        self.cid_pick_event = canvas.mpl_connect('pick_event', self._on_pick)
+        self.cid_button_press_event = canvas.mpl_connect('button_press_event', self._on_button_press)
 
         return canvas, figure, axes
 
@@ -296,22 +297,54 @@ class AnnotationWidget(CustomDockWidget):
 
         # let the GUI event loop process anything it has to do
         canvas.flush_events()
-
-    def _on_pick(self, event):
-        """Set the active artist"""
+    
+    def _on_button_press(self, event):
+        """Update active artist on mouse button press."""
         
-        label = event.artist.get_label()
- 
-        # Don't do anything if the artist is already the active signal
-        if self.active_signal_label == label:
+        # Don't do anything if the zoom/pan tools have been enabled.
+        if self.canvas.widgetlock.locked():
             return
+            
+        if event.inaxes is None or event.button != MouseButton.LEFT:
+            return
+        
+        artist = self._get_artist_under_point(
+            cursor_position=np.asarray([[event.x, event.y]]),
+        )
+        
+        # Don't do anything if the click is too far from an artist
+        if artist is None:
+            return
+        
+        label = artist.get_label()
         
         # Don't do anything artist is not a signal (i.e. it is an annotation)
         if label not in self.signal_artists:
             return
-    
-        self.active_signal_label = label
+        
+        self.active_signal_label = artist.get_label()
         self.update_active_artist()
+    
+    def _get_artist_under_point(self, cursor_position):
+        """Find the nearest artist to a given point.
+        
+        If it is within a given cutoff distance, return that artist.
+        Otherwise, return None.
+        """
+        
+        min_distance = 6
+        nearest_artist = None
+        
+        for artist in self.signal_artists.values():
+            
+            artist_position = np.vstack(artist.get_data()).T  # axes coordinates, must transform to pixel coordinates
+            distance = np.min(calculate_distance(cursor_position, self.axes.transData.transform(artist_position)))
+            
+            if distance < min_distance:
+                min_distance = distance
+                nearest_artist = artist
+        
+        return nearest_artist
 
     def add_artist(self, artist, label, signal=True):
         """Add an artist to be managed.
@@ -438,7 +471,7 @@ class AnnotationWidget(CustomDockWidget):
                 linewidth=0.8,
                 label=label,
                 zorder=2,
-                picker=True,
+                picker=False,
                 alpha=1,
             )
             
