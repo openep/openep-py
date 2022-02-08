@@ -183,7 +183,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     
         self.annotate_dock.egm_selection.currentIndexChanged[int].connect(self.update_annotation_plot)
         self.annotate_dock.canvas.mpl_connect('key_press_event', self.annotation_on_press)
-        self.annotate_dock.canvas.mpl_connect('scroll_event', self.annotation_on_scroll)
+        self.annotate_dock.canvas.mpl_connect('scroll_event', self.annotation_on_scroll_wheel)  # this is scrolling with the wheel, not scrollbar
         
         # remove all default key bindings
         # see https://stackoverflow.com/a/35631062/17623640
@@ -1120,7 +1120,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             self.annotate_dock.blit_artists()
             return
 
-    def annotation_on_scroll(self, event):
+    def annotation_on_scroll_wheel(self, event):
         """Set the gain of the active line in the annotation viewer"""
         
         current_index = self.annotate_dock.egm_selection.currentIndex()
