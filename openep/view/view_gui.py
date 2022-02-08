@@ -1093,7 +1093,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         artist_label = self.annotate_dock.active_annotation_artist
         artist = self.annotate_dock.annotation_artists[artist_label]
         new_time = int(event.xdata)
-        print(artist_label)
         
         if artist_label == "reference_annotation_line":
             
