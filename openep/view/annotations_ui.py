@@ -25,7 +25,6 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backend_tools import Cursors
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.backend_bases import MouseButton
 import numpy as np
 
 from .custom_widgets import CustomDockWidget, CustomNavigationToolbar
@@ -208,7 +207,7 @@ class AnnotationWidget(CustomDockWidget):
             linestyle='--',
             linewidth=0.6,
             alpha=0.6,
-            label="reference_annotation_point",
+            label="reference_annotation_line",
             zorder=1,
             picker=False,
         )
@@ -228,6 +227,7 @@ class AnnotationWidget(CustomDockWidget):
             linewidth=0,
             marker='o',
             markersize=4,
+            label="local_annotation_point",
             zorder=3,
             picker=False,
         )
@@ -243,6 +243,7 @@ class AnnotationWidget(CustomDockWidget):
             linestyle='--',
             linewidth=0.6,
             alpha=0.6,
+            label="local_annotation_line",
             zorder=1,
             picker=False,
         )
