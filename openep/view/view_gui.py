@@ -1053,6 +1053,9 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     def annotation_on_button_press(self, event):
         """Update active artist on mouse button press, or set up call backs for moving annotations."""
         
+        if event.button != MouseButton.LEFT:
+            return
+        
         annotater = self.annotate_dock
         
         if annotater.active_annotation_artist is not None:
@@ -1073,7 +1076,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         if annotater.canvas.widgetlock.locked():
             return
             
-        if event.inaxes is None or event.button != MouseButton.LEFT:
+        if event.inaxes is None:
             return
         
         artist = annotater._get_signal_artist_under_point(
@@ -1089,6 +1092,9 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
     def _annotation_on_mouse_move_position(self, event):
         """Update the active annotation line"""
+        
+        if event.inaxes is None:
+            return
         
         artist_label = self.annotate_dock.active_annotation_artist
         artist = self.annotate_dock.annotation_artists[artist_label]
