@@ -32,7 +32,6 @@ from ._mpl_key_bindings import disable_all_bindings
 from openep.case.case_routines import calculate_distance
 
 
-plt.style.use('bmh')
 mpl.rcParams['font.size'] = 8
 disable_all_bindings()
 
@@ -101,8 +100,11 @@ class AnnotationWidget(CustomDockWidget):
         Create an interactive matploblib canvas.
         """
 
-        figure, axes = plt.subplots(ncols=1, nrows=1)
+        figure = plt.figure()
         figure.set_visible('off') # hide the figure until we have data to plot
+        
+        # ensure the axes takes up the entire figure
+        axes = figure.add_axes([0,0,1,1])
         
         # only display x coordinate in the toolbar when hovering over the axis
         axes.format_coord = lambda x, y: f"{x:.1f} ms"
@@ -506,7 +508,7 @@ class AnnotationWidget(CustomDockWidget):
         self.active_signal_artist = labels[0]
         self.signal_artists[self.active_signal_artist].set_color('xkcd:azure')
 
-        self.axes.set_yticks(separations, labels)
+        self.axes.set_yticks(separations, labels)  # need to explicitly set the grid positions
 
         # Remove the border and ticks
         plt.tick_params(axis='both', which='both', length=0)
@@ -515,6 +517,8 @@ class AnnotationWidget(CustomDockWidget):
         self.axes.spines['bottom'].set_alpha(0.4)
         self.axes.tick_params(axis=u'both', which=u'both',length=0)
         self.axes.grid(axis='y')
+        self.axes.margins(0)  # don't add padding the the x axis when plotting
+        plt.tight_layout(pad=0)
 
     def activate_figure(self, xmin, xmax):
         """Show the figure"""
