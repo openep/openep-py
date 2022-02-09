@@ -32,7 +32,8 @@ from ._mpl_key_bindings import disable_all_bindings
 from openep.case.case_routines import calculate_distance
 
 
-mpl.rcParams['font.size'] = 9
+plt.style.use('bmh')
+mpl.rcParams['font.size'] = 8
 disable_all_bindings()
 
 
@@ -44,6 +45,13 @@ class AnnotationWidget(CustomDockWidget):
         super().__init__(title)
         self._init_main_window()
         self._initialise_annotations()
+
+        # TODO: Get the resolution of the screen
+        #       We can use this to set the size of the figure and the font size
+        #       As well as the minimum size of the window        
+        #app = QtWidgets.QApplication.instance()
+        #screen_resolution = app.desktop().screenGeometry()
+        #width, height = screen_resolution.width(), screen_resolution.height()
 
     def _init_main_window(self):
         
@@ -467,15 +475,10 @@ class AnnotationWidget(CustomDockWidget):
             labels (np.ndarray): Name of each signal. We be used to label the y-axis.
         """
         
-        # First we need to clear the axis, but we want to keep to previous limits
-        xlim = self.axes.get_xlim()
-        ylim = self.axes.get_ylim()
-        
         self.axes.cla()
         self.axes.set_yticklabels([])
-        self.axes.set_ylim(ylim)
-        self.axes.set_xlim(xlim)
-        
+        self.axes.set_ylim(0, 12)
+
         # we need to horizontally shift the signals so they don't overlap
         y_start = 2
         y_separation = 4
