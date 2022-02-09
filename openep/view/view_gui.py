@@ -1514,6 +1514,7 @@ def main():
     # Create an instance of Qapplication
     app = QtWidgets.QApplication(sys.argv)
     app.setWindowIcon(QtGui.QIcon(openep.view.static.LOGO))
+    app.setStyle('Fusion')
 
     # Create an instance of GUI
     window = OpenEPGUI()
