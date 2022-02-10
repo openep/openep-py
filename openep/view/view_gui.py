@@ -797,7 +797,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         mesh = system.meshes[index]
         mesh.set_active_scalars(name=scalars)
 
-    def update_scalar_fields(self, event):
+    def update_scalar_fields(self, event=None):
         """
         If the active system is an OpenEP case:
         Interpolate EGM data onto the surface and draw a map if necessary.
@@ -1129,10 +1129,12 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.annotate_dock.blit_artists()
 
     def _annotation_on_button_release(self, event):
-        """Disconnect callbacks for moving annotaitons, and set up callback for selecting active signal artist"""
+        """Disconnect callbacks for moving annotaitons, and set up callback for selecting active signal artist.
+        
+        Also store the annotation data in the active case.
+        """
         
         annotater = self.annotate_dock
-        
         annotater.canvas.mpl_disconnect(annotater.cid_motion_notify_event_annotation_position)
         annotater.cid_motion_notify_event_cursor_style = annotater.canvas.mpl_connect(
             'motion_notify_event',
@@ -1140,7 +1142,22 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         )
         annotater.canvas.mpl_disconnect(annotater.cid_button_release_event)
         
+        # We also need to store the updated data
+        current_index = self.annotate_dock.egm_selection.currentIndex()
+        annotations = self.system_manager.active_system.case.electric.annotations
+        annotation_artists = annotater.annotation_artists
         
+        annotations.local_activation_time[current_index] = annotation_artists['local_annotation_point'].get_xdata()[0]
+        ref_annotation = annotation_artists['reference_annotation_point'].get_xdata()[0]
+        annotations.reference_activation_time[current_index] = ref_annotation
+        woi = np.asarray([
+            annotation_artists['woi_start'].get_xdata()[0] - ref_annotation,
+            annotation_artists['woi_stop'].get_xdata()[0] - ref_annotation,
+        ])
+        annotations.window_of_interest[current_index] = woi
+        
+        # And re-interpolate onto the surface
+        self.update_scalar_fields(event=None)
 
     def annotation_on_key_press(self, event):
         """Bindings for key press events in the annotation viewer"""
