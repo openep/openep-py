@@ -53,7 +53,7 @@ def mock_case(mocker):
     case.electric.annotations.window_of_interest = np.full((10, 2), fill_value=5)
     case.electric.annotations.window_of_interest[:, 1] += 10
 
-    case.electric.bipolar_egm.egm = np.repeat(np.arange(20)[np.newaxis, :], 10, axis=0)
+    case.electric.bipolar_egm.egm = np.repeat(np.arange(20, dtype=float)[np.newaxis, :], 10, axis=0)
     case.electric.internal_names = np.arange(10).astype(str)
 
     case.points = np.repeat(np.arange(20)[:, np.newaxis], repeats=3, axis=1)
