@@ -258,8 +258,22 @@ def get_woi_times(case, buffer=50, relative=False):
 
     Returns:
         times (ndarray): times within the window of interest
+        
+    Warning
+    -------
+    This returns the sample indices that cover the window of interest for the
+    **first** electrogram only. get_sample_indices_within_woi can be used to
+    obtain a two-dimensional boolean array in which value of True indicate
+    that the specific sample is within the specific electrogram's window of
+    interest.
     """
+    
+    # TODO: remove this function as it does not take into account the fact
+    #       that different electrograms may have different windows of interest
+    #       and different reference annotations
 
+    # TODO: This is sample rather than time
+    #       Should take into account sample frequency to get actual time
     times = np.arange(case.electric.bipolar_egm.egm.shape[1])
 
     # TODO: woi and reference times might be different for each mapping point
@@ -277,6 +291,42 @@ def get_woi_times(case, buffer=50, relative=False):
         times -= ref_annotation
 
     return times[keep_times]
+
+
+def get_sample_indices_within_woi(case, buffer=50):
+    """
+    Determine which samples are within the window of interest for each electrogram.
+
+    can be used to
+    obtain a two-dimensional boolean array in which value of True indicate
+    that the specific sample is within the specific electrogram's window of
+    interest.
+
+    Args:
+        case (Case): openep case object
+        buffer (float): times within the window of interest plus/minus this buffer
+            time will be considered to be within the woi.
+
+    Returns:
+        within_woi (ndarray): 2D boolean array of shape (N_electrograms, N_samples).
+            Values of True indicate that the sample if within the electrogram's
+            window of interest.
+    """
+    
+    egm = case.electric.bipolar_egm.egm
+    sample_indices = np.full_like(egm, fill_value=np.arange(egm.shape[1]), dtype=int)
+    
+    woi = case.electric.annotations.window_of_interest
+    ref_annotations = case.electric.annotations.reference_activation_time[:, np.newaxis]
+
+    start_time, stop_time = (woi + ref_annotations + [-buffer, buffer]).T
+
+    within_woi = np.logical_and(
+        sample_indices >= start_time[:, np.newaxis],
+        sample_indices <= stop_time[:, np.newaxis],
+    )
+
+    return within_woi  # This is now a 2D array that can be used to index into electrograms and calculate voltages.
 
 
 def calculate_voltage_from_electrograms(case, buffer=50, bipolar=True):
@@ -302,10 +352,10 @@ def calculate_voltage_from_electrograms(case, buffer=50, bipolar=True):
     else:
         electrograms = case.electric.unipolar_egm.egm.copy()
 
-    woi_times = get_woi_times(case, buffer=buffer, relative=False)
-    electrograms = electrograms[:, woi_times]
+    sample_within_woi = get_sample_indices_within_woi(case, buffer=buffer)
+    electrograms[~sample_within_woi] = np.NaN
 
-    amplitudes = np.ptp(electrograms, axis=1)
+    amplitudes = np.nanmax(electrograms, axis=1) - np.nanmin(electrograms, axis=1)
 
     return amplitudes
 

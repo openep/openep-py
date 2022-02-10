@@ -3,7 +3,7 @@ attrs
 typing_extensions
 h5py
 numpy
-scipy
+scipy>=1.8
 pandas
 scikit-learn
 matplotlib>3.5
