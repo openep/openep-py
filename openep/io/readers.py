@@ -69,8 +69,8 @@ __all__ = ["load_openep_mat", "_load_mat", "load_opencarp"]
 def _check_mat_version_73(filename):
     """Check if a MATLAB file is of version 7.3"""
 
-    byte_stream, file_opened = scipy.io.matlab._mio._open_file(filename, appendmat=False)
-    major_version, minor_version = scipy.io.matlab._miobase.get_matfile_version(byte_stream)
+    byte_stream, file_opened = scipy.io.matlab.mio._open_file(filename, appendmat=False)
+    major_version, minor_version = scipy.io.matlab.miobase.get_matfile_version(byte_stream)
 
     return major_version == 2
 
