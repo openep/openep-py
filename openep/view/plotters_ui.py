@@ -72,7 +72,7 @@ def _create_colourbar_layout():
     colour_bar_text = QtWidgets.QLabel("Colourbar limits:")
     colour_bar_text.setMinimumWidth(100)
     colour_bar_text.setMaximumWidth(200)
-    colour_bar_text.setStyleSheet('QLabel {border: 0px; background-color: #d8dcd6;}')
+    #colour_bar_text.setStyleSheet('QLabel {border: 0px; background-color: #d8dcd6;}')
     colour_bar_layout.addWidget(colour_bar_text)
 
     lower_limit = QtWidgets.QLineEdit()
@@ -103,7 +103,7 @@ def _create_opacity_layout():
     opacity_text = QtWidgets.QLabel("Opacity:")
     opacity_text.setMinimumWidth(50)
     opacity_text.setMaximumWidth(120)
-    opacity_text.setStyleSheet('QLabel {border: 0px; background-color: #d8dcd6;}')
+    #opacity_text.setStyleSheet('QLabel {border: 0px; background-color: #d8dcd6;}')
     opacity_layout.addWidget(opacity_text)
 
     opacity_selector = QtWidgets.QDoubleSpinBox()

@@ -35,7 +35,7 @@ def create_canvas():
     """
 
     figure, axis = plt.subplots(ncols=1, nrows=1)
-    figure.set_facecolor("white")
+    #figure.set_facecolor("white")
 
     # hide it until we have data to plot
     axis.axis('off')
@@ -55,12 +55,12 @@ def create_egm_selection_layout():
     egm_selection_text = QtWidgets.QLabel("Select EGMs (indices of points):")
     egm_selection_text.setMinimumWidth(220)
     egm_selection_text.setMaximumWidth(300)
-    egm_selection_text.setStyleSheet('border: 0px; background-color: white;')
+    #egm_selection_text.setStyleSheet('border: 0px; background-color: white;')
 
     egm_selection = QtWidgets.QLineEdit()
     egm_selection.setMinimumWidth(100)
     egm_selection.setMaximumWidth(300)
-    egm_selection.setStyleSheet('border: 1px solid #d8dcd6; background-color: white;')
+    #egm_selection.setStyleSheet('border: 1px solid #d8dcd6; background-color: white;')
     egm_selection.setText("0")
     egm_selection.setPlaceholderText("indices")
 
@@ -75,19 +75,23 @@ def create_egm_type_layout():
     """Create a layout with widgets for selecting which type(s) of electrograms to plot."""
 
     reference_checkbox = QtWidgets.QCheckBox("Reference")
-    reference_checkbox.setStyleSheet("color: #be0119; background-color: white;")  # xkcd:scarlet
+    #reference_checkbox.setStyleSheet("color: #be0119; background-color: white;")  # xkcd:scarlet
+    reference_checkbox.setStyleSheet("color: #be0119")  # xkcd:scarlet
     reference_checkbox.setChecked(False)
 
     bipolar_checkbox = QtWidgets.QCheckBox("Bipolar")
-    bipolar_checkbox.setStyleSheet("color: #0485d1; background-color: white;")  # xkcd:cerulean
+    #bipolar_checkbox.setStyleSheet("color: #0485d1; background-color: white;")  # xkcd:cerulean
+    bipolar_checkbox.setStyleSheet("color: #0485d1")  # xkcd:cerulean
     bipolar_checkbox.setChecked(True)
 
     unipolar_A_checkbox = QtWidgets.QCheckBox("Unipolar: A")
-    unipolar_A_checkbox.setStyleSheet("color: #2a7e19; background-color: white;")  # xkcd:tree green
+    #unipolar_A_checkbox.setStyleSheet("color: #2a7e19; background-color: white;")  # xkcd:tree green
+    unipolar_A_checkbox.setStyleSheet("color: #2a7e19")  # xkcd:tree green
     unipolar_A_checkbox.setChecked(True)
 
     unipolar_B_checkbox = QtWidgets.QCheckBox("Unipolar: B")
-    unipolar_B_checkbox.setStyleSheet("color: #fb7d07; background-color: white;")  # xkcd:pumpkin
+    #unipolar_B_checkbox.setStyleSheet("color: #fb7d07; background-color: white;")  # xkcd:pumpkin
+    unipolar_B_checkbox.setStyleSheet("color: #fb7d07")  # xkcd:pumpkin
     unipolar_B_checkbox.setChecked(True)
 
     egm_type_layout = QtWidgets.QHBoxLayout()
@@ -129,7 +133,7 @@ def create_canvas_widget(canvas, toolbar):
 
     canvas_widget = QtWidgets.QWidget()
     canvas_widget.setLayout(canvas_layout)
-    canvas_widget.setStyleSheet("border-width: 0px; border: 0px; background-color: #d8dcd6;")
+    #canvas_widget.setStyleSheet("border-width: 0px; border: 0px; background-color: #d8dcd6;")
 
     return canvas_widget
 
@@ -193,7 +197,7 @@ def create_reannotate_selection_layout():
 
     reannotate_selection = QtWidgets.QComboBox()
     reannotate_selection.setMinimumWidth(220)
-    reannotate_selection.setStyleSheet('border: 1px solid #d8dcd6; background-color: white;')
+    #reannotate_selection.setStyleSheet('border: 1px solid #d8dcd6; background-color: white;')
 
     reannotate_selection_layout.addWidget(reannotate_selection)
     reannotate_selection_layout.addStretch()
