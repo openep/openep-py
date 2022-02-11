@@ -122,8 +122,8 @@ class SystemManagetDockWidget(CustomDockWidget):
     def _add_heading_bar(self):
         """Add a heading bar to the table layout."""
 
-        #heading_font = QtGui.QFont()
-        #heading_font.setBold(True)
+        heading_font = QtGui.QFont()
+        heading_font.setBold(True)
 
         heading_bar = QtWidgets.QWidget()
         heading_bar_layout = QtWidgets.QHBoxLayout()
@@ -133,14 +133,14 @@ class SystemManagetDockWidget(CustomDockWidget):
             [2, 8, 1, 1],
         ):
             heading = QtWidgets.QLabel(heading_name)
-            #heading.setFont(heading_font)
+            heading.setFont(heading_font)
             heading.setFrameShape(QtWidgets.QFrame.NoFrame)
             heading.setLineWidth(0)
             heading_bar_layout.addWidget(heading, width)
             total_width += width
 
         heading_bar.setLayout(heading_bar_layout)
-        #heading_bar.setStyleSheet('QWidget {background-color: #95a3a6;}')
+        heading_bar.setStyleSheet('QWidget {background-color: #95a3a6;}')
         self.table_layout.addWidget(heading_bar, 0, 0, total_width, 1)
 
     def _create_vertical_stretch(self):
