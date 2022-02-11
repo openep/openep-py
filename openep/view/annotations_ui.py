@@ -165,13 +165,13 @@ class AnnotationWidget(CustomDockWidget):
             linestyle='--',
             linewidth=0.6,
             alpha=0.6,
-            label='woi_start',
+            label='start_woi',
             zorder=1,
             picker=False,
         )
         self.add_artist(
             artist=woi_slider_lower_limit,
-            label="woi_start",
+            label="start_woi",
             signal=False,
         )        
         
@@ -181,13 +181,13 @@ class AnnotationWidget(CustomDockWidget):
             linestyle='--',
             linewidth=0.6,
             alpha=0.6,
-            label='woi_stop',
+            label='stop_woi',
             zorder=1,
             picker=False,
         )
         self.add_artist(
             artist=woi_slider_upper_limit,
-            label="woi_stop",
+            label="stop_woi",
             signal=False,
         )
 
@@ -263,13 +263,34 @@ class AnnotationWidget(CustomDockWidget):
             signal=False,
         )
     
-    def _initialise_scrollbar(self):
-        """Set up the range and initial values of the scrollbar"""
+    def _initialise_scrollbar(self, start_woi=None):
+        """Set up the range and initial values of the scrollbar.
+        
+        Args:
+            start_woi (int): Sample index at which woi start is located.
+                If provided, this will be used to set the initial scrollbar
+                position. If None, the initial scrollbar position will not
+                be changed.
+        """
         
         self.scrollbar_limits = np.asarray(self.axes.get_xlim()).astype(int)
         self.scrollbar.setPageStep(self.scrollbar_step * 100)
+        
+        if start_woi is not None:
+            self._update_scrollbar_from_woi(start_woi)
+
         self._update_limits_from_scrollbar()
-    
+
+    def _update_scrollbar_from_woi(self, start_woi):
+        """Move the scrollbar to be cover the woi lower limit."""
+        
+        lower_limit = start_woi - 30  # show the axes just to the left of the woi start
+        slider_position = (lower_limit - self.scrollbar_limits[0]) / np.diff(self.scrollbar_limits)
+        slider_index = int(slider_position * ((1 + self.scrollbar_step) * 100))
+        slider_index = max(slider_index, 0)
+        slider_index = min(slider_index, 99)
+        self.scrollbar.setSliderPosition(slider_index)
+
     def _update_limits_from_scrollbar(self, event=None):
         """Update the displayed view of the scrollbar"""
         
@@ -407,8 +428,8 @@ class AnnotationWidget(CustomDockWidget):
     def update_window_of_interest(self, start_woi, stop_woi):
         """Plot vertical lines designating the window of interest"""
 
-        self.annotation_artists['woi_start'].set_xdata([start_woi, start_woi])
-        self.annotation_artists['woi_stop'].set_xdata([stop_woi, stop_woi])
+        self.annotation_artists['start_woi'].set_xdata([start_woi, start_woi])
+        self.annotation_artists['stop_woi'].set_xdata([stop_woi, stop_woi])
 
     def _update_window_of_interest(self, event):
         """This is called when the woi line is picked"""

@@ -1045,7 +1045,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.annotate_dock.update_window_of_interest(start_woi, stop_woi)
 
         self.annotate_dock.canvas.draw()
-        self.annotate_dock._initialise_scrollbar()
+        self.annotate_dock._initialise_scrollbar(start_woi=start_woi)
         self.annotate_dock.update_active_artist()  # ensure the annotations/woi are added to the background
 
         # TODO: Display this point in the 3d viewer (e.g. render as large blue sphere)
@@ -1105,11 +1105,11 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             current_time = np.asarray(artist.get_xdata())
             time_difference = new_time - current_time
 
-            woi_start = self.annotate_dock.annotation_artists["woi_start"]
-            woi_start.set_xdata(np.asarray(woi_start.get_xdata()) + time_difference)
+            start_woi = self.annotate_dock.annotation_artists["start_woi"]
+            start_woi.set_xdata(np.asarray(start_woi.get_xdata()) + time_difference)
             
-            woi_stop = self.annotate_dock.annotation_artists["woi_stop"]
-            woi_stop.set_xdata(np.asarray(woi_stop.get_xdata()) + time_difference)            
+            stop_woi = self.annotate_dock.annotation_artists["stop_woi"]
+            stop_woi.set_xdata(np.asarray(stop_woi.get_xdata()) + time_difference)            
 
             self.annotate_dock.annotation_artists["reference_annotation_point"].set_xdata([new_time, new_time])
             self.annotate_dock._update_annotation_ydata(
@@ -1151,8 +1151,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         ref_annotation = annotation_artists['reference_annotation_point'].get_xdata()[0]
         annotations.reference_activation_time[current_index] = ref_annotation
         woi = np.asarray([
-            annotation_artists['woi_start'].get_xdata()[0] - ref_annotation,
-            annotation_artists['woi_stop'].get_xdata()[0] - ref_annotation,
+            annotation_artists['start_woi'].get_xdata()[0] - ref_annotation,
+            annotation_artists['stop_woi'].get_xdata()[0] - ref_annotation,
         ])
         annotations.window_of_interest[current_index] = woi
         
