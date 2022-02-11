@@ -293,6 +293,8 @@ class AnnotationWidget(CustomDockWidget):
             self.figure.draw_artist(artist)
         for artist in self.annotation_artists.values():
             self.figure.draw_artist(artist)
+        for handle in self._legend_handles.values():
+            self.figure.draw_artist(handle)
 
     def blit_artists(self):
         """Update the screen with animated artists."""
@@ -394,11 +396,12 @@ class AnnotationWidget(CustomDockWidget):
 
     def update_active_artist(self):
         """Change the colour of the active artist"""
-        
+    
         for artist_label, artist in self.signal_artists.items():
             colour = 'xkcd:azure' if artist_label == self.active_signal_artist else 'xkcd:steel blue'
             artist.set_color(colour)
-        
+            self._legend_handles[artist_label].set_color(colour)
+
         self.blit_artists()
 
     def update_window_of_interest(self, start_woi, stop_woi):
@@ -509,6 +512,15 @@ class AnnotationWidget(CustomDockWidget):
         self.signal_artists[self.active_signal_artist].set_color('xkcd:azure')
 
         self.axes.set_yticks(separations, labels)  # need to explicitly set the grid positions
+        legend = self.figure.legend(
+            handles=[line for line in self.signal_artists.values()],
+            loc='upper center',
+            ncol=3,
+            frameon=False,
+        )
+        self._legend_handles = {handle.get_label(): handle for handle in legend.legendHandles}
+        for handle in self._legend_handles.values():
+            handle.set_linewidth(3)
 
         # Remove the border and ticks
         plt.tick_params(axis='both', which='both', length=0)
