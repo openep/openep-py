@@ -249,16 +249,17 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         Add dockable widgets to the main window.
         """
 
-        self.addDockWidget(Qt.RightDockWidgetArea, self.analysis_dock)
+        #self.addDockWidget(Qt.RightDockWidgetArea, self.analysis_dock)
         self.addDockWidget(Qt.RightDockWidgetArea, self.system_manager_ui)
 
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.egm_dock)
+        #self.addDockWidget(Qt.LeftDockWidgetArea, self.egm_dock)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.annotate_dock)
         
-        self.tabifyDockWidget(self.analysis_dock, self.system_manager_ui)
-        self.tabifyDockWidget(self.egm_dock, self.annotate_dock)
+        #self.tabifyDockWidget(self.analysis_dock, self.system_manager_ui)
+        #self.tabifyDockWidget(self.egm_dock, self.annotate_dock)
 
-        for dock in [self.analysis_dock, self.system_manager_ui, self.egm_dock,  self.annotate_dock]:
+        #for dock in [self.analysis_dock, self.system_manager_ui, self.egm_dock,  self.annotate_dock]:
+        for dock in [self.system_manager_ui, self.annotate_dock]:
             dock.setAllowedAreas(Qt.AllDockWidgetAreas)
 
         self.setDockOptions(self.GroupedDragging | self.AllowTabbedDocks | self.AllowNestedDocks)
