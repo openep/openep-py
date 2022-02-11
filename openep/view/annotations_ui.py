@@ -25,6 +25,7 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backend_tools import Cursors
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from cycler import cycler
 import numpy as np
 
 from .custom_widgets import CustomDockWidget, CustomNavigationToolbar
@@ -33,6 +34,8 @@ from openep.case.case_routines import calculate_distance
 
 
 mpl.rcParams['font.size'] = 8
+# neon colors: teal/cyan, matrix green, violet. pink, yellow, red
+mpl.rcParams['axes.prop_cycle'] = cycler('color', ['#08F7FE', '#00ff41', '#9467bd', '#FE53BB', '#F5D300', 'r', ])
 disable_all_bindings()
 
 class AnnotationWidget(CustomDockWidget):
@@ -162,7 +165,7 @@ class AnnotationWidget(CustomDockWidget):
             start_woi,
             color='grey',
             linestyle='--',
-            linewidth=0.6,
+            linewidth=0.8,
             alpha=0.6,
             label='start_woi',
             zorder=1,
@@ -178,7 +181,7 @@ class AnnotationWidget(CustomDockWidget):
             stop_woi,
             color='grey',
             linestyle='--',
-            linewidth=0.6,
+            linewidth=0.8,
             alpha=0.6,
             label='stop_woi',
             zorder=1,
@@ -196,8 +199,9 @@ class AnnotationWidget(CustomDockWidget):
         reference_annotation, = self.axes.plot(
             time,
             voltage,
-            color='red',
-            linewidth=0,
+            #color='red',
+            color='xkcd:royal blue',
+            linewidth=0.0,
             marker='o',
             markersize=4,
             label="reference_annotation_point",
@@ -212,9 +216,10 @@ class AnnotationWidget(CustomDockWidget):
         
         reference_annotation_line = self.axes.axvline(
             time,
-            color='red',
+            #color='red',
+            color='xkcd:royal blue',
             linestyle='--',
-            linewidth=0.6,
+            linewidth=1,
             alpha=0.6,
             label="reference_annotation_line",
             zorder=1,
@@ -250,7 +255,7 @@ class AnnotationWidget(CustomDockWidget):
             time,
             color='green',
             linestyle='--',
-            linewidth=0.6,
+            linewidth=1,
             alpha=0.6,
             label="local_annotation_line",
             zorder=1,
@@ -531,7 +536,7 @@ class AnnotationWidget(CustomDockWidget):
 
         # Set an active artists (has a different colour to to others. The gain can be set by scrolling).
         self.active_signal_artist = labels[0]
-        self.signal_artists[self.active_signal_artist].set_color('xkcd:azure')
+        #self.signal_artists[self.active_signal_artist].set_color('xkcd:azure')
 
         self.axes.set_yticks(separations, labels)  # need to explicitly set the grid positions
         legend = self.figure.legend(
@@ -552,7 +557,7 @@ class AnnotationWidget(CustomDockWidget):
         self.axes.tick_params(axis=u'both', which=u'both',length=0)
         self.axes.grid(axis='y')
         self.axes.margins(0)  # don't add padding the the x axis when plotting
-        plt.tight_layout(pad=0)
+        #plt.tight_layout(pad=0)
 
     def activate_figure(self, xmin, xmax):
         """Show the figure"""
