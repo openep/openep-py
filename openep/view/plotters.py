@@ -23,6 +23,10 @@ Create and manipulate PyVista-Qt BackgroundPlotters.
 
 from PySide2 import QtCore, QtWidgets
 from pyvistaqt import BackgroundPlotter
+import pyvista
+
+
+pyvista.set_plot_theme('paraview')
 
 
 def create_plotter():
@@ -43,7 +47,7 @@ def create_plotter():
         update_app_icon=False,
         auto_update=100,
     )
-    plotter.background_color = '#d8dcd6'
+    #plotter.background_color = '#d8dcd6'
     plotter.setMinimumSize(QtCore.QSize(50, 50))
 
     return plotter

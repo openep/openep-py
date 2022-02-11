@@ -60,9 +60,9 @@ class AnnotationWidget(CustomDockWidget):
         
         # The dock is set to have bold font (so the title stands out)
         # But all other widgets should have normal weighted font
-        main_font = QtGui.QFont()
-        main_font.setBold(False)
-        self.main.setFont(main_font)
+        #main_font = QtGui.QFont()
+        #main_font.setBold(False)
+        #self.main.setFont(main_font)
         
         # The central widget will hold a matplotlib canvas and toolbar.
         # The canvas widget will also contain a QComboBox for selecting
@@ -122,13 +122,13 @@ class AnnotationWidget(CustomDockWidget):
 
         annotate_selection = QtWidgets.QComboBox()
         annotate_selection.setMinimumWidth(220)
-        annotate_selection.setStyleSheet(
-            "QWidget{"
-            "background-color: white;"
-            "selection-background-color: #168CFF;"
-            "border: 1px solid #d8dcd6;"
-            "}"
-        )
+        #annotate_selection.setStyleSheet(
+        #    "QWidget{"
+        #    "background-color: white;"
+        #    "selection-background-color: #168CFF;"
+        #    "border: 1px solid #d8dcd6;"
+        #    "}"
+        #)
 
         annotate_selection_layout = QtWidgets.QHBoxLayout()
         annotate_selection_layout.addWidget(annotate_selection)
@@ -147,7 +147,7 @@ class AnnotationWidget(CustomDockWidget):
         central_layout.addWidget(toolbar)
         central_widget = QtWidgets.QWidget()
         central_widget.setLayout(central_layout)
-        central_widget.setStyleSheet("border-width: 0px; border: 0px; background-color: #d8dcd6;")
+        #central_widget.setStyleSheet("border-width: 0px; border: 0px; background-color: #d8dcd6;")
         
         return central_widget
 
