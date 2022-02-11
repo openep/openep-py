@@ -27,6 +27,7 @@ import os
 import pathlib
 import re
 
+import qdarkstyle
 from PySide2 import QtCore, QtGui, QtWidgets
 from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QAction
@@ -1532,7 +1533,13 @@ def main():
     # Create an instance of Qapplication
     app = QtWidgets.QApplication(sys.argv)
     app.setWindowIcon(QtGui.QIcon(openep.view.static.LOGO))
+    
+    # This is necessary for vtk widgets to work with qdockwidgets on macOS
+    # See: https://gitlab.kitware.com/vtk/vtk/-/issues/18454
     app.setStyle('Fusion')
+
+    # setup stylesheet
+    app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='pyside2'))
 
     # Create an instance of GUI
     window = OpenEPGUI()
