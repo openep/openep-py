@@ -35,7 +35,6 @@ from openep.case.case_routines import calculate_distance
 mpl.rcParams['font.size'] = 8
 disable_all_bindings()
 
-
 class AnnotationWidget(CustomDockWidget):
     """A dockable widget for annotating electrograms."""
 
@@ -314,8 +313,8 @@ class AnnotationWidget(CustomDockWidget):
             self.figure.draw_artist(artist)
         for artist in self.annotation_artists.values():
             self.figure.draw_artist(artist)
-        for handle in self._legend_handles.values():
-            self.figure.draw_artist(handle)
+        #for handle in self._legend_handles.values():
+        #    self.figure.draw_artist(handle)
 
     def blit_artists(self):
         """Update the screen with animated artists."""
@@ -419,9 +418,11 @@ class AnnotationWidget(CustomDockWidget):
         """Change the colour of the active artist"""
     
         for artist_label, artist in self.signal_artists.items():
-            colour = 'xkcd:azure' if artist_label == self.active_signal_artist else 'xkcd:steel blue'
-            artist.set_color(colour)
-            self._legend_handles[artist_label].set_color(colour)
+            lw = 2.5 if artist_label == self.active_signal_artist else 1.25
+            artist.set_linewidth(lw)
+            #colour = 'xkcd:azure' if artist_label == self.active_signal_artist else 'xkcd:steel blue'
+            #artist.set_color(colour)
+            #self._legend_handles[artist_label].set_color(colour)
 
         self.blit_artists()
 
@@ -541,7 +542,7 @@ class AnnotationWidget(CustomDockWidget):
         )
         self._legend_handles = {handle.get_label(): handle for handle in legend.legendHandles}
         for handle in self._legend_handles.values():
-            handle.set_linewidth(3)
+            handle.set_linewidth(2.5)
 
         # Remove the border and ticks
         plt.tick_params(axis='both', which='both', length=0)
