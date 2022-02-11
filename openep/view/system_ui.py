@@ -42,9 +42,9 @@ def create_system_dock(plotter):
 
     # The dock is set to have bold font (so the title stands out)
     # But all other widgets should have normal weighted font
-    main_font = QtGui.QFont()
-    main_font.setBold(False)
-    dock.main.setFont(main_font)
+    #main_font = QtGui.QFont()
+    #main_font.setBold(False)
+    #dock.main.setFont(main_font)
 
     # Create a menubar for this dock
     # From here we can control e.g. the scalar values projected onto the surface
