@@ -54,3 +54,12 @@ Documentation
 =============
 
 The full documentation of OpenEP-Py is available at: `openep-py.readthedocs.io <https://openep-py.readthedocs.io/en/latest/?badge=latest>`__
+
+OpenEP-GUI
+==========
+
+After installing OpenEP, you can launch a GUI from the command line by typing `openep`.
+
+The GUI is in the very early stages of development and will change significantly and without warning.
+
+![opnep gui](https://raw.githubusercontent.com/openep/openep-py/theme/.github/OpenEP-GUI.png)
