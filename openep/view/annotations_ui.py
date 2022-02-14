@@ -58,12 +58,6 @@ class AnnotationWidget(CustomDockWidget):
         
         self.main  = QtWidgets.QMainWindow()
         
-        # The dock is set to have bold font (so the title stands out)
-        # But all other widgets should have normal weighted font
-        #main_font = QtGui.QFont()
-        #main_font.setBold(False)
-        #self.main.setFont(main_font)
-        
         # The central widget will hold a matplotlib canvas and toolbar.
         # The canvas widget will also contain a QComboBox for selecting
         # the electrogram to annnotate.
@@ -122,13 +116,6 @@ class AnnotationWidget(CustomDockWidget):
 
         annotate_selection = QtWidgets.QComboBox()
         annotate_selection.setMinimumWidth(220)
-        #annotate_selection.setStyleSheet(
-        #    "QWidget{"
-        #    "background-color: white;"
-        #    "selection-background-color: #168CFF;"
-        #    "border: 1px solid #d8dcd6;"
-        #    "}"
-        #)
 
         annotate_selection_layout = QtWidgets.QHBoxLayout()
         annotate_selection_layout.addWidget(annotate_selection)
@@ -147,8 +134,7 @@ class AnnotationWidget(CustomDockWidget):
         central_layout.addWidget(toolbar)
         central_widget = QtWidgets.QWidget()
         central_widget.setLayout(central_layout)
-        #central_widget.setStyleSheet("border-width: 0px; border: 0px; background-color: #d8dcd6;")
-        
+
         return central_widget
 
     def _initialise_annotations(self):
@@ -199,7 +185,6 @@ class AnnotationWidget(CustomDockWidget):
         reference_annotation, = self.axes.plot(
             time,
             voltage,
-            #color='red',
             color='xkcd:royal blue',
             linewidth=0.0,
             marker='o',
@@ -216,7 +201,6 @@ class AnnotationWidget(CustomDockWidget):
         
         reference_annotation_line = self.axes.axvline(
             time,
-            #color='red',
             color='xkcd:royal blue',
             linestyle='--',
             linewidth=1,
@@ -318,13 +302,13 @@ class AnnotationWidget(CustomDockWidget):
             self.figure.draw_artist(artist)
         for artist in self.annotation_artists.values():
             self.figure.draw_artist(artist)
-        #for handle in self._legend_handles.values():
-        #    self.figure.draw_artist(handle)
 
     def blit_artists(self):
         """Update the screen with animated artists."""
+
         canvas = self.canvas
         figure = self.figure
+
         # paranoia in case we missed the draw event,
         if self.background is None:
             self._on_draw(event=None)
@@ -425,22 +409,15 @@ class AnnotationWidget(CustomDockWidget):
         for artist_label, artist in self.signal_artists.items():
             lw = 2.5 if artist_label == self.active_signal_artist else 1.25
             artist.set_linewidth(lw)
-            #colour = 'xkcd:azure' if artist_label == self.active_signal_artist else 'xkcd:steel blue'
-            #artist.set_color(colour)
-            #self._legend_handles[artist_label].set_color(colour)
 
         self.blit_artists()
 
     def update_window_of_interest(self, start_woi, stop_woi):
-        """Plot vertical lines designating the window of interest"""
+        """Move vertical lines designating the window of interest"""
 
         self.annotation_artists['start_woi'].set_xdata([start_woi, start_woi])
         self.annotation_artists['stop_woi'].set_xdata([stop_woi, stop_woi])
 
-    def _update_window_of_interest(self, event):
-        """This is called when the woi line is picked"""
-        pass
-    
     def update_reference_annotation(self, time, voltage, gain):
         """Plot the reference activation time"""
         
@@ -534,9 +511,8 @@ class AnnotationWidget(CustomDockWidget):
             self.add_artist(artist=line, label=label, signal=True)
             self.signal_artists[label] = line
 
-        # Set an active artists (has a different colour to to others. The gain can be set by scrolling).
+        # Set an active artists (has a thicker linewidth than other lines. The gain can be set by scrolling).
         self.active_signal_artist = labels[0]
-        #self.signal_artists[self.active_signal_artist].set_color('xkcd:azure')
 
         self.axes.set_yticks(separations, labels)  # need to explicitly set the grid positions
         legend = self.figure.legend(
@@ -557,7 +533,6 @@ class AnnotationWidget(CustomDockWidget):
         self.axes.tick_params(axis=u'both', which=u'both',length=0)
         self.axes.grid(axis='y')
         self.axes.margins(0)  # don't add padding the the x axis when plotting
-        #plt.tight_layout(pad=0)
 
     def activate_figure(self, xmin, xmax):
         """Show the figure"""
