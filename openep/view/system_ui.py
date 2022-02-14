@@ -27,11 +27,11 @@ from PySide2.QtWidgets import QAction, QActionGroup
 from .custom_widgets import CustomDockWidget
 
 
-def create_system_dock(plotter):
+def create_system_dock(central_widget):
     """Create a new dockable widget that will contain a pyvista-qt plotter for rendering 3D maps.
 
     Args:
-        plotter (BackgroundPlotter): plotter to set at the widget for the new dock
+        central_widget (QWidget): Widget containing the BackgroundPlotter to add to the new dock
 
     Returns:
         dock (CustomDockWidget): dockable widget containing the plotter
@@ -40,12 +40,6 @@ def create_system_dock(plotter):
     dock = CustomDockWidget("Temporary title")  # this will be changed
     dock.main = QtWidgets.QMainWindow()
 
-    # The dock is set to have bold font (so the title stands out)
-    # But all other widgets should have normal weighted font
-    #main_font = QtGui.QFont()
-    #main_font.setBold(False)
-    #dock.main.setFont(main_font)
-
     # Create a menubar for this dock
     # From here we can control e.g. the scalar values projected onto the surface
     dock.main.menubar = dock.main.menuBar()
@@ -53,7 +47,7 @@ def create_system_dock(plotter):
     dock.main.menubar
 
     # Set widget
-    dock.main.setCentralWidget(plotter)
+    dock.main.setCentralWidget(central_widget)
     dock.setWidget(dock.main)
     dock.setAllowedAreas(Qt.AllDockWidgetAreas)
 
