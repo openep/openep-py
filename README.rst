@@ -62,4 +62,4 @@ After installing OpenEP, you can launch a GUI from the command line by typing `o
 
 The GUI is in the very early stages of development and will change significantly and without warning.
 
-.. image:: https://raw.githubusercontent.com/openep/openep-py/theme/.github/OpenEP-GUI.png?sanitize=true
+.. image:: https://raw.githubusercontent.com/openep/openep-py/dev/.github/OpenEP-GUI.png
