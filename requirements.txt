@@ -11,6 +11,7 @@ pyvista>=0.33
 pyvistaqt>=0.6
 PySide2
 qdarkstyle
+mplcyberpunk
 pymeshfix
 trimesh
 shapely
