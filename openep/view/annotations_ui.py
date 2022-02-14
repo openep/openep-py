@@ -21,11 +21,14 @@
 Create a dock widget for the annotation viewer.
 """
 from PySide2 import QtCore, QtWidgets
+
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backend_tools import Cursors
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from cycler import cycler
+import mplcyberpunk
+
 import numpy as np
 
 from .custom_widgets import CustomDockWidget, CustomNavigationToolbar
@@ -33,10 +36,13 @@ from ._mpl_key_bindings import disable_all_bindings
 from openep.case.case_routines import calculate_distance
 
 
-mpl.rcParams['font.size'] = 8
-# neon colors: teal/cyan, matrix green, violet. pink, yellow, red
-mpl.rcParams['axes.prop_cycle'] = cycler('color', ['#08F7FE', '#00ff41', '#9467bd', '#FE53BB', '#F5D300', 'r', ])
+plt.style.use("cyberpunk")
+
+# mpl.rcParams['font.size'] = 8
+# neon colors: teal/cyan, pink, yellow, matrix green, red, violet
+# axes.prop_cycle: cycler('color', ['08F7FE', 'FE53BB', 'F5D300', '00ff41', 'r', '9467bd', ])
 disable_all_bindings()
+
 
 class AnnotationWidget(CustomDockWidget):
     """A dockable widget for annotating electrograms."""
@@ -149,7 +155,7 @@ class AnnotationWidget(CustomDockWidget):
 
         woi_slider_lower_limit = self.axes.axvline(
             start_woi,
-            color='grey',
+            color='white',
             linestyle='--',
             linewidth=0.8,
             alpha=0.6,
@@ -165,7 +171,7 @@ class AnnotationWidget(CustomDockWidget):
         
         woi_slider_upper_limit = self.axes.axvline(
             stop_woi,
-            color='grey',
+            color='white',
             linestyle='--',
             linewidth=0.8,
             alpha=0.6,
@@ -181,11 +187,11 @@ class AnnotationWidget(CustomDockWidget):
 
     def _initialise_reference_annotation(self, time=0.5, voltage=6):
         """Plot a point at the reference activation time"""
-        
+
         reference_annotation, = self.axes.plot(
             time,
             voltage,
-            color='xkcd:royal blue',
+            color='white',
             linewidth=0.0,
             marker='o',
             markersize=4,
@@ -201,7 +207,7 @@ class AnnotationWidget(CustomDockWidget):
         
         reference_annotation_line = self.axes.axvline(
             time,
-            color='xkcd:royal blue',
+            color='#08F7FE',
             linestyle='--',
             linewidth=1,
             alpha=0.6,
@@ -221,7 +227,7 @@ class AnnotationWidget(CustomDockWidget):
         local_annotation, = self.axes.plot(
             time,
             voltage,
-            color='green',
+            color='white',
             linewidth=0,
             marker='o',
             markersize=4,
@@ -237,7 +243,7 @@ class AnnotationWidget(CustomDockWidget):
 
         local_annotation_line = self.axes.axvline(
             time,
-            color='green',
+            color='#FE53BB',
             linestyle='--',
             linewidth=1,
             alpha=0.6,
@@ -531,7 +537,8 @@ class AnnotationWidget(CustomDockWidget):
             self.axes.spines[spine].set_visible(False)
         self.axes.spines['bottom'].set_alpha(0.4)
         self.axes.tick_params(axis=u'both', which=u'both',length=0)
-        self.axes.grid(axis='y')
+        self.axes.grid(axis='y', visible=True, linestyle="-")
+        self.axes.grid(axis='x', visible=False)
         self.axes.margins(0)  # don't add padding the the x axis when plotting
 
     def activate_figure(self, xmin, xmax):
