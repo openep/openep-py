@@ -38,30 +38,36 @@ def create_plotter_layout(plotter, add_link_views_button=True):
         plotter [BackgrounPlotter]: Plotter for which the layout will be created
 
     Returns:
-        plotter [BackgrounPlotter]: Plotter for which the layout has been created.
-        plotter_layout [QtWidgets.QVBoxLayout]: Layout for the plotter
+        central_widget (QWidget): Widget whose layout contains the BackgroundPlotter, colourbar widgets, and opacity widget
+        lower_limit (QLineEdit): widget for setting the colourbar's lower limit
+        upper_limit (QLineEdit): widget for setting the colourbar's upper limit
+        opacity (QDoubleSpinBox): widget for setting the opacity of the mesh
+        link_views_with_primary (None or QPushButton): If ``add_link_views_button` is True, this is a
+            widget for linking the view of this plotter with the 'primary plotter' of this case.
     """
 
     # TODO: We're currently using line edits to set colourbar limits - look into RangeSlider
-    plotter_layout = QtWidgets.QVBoxLayout(plotter)
-
     colour_bar_layout, lower_limit, upper_limit = _create_colourbar_layout()
     opacity_layout, opacity = _create_opacity_layout()
     control_layout = _create_control_layout(
         colour_bar_layout=colour_bar_layout,
         opacity_layout=opacity_layout,
     )
-    plotter_layout.addLayout(control_layout)
-
+    
     if add_link_views_button:
         link_views_layout, link_view_with_primary = _create_link_views_layout()
-        plotter_layout.addLayout(link_views_layout)
     else:
         link_view_with_primary = None
 
-    plotter_layout.addStretch()
+    central_layout = QtWidgets.QVBoxLayout()
+    central_layout.addLayout(control_layout)
+    if add_link_views_button:
+        central_layout.addLayout(link_views_layout)
+    central_layout.addWidget(plotter)
+    central_widget = QtWidgets.QWidget()
+    central_widget.setLayout(central_layout)
 
-    return plotter_layout, lower_limit, upper_limit, opacity, link_view_with_primary
+    return central_widget, lower_limit, upper_limit, opacity, link_view_with_primary
 
 
 def _create_colourbar_layout():

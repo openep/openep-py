@@ -539,14 +539,14 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         index = len(system.plotters)
         plotter_is_secondary_view = index > 0
-        _, *plotter_widgets = openep.view.plotters_ui.create_plotter_layout(
+        plotter_widgets = openep.view.plotters_ui.create_plotter_layout(
             plotter=plotter,
             add_link_views_button=plotter_is_secondary_view,
         )
-        plotter.lower_limit, plotter.upper_limit, plotter.opacity, plotter.link_view_with_primary = \
+        central_widget, plotter.lower_limit, plotter.upper_limit, plotter.opacity, plotter.link_view_with_primary = \
             plotter_widgets
 
-        dock = openep.view.system_ui.create_system_dock(plotter=plotter)
+        dock = openep.view.system_ui.create_system_dock(central_widget=central_widget)
 
         # Add a Field menu to the menubar. This is used for selecting the scalar field to project onto the surface.
         dock, plotter = openep.view.system_ui.add_field_menu(
