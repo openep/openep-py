@@ -43,13 +43,6 @@ class SystemManagetDockWidget(CustomDockWidget):
         """Create a MainWindow that will be the widget of the system manager"""
 
         self.main = QtWidgets.QMainWindow()
-        #self.main.setStyleSheet('QMainWindow {border: 0px; background-color: #d8dcd6;}')
-
-        # The dock is set to have bold font (so the title stands out)
-        # But all other widgets should have normal weighted font
-        #main_font = QtGui.QFont()
-        #main_font.setBold(False)
-        #self.main.setFont(main_font)
 
     def _create_system_manager_menubar(self):
         """Add a menu bar to the System Manager.
@@ -64,13 +57,6 @@ class SystemManagetDockWidget(CustomDockWidget):
         # Adding data to systems, exporting system to a different format
         self.main.menubar = self.main.menuBar()
         self.main.menubar.setNativeMenuBar(False)
-        #self.main.menubar.setStyleSheet(
-        #    "QMenuBar{"
-        #    "background-color: #95a3a6;"  # xkcd:cool grey
-        #    "color: black;"
-        #    "border: None;"
-        #    "}"
-        #)
 
         file_menu = self.main.menubar.addMenu("File")
 
@@ -140,7 +126,7 @@ class SystemManagetDockWidget(CustomDockWidget):
             total_width += width
 
         heading_bar.setLayout(heading_bar_layout)
-        heading_bar.setStyleSheet('QWidget {background-color: #95a3a6;}')
+        heading_bar.setStyleSheet('QWidget {background-color: #60798B}')
         self.table_layout.addWidget(heading_bar, 0, 0, total_width, 1)
 
     def _create_vertical_stretch(self):
@@ -303,7 +289,6 @@ class SystemManagetDockWidget(CustomDockWidget):
         system_layout.addWidget(active_widget, active_width)
 
         system_row.setLayout(system_layout)
-        #system_row.setStyleSheet('background-color: white;')
 
         self.table_layout.addWidget(system_row, row_number, 0, total_width, 1)
 

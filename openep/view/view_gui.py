@@ -166,9 +166,9 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         # The dock is set to have bold font (so the title stands out)
         # But all other widgets should have normal weighted font
-        main_font = QtGui.QFont()
-        main_font.setBold(False)
-        egm_canvas_main.setFont(main_font)
+        #main_font = QtGui.QFont()
+        #main_font.setBold(False)
+        #egm_canvas_main.setFont(main_font)
 
         self.egm_dock.setWidget(egm_canvas_main)
     
@@ -239,9 +239,9 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         # The dock is set to have bold font (so the title stands out)
         # But all other widgets should have normal weighted font
-        main_font = QtGui.QFont()
-        main_font.setBold(False)
-        analysis_canvas_main.setFont(main_font)
+        #main_font = QtGui.QFont()
+        #main_font.setBold(False)
+        #analysis_canvas_main.setFont(main_font)
 
         self.analysis_dock.setWidget(analysis_canvas_main)
 
@@ -1506,27 +1506,17 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                 for dock in system.docks:
                     dock.main.menubar.setStyleSheet(
                         "QMenuBar{"
-                        "background-color: #5a86ad;"  # xkcd:dusty blue
-                        "color: black;"
-                        "border: None;"
+                        "background-color: #60798B;"
                         "}"
                     )
-                # The below can be used to put a red border around the plotter (but not the entire window)
-                # for plotter in system.plotters:
-                #     plotter.renderer.add_border(color="red", width=5)
             else:
-                # The below can be used to remove the red border around the plotter
-                # for plotter in system.plotters:
-                #     plotter.renderer.add_border(color=None, width=5)
                 for dock in system.docks:
                     dock.main.menubar.setStyleSheet(
                         "QMenuBar{"
-                        "background-color: #95a3a6;"  # xkcd:cool grey
-                        "color: black;"
-                        "border: None;"
+                        "background-color: #455364;"  # default heading colour for qdarkstyle
                         "}"
                     )
-
+            
 
 def main():
 
