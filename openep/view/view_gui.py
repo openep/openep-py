@@ -97,7 +97,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     def _create_system_manager_ui(self):
         """Create a dockable widget that for managing systems loaded into the GUI"""
 
-        self.system_manager_ui = openep.view.system_manager_ui.SystemManagetDockWidget(
+        self.system_manager_ui = openep.view.system_manager_ui.SystemManagerDockWidget(
             title="Systems"
         )
 
@@ -476,8 +476,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     def update_system_manager_table(self, system):
         """Update the System manager table when a new system is loaded."""
 
-        # Not sure why * 10 works. But if not multiplied by at least 10, there is vertical overlap between rows
-        row_number = len(self.system_manager.systems) * 10
+        row_number = len(self.system_manager.systems)
 
         system.name_widget, *_, active_widget = self.system_manager_ui.update_system_manager_table(
             name=str(system.name),
