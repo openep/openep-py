@@ -100,7 +100,7 @@ class SystemManagerDockWidget(CustomDockWidget):
         # We're going to add an additional column to take care of spacing
         self.table_layout.setHorizontalSpacing(0)
         
-        # We use a large number here so the rows do not change size to fill the verical space
+        # We use a large number here so the rows do not change size to fill the vertical space
         self.table_layout.setRowStretch(1e6, 1)
 
         # add a row containing heading labels to the grid
