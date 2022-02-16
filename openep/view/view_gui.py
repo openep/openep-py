@@ -187,7 +187,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.annotate_dock.canvas.mpl_connect('key_press_event', self.annotation_on_key_press)
         self.annotate_dock.canvas.mpl_connect('scroll_event', self.annotation_on_scroll_wheel)  # this is scrolling with the wheel, not scrollbar
         
-        # We will need to disconnect and reconnect these events through uesr interaction
+        # We will need to disconnect and reconnect these events through user interaction
         self.annotate_dock.cid_button_press_event = self.annotate_dock.canvas.mpl_connect(
             'button_press_event',
             self.annotation_on_button_press,
@@ -790,7 +790,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             self.annotate_dock.deactivate_figure()
 
     def change_active_scalars(self, system, index, scalars):
-        """Cahnge the scalar values that are being projected onto the mesh."""
+        """Change the scalar values that are being projected onto the mesh."""
 
         dock = system.docks[index]
         dock.setWindowTitle(f"{system.name}: {scalars}")
