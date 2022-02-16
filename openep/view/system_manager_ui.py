@@ -22,10 +22,11 @@ Class for creating the system manager widget.
 """
 from PySide2 import QtGui, QtWidgets
 from PySide2.QtWidgets import QAction
+from PySide2.QtCore import Qt
 from .custom_widgets import CustomDockWidget
 
 
-class SystemManagetDockWidget(CustomDockWidget):
+class SystemManagerDockWidget(CustomDockWidget):
     """A dockable widget that for managing systems loaded into the GUI"""
 
     def __init__(self, title: str):
@@ -93,7 +94,14 @@ class SystemManagetDockWidget(CustomDockWidget):
         """
 
         self.table = QtWidgets.QWidget()
-        self.table_layout = QtWidgets.QGridLayout(self.table)
+        self.table_layout = QtWidgets.QGridLayout()
+        self.table.setLayout(self.table_layout)
+        
+        # We're going to add an additional column to take care of spacing
+        self.table_layout.setHorizontalSpacing(0)
+        
+        # We use a large number here so the rows do not change size to fill the verical space
+        self.table_layout.setRowStretch(1e6, 1)
 
         # add a row containing heading labels to the grid
         self._add_heading_bar()
@@ -101,43 +109,42 @@ class SystemManagetDockWidget(CustomDockWidget):
         # we need a method for selecting the active system
         self._active_system_button_group = QtWidgets.QButtonGroup()
 
-        # After adding all the rows we need to make sure they are at the top of the layout
-        self.table.vertical_stretch = self._create_vertical_stretch()
-        self.table_layout.addItem(self.table.vertical_stretch)
-
     def _add_heading_bar(self):
         """Add a heading bar to the table layout."""
 
         heading_font = QtGui.QFont()
         heading_font.setBold(True)
 
-        heading_bar = QtWidgets.QWidget()
-        heading_bar_layout = QtWidgets.QHBoxLayout()
-        total_width = 0
-        for heading_name, width in zip(
-            ['Name', 'File', 'Type', 'Active'],
-            [2, 8, 1, 1],
-        ):
+        heading_names = [
+            'Name',
+            'File',
+            'Type',
+            'Active',
+        ]
+        self._alignments = [
+            Qt.AlignLeft,
+            Qt.AlignLeft,
+            Qt.AlignLeft,
+            Qt.AlignCenter,
+        ]
+        self._column_stretches = [3, 8, 2, 1]
+        row = 0
+        row_width = 1
+        
+        for column, heading_name in enumerate(heading_names):
+            
             heading = QtWidgets.QLabel(heading_name)
+            heading.setStyleSheet('background: #60798B; padding: 5px;')
             heading.setFont(heading_font)
-            heading.setFrameShape(QtWidgets.QFrame.NoFrame)
-            heading.setLineWidth(0)
-            heading_bar_layout.addWidget(heading, width)
-            total_width += width
 
-        heading_bar.setLayout(heading_bar_layout)
-        heading_bar.setStyleSheet('QWidget {background-color: #60798B}')
-        self.table_layout.addWidget(heading_bar, 0, 0, total_width, 1)
-
-    def _create_vertical_stretch(self):
-        """Create a vertical spacer widget"""
-
-        vertical_stretch = QtWidgets.QSpacerItem(
-            0, 0,
-            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding,
-        )
-
-        return vertical_stretch
+            # For the first 3 columns, add an additional column to the right hand side.
+            # This adds a small space between the columns.
+            if column < len(heading_names) - 1:
+                self.table_layout.addWidget(heading, row, 2 * column, row_width, column_width:=2)
+                self.table_layout.setColumnMinimumWidth(2 * column + 1, 20 * self._column_stretches[column])
+                self.table_layout.setColumnStretch(2 * column, self._column_stretches[column])
+            else:
+                self.table_layout.addWidget(heading, row, 2 * column, row_width, column_width:=1, self._alignments[column])
 
     def create_export_action(self, system_basename, export_name):
         """Add an action to the Menubar for exporting a system dataset to a specific format.
@@ -220,21 +227,26 @@ class SystemManagetDockWidget(CustomDockWidget):
             active_widget (QtWidgets.QRadioButton): widget for setting the system to be the active system
         """
 
-        self.table_layout.removeItem(self.table.vertical_stretch)
-
-        name_widget, basename_widget, data_type_widget, active_widget = self._create_widgets_for_system_row(
+        widgets = self._create_widgets_for_system_row(
             name=name,
             basename=basename,
             data_type=data_type,
             is_active=is_active,
-            row_number=row_number,
             )
-
+        name_widget, basename_widget, data_type_widget, active_widget = widgets
         self._active_system_button_group.addButton(active_widget)
+        
+        row_width = 1        
+        for column, widget in enumerate(widgets):
 
-        # Make sure the vertical spacing is correct again
-        self.table.vertical_stretch = self._create_vertical_stretch()
-        self.table_layout.addItem(self.table.vertical_stretch)
+            # For the first 3 columns, add an additional column to the right hand side.
+            # This adds a small space between the columns.
+            if column < len(widgets) - 1:
+                self.table_layout.addWidget(widget, row_number, 2 * column, row_width, column_width:=2)
+                self.table_layout.setColumnMinimumWidth(2 * column + 1, 20 * self._column_stretches[column])
+                self.table_layout.setColumnStretch(2 * column, self._column_stretches[column])
+            else:
+                self.table_layout.addWidget(widget, row_number, 2 * column, row_width, column_width:=1, self._alignments[column])
 
         return name_widget, basename_widget, data_type_widget, active_widget
 
@@ -244,18 +256,14 @@ class SystemManagetDockWidget(CustomDockWidget):
         basename: str,
         data_type: str,
         is_active: str,
-        row_number: int,
     ):
-        """Create a QHBoxLayout containing widgets with info about a given system.
-
-        The row is added to the table layout. The created widgets are also returned.
+        """Create widgets with info about a given system.
 
         Args:
             name (str): label for the system
             basename (str): basename of the file(s) for the given system
             data_type (str): type of system data - either OpenEP or openCARP
             is_active (bool): whether the system is currently the active system in the GUI
-            row_number (int): which row number in the QGridLayout to add the new row
 
         Returns:
             name_widget (QtWidgets.QLineEdit): widget for editing the name of the system
@@ -263,33 +271,18 @@ class SystemManagetDockWidget(CustomDockWidget):
             data_type_widget (QtWidgets.QLabel): widget displaying the data type of the system
             active_widget (QtWidgets.QRadioButton): widget for setting the system to be the active system
         """
-
-        system_row = QtWidgets.QWidget()
-        system_layout = QtWidgets.QHBoxLayout()
-
-        # The widths of the widgets are the same as those used in add_heading_bar()
-        name_width, basename_width, data_type_width, active_width = [2, 8, 1, 1]
-        total_width = 12
-
+       
         name_widget = QtWidgets.QLineEdit()
         name_widget.setText(str(name))
         name_widget.setPlaceholderText("system name")
-        system_layout.addWidget(name_widget, name_width)
-
+        
         basename_widget = QtWidgets.QLabel()
         basename_widget.setText(str(basename))
-        system_layout.addWidget(basename_widget, basename_width)
-
+        
         data_type_widget = QtWidgets.QLabel()
         data_type_widget.setText(data_type)
-        system_layout.addWidget(data_type_widget, data_type_width)
-
+        
         active_widget = QtWidgets.QRadioButton()
         active_widget.setChecked(is_active)
-        system_layout.addWidget(active_widget, active_width)
-
-        system_row.setLayout(system_layout)
-
-        self.table_layout.addWidget(system_row, row_number, 0, total_width, 1)
 
         return name_widget, basename_widget, data_type_widget, active_widget
