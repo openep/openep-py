@@ -246,12 +246,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         analysis_canvas_main = QtWidgets.QMainWindow()
         analysis_canvas_main.setCentralWidget(canvas_widget)
 
-        # The dock is set to have bold font (so the title stands out)
-        # But all other widgets should have normal weighted font
-        #main_font = QtGui.QFont()
-        #main_font.setBold(False)
-        #analysis_canvas_main.setFont(main_font)
-
         self.analysis_dock.setWidget(analysis_canvas_main)
 
     def _add_dock_widgets(self):
@@ -259,18 +253,10 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         Add dockable widgets to the main window.
         """
 
-        #self.addDockWidget(Qt.RightDockWidgetArea, self.analysis_dock)
         self.addDockWidget(Qt.RightDockWidgetArea, self.system_manager_ui)
-
-        #self.addDockWidget(Qt.LeftDockWidgetArea, self.egm_dock)
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.annotate_dock)
-        
         self.splitDockWidget(self.system_manager_ui, self.mapping_points, Qt.Vertical)
+        self.splitDockWidget(self.mapping_points, self.annotate_dock, Qt.Vertical)
         
-        #self.tabifyDockWidget(self.analysis_dock, self.system_manager_ui)
-        #self.tabifyDockWidget(self.egm_dock, self.annotate_dock)
-
-        #for dock in [self.analysis_dock, self.system_manager_ui, self.egm_dock,  self.annotate_dock]:
         for dock in [self.system_manager_ui, self.annotate_dock, self.mapping_points]:
             dock.setAllowedAreas(Qt.AllDockWidgetAreas)
 
@@ -675,8 +661,11 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         # If this is the first 3d viewer for the first system loaded, we need to update the egms etc.
         if (system.name == self.system_manager.active_system.name) and (len(system.plotters) == 1):
             self.change_active_system(system)
+            self.addDockWidget(Qt.LeftDockWidgetArea, dock)
+        else:
+            active_parent = self.system_manager.active_system.plotters[0]
+            self.tabifyDockWidgets(active_parent, dock)
 
-        self.addDockWidget(Qt.LeftDockWidgetArea, dock)
         self.highlight_menubars_of_active_plotters()
 
     def update_colourbar_limits(self, system, index):
