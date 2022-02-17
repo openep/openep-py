@@ -37,6 +37,7 @@ import numpy as np
 import openep
 
 import openep.view.custom_widgets
+import openep.view.mapping_points
 import openep.view.canvases
 import openep.view.annotations_ui
 import openep.view.plotters_ui
@@ -69,6 +70,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self._create_system_manager_ui()
         self._create_egm_canvas_dock()
         self._create_annotate_dock()
+        self._create_mapping_points_dock()
         self._create_analysis_canvas_dock()
         self._add_dock_widgets()
         self._disable_dock_widgets()
@@ -205,6 +207,13 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         # hide the figure until we have data to plot
         self.annotate_dock.deactivate_figure()
     
+    def _create_mapping_points_dock(self):
+        """Create a dockable widget for displaying mapping points info."""
+
+        self.mapping_points = openep.view.mapping_points.MappingPointsDock(
+            title="Mapping points",
+            system=None,
+        )
 
     def _create_analysis_canvas_dock(self):
         """
@@ -256,11 +265,13 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         #self.addDockWidget(Qt.LeftDockWidgetArea, self.egm_dock)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.annotate_dock)
         
+        self.splitDockWidget(self.system_manager_ui, self.mapping_points, Qt.Vertical)
+        
         #self.tabifyDockWidget(self.analysis_dock, self.system_manager_ui)
         #self.tabifyDockWidget(self.egm_dock, self.annotate_dock)
 
         #for dock in [self.analysis_dock, self.system_manager_ui, self.egm_dock,  self.annotate_dock]:
-        for dock in [self.system_manager_ui, self.annotate_dock]:
+        for dock in [self.system_manager_ui, self.annotate_dock, self.mapping_points]:
             dock.setAllowedAreas(Qt.AllDockWidgetAreas)
 
         self.setDockOptions(self.GroupedDragging | self.AllowTabbedDocks | self.AllowNestedDocks)
@@ -788,6 +799,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             self.egm_canvas.draw()
             
             self.annotate_dock.deactivate_figure()
+        
+        self.mapping_points.model.system = system
 
     def change_active_scalars(self, system, index, scalars):
         """Change the scalar values that are being projected onto the mesh."""
