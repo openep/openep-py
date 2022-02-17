@@ -22,7 +22,7 @@ Class and functions for handling and displaying list of mapping points.
 
 from typing import Optional
 
-from PySide2 import QtCore, QtWidgets
+from PySide2 import QtCore, QtWidgets, QtGui
 from PySide2.QtCore import Qt
 
 import numpy as np
@@ -98,7 +98,6 @@ class MappingPointsModel(QtCore.QAbstractTableModel):
             ],
             axis=1,
         )
-        
         self.layoutChanged.emit()
 
     def data(self, index, role):
@@ -107,12 +106,27 @@ class MappingPointsModel(QtCore.QAbstractTableModel):
             
             value = self._data[index.row(), index.column()]
             return value
-    
+
     def rowCount(self, index=None):
         return 0 if self._data is None else self._data.shape[0]
 
     def columnCount(self, index=None):
         return 0 if self._data is None else self._data.shape[1]
+
+
+class SortProxyModel(QtCore.QSortFilterProxyModel):
+    
+    def lessThan(self, left_index, right_index):
+
+        left_var = self.sourceModel().data(left_index, Qt.DisplayRole)
+        right_var = self.sourceModel().data(right_index, Qt.DisplayRole)
+        
+        try:
+            return float(left_var) < float(right_var)
+        except ValueError as e:
+            if not str(e).startswith("could not convert string to float:"):
+                raise e
+            return left_var < right_var
 
 class MappingPointsDock(CustomDockWidget):
     """A dockable widget for handling and viewing the mapping points data."""
@@ -122,13 +136,47 @@ class MappingPointsDock(CustomDockWidget):
         super().__init__(title)
         
         self.model = MappingPointsModel(system=system)
-        self.proxy_model = QtCore.QSortFilterProxyModel()
+        self.proxy_model = SortProxyModel()
         self.proxy_model.setSourceModel(self.model)
         self.table = QtWidgets.QTableView()
         self.table.setModel(self.proxy_model)
+        self.table.verticalHeader().hide()
         self.table.setSortingEnabled(True)
         self.table.setShowGrid(False)
+        self.table.setAlternatingRowColors(True)
+        self.table.setStyleSheet(
+            "alternate-background-color: #262E38;"
+        )
+
+        header = self.table.horizontalHeader()
+        header.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        header.customContextMenuRequested.connect(self.header_context_menu)
         
         self.main = QtWidgets.QMainWindow()
         self.main.setCentralWidget(self.table)
         self.setWidget(self.main)
+
+    def header_context_menu(self, pos):
+        
+        # column_index = self.table.horizontalHeader().logicalIndexAt(pos)
+        
+        menu = QtWidgets.QMenu()
+  
+        show_menu = QtWidgets.QMenu("Show/hide")
+        show_index = QtWidgets.QAction("Index")
+        show_tag = QtWidgets.QAction("Tag")
+        show_name = QtWidgets.QAction("Name")
+        show_voltage = QtWidgets.QAction("Voltage")
+        show_lat = QtWidgets.QAction("LAT")
+        show_menu.addActions(
+            [
+                show_index,
+                show_tag,
+                show_name,
+                show_voltage,
+                show_lat,
+            ]
+        )
+        menu.addMenu(show_menu)
+
+        menu.exec_(QtGui.QCursor.pos())
