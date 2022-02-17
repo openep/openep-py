@@ -141,7 +141,7 @@ class SystemManagerDockWidget(CustomDockWidget):
             # This adds a small space between the columns.
             if column < len(heading_names) - 1:
                 self.table_layout.addWidget(heading, row, 2 * column, row_width, column_width:=2)
-                self.table_layout.setColumnMinimumWidth(2 * column + 1, 20 * self._column_stretches[column])
+                self.table_layout.setColumnMinimumWidth(2 * column + 1, 10 * self._column_stretches[column])
                 self.table_layout.setColumnStretch(2 * column, self._column_stretches[column])
             else:
                 self.table_layout.addWidget(heading, row, 2 * column, row_width, column_width:=1, self._alignments[column])
@@ -243,8 +243,6 @@ class SystemManagerDockWidget(CustomDockWidget):
             # This adds a small space between the columns.
             if column < len(widgets) - 1:
                 self.table_layout.addWidget(widget, row_number, 2 * column, row_width, column_width:=2)
-                self.table_layout.setColumnMinimumWidth(2 * column + 1, 20 * self._column_stretches[column])
-                self.table_layout.setColumnStretch(2 * column, self._column_stretches[column])
             else:
                 self.table_layout.addWidget(widget, row_number, 2 * column, row_width, column_width:=1, self._alignments[column])
 
