@@ -54,6 +54,7 @@ class MappingPointsModel(QtCore.QAbstractTableModel):
     def _init_headers(self):
         
         self.headers = ["Index", "Tag", "Name", "Voltage", "LAT"]
+        self._column_indices = {header: index for index, header in enumerate(self.headers)}
 
     def headerData(self, section, orientation, role):
         if role == QtCore.Qt.DisplayRole :
@@ -142,41 +143,42 @@ class MappingPointsDock(CustomDockWidget):
         self.table.setModel(self.proxy_model)
         self.table.verticalHeader().hide()
         self.table.setSortingEnabled(True)
+        self.table.resizeColumnsToContents()
         self.table.setShowGrid(False)
         self.table.setAlternatingRowColors(True)
         self.table.setStyleSheet(
             "alternate-background-color: #262E38;"
         )
-
-        header = self.table.horizontalHeader()
-        header.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        header.customContextMenuRequested.connect(self.header_context_menu)
         
         self.main = QtWidgets.QMainWindow()
         self.main.setCentralWidget(self.table)
         self.setWidget(self.main)
+        
+        self._init_header_context_menu()
+        self.table.resizeColumnsToContents()
 
-    def header_context_menu(self, pos):
+    def _init_header_context_menu(self):
+        """Create menu for selecting which columns to show when right-clicking on the header"""
+
+        header = self.table.horizontalHeader()
+        # header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
+        header.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        header.customContextMenuRequested.connect(self.header_context_menu)
         
-        # column_index = self.table.horizontalHeader().logicalIndexAt(pos)
-        
-        menu = QtWidgets.QMenu()
-  
+        self.header_menu = QtWidgets.QMenu()
         show_menu = QtWidgets.QMenu("Show/hide")
-        show_index = QtWidgets.QAction("Index")
-        show_tag = QtWidgets.QAction("Tag")
-        show_name = QtWidgets.QAction("Name")
-        show_voltage = QtWidgets.QAction("Voltage")
-        show_lat = QtWidgets.QAction("LAT")
-        show_menu.addActions(
-            [
-                show_index,
-                show_tag,
-                show_name,
-                show_voltage,
-                show_lat,
-            ]
-        )
-        menu.addMenu(show_menu)
+        self.header_menu.addMenu(show_menu)
+        
+        for column_name in self.model.headers:
+            action = QtWidgets.QAction(column_name, self.main, checkable=True, checked=True)
+            show_menu.addAction(action)
+            action.toggled.connect(
+                lambda checked, name=column_name: self.column_visibility(checked, self.model._column_indices[name])
+            )
+        
+    def header_context_menu(self, pos):
+        # column_index = self.table.horizontalHeader().logicalIndexAt(pos)
+        self.header_menu.exec_(QtGui.QCursor.pos())
 
-        menu.exec_(QtGui.QCursor.pos())
+    def column_visibility(self, show, column_index):
+        self.table.setColumnHidden(column_index, not show)
