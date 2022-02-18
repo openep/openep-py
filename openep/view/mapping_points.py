@@ -72,6 +72,7 @@ class MappingPointsModel(QtCore.QAbstractTableModel):
         
         if self._system is None:
             self._data = None
+            self._include = np.array([])
             return
 
         electric = self._system.case.electric
@@ -82,16 +83,17 @@ class MappingPointsModel(QtCore.QAbstractTableModel):
             return
 
         if not hasattr(electric, '_include'):
-            electric._include = np.full_like(
+            electric._include = self._include = np.full_like(
                 electric.bipolar_egm.voltage,
                 fill_value=True,
                 dtype=bool,
             )
 
+        self._index = np.arange(electric.bipolar_egm.voltage.shape[0], dtype=int)
         activation_time = electric.annotations.local_activation_time - electric.annotations.reference_activation_time
         self._data = np.concatenate(
             [
-                np.arange(electric.bipolar_egm.voltage.shape[0], dtype=int)[:, np.newaxis],
+                self._index[:, np.newaxis],
                 electric.names[:, np.newaxis],
                 electric.internal_names[:, np.newaxis],
                 electric.bipolar_egm.voltage[:, np.newaxis],
@@ -128,23 +130,29 @@ class SortProxyModel(QtCore.QSortFilterProxyModel):
             if not str(e).startswith("could not convert string to float:"):
                 raise e
             return left_var < right_var
+    
+    #def filterAcceptsRow(self, source_row: int, source_parent: QtCore.QModelIndex) -> bool:
+    #    index = self.sourceModel().index(source_row, 0, source_parent)
+    #    return self.sourceModel()._include[index.row()]
 
 class MappingPointsDock(CustomDockWidget):
     """A dockable widget for handling and viewing the mapping points data."""
 
-    def __init__(self, title: str, system: Optional[System] = None):
+    def __init__(self, title: str, system: Optional[System] = None, model=None, proxy_model=None):
 
         super().__init__(title)
         
-        self.model = MappingPointsModel(system=system)
-        self.proxy_model = SortProxyModel()
+        self.model = model if model is not None else MappingPointsModel(system=system)
+        self.proxy_model = proxy_model if proxy_model is not None else SortProxyModel()
         self.proxy_model.setSourceModel(self.model)
+
         self.table = QtWidgets.QTableView()
         self.table.setModel(self.proxy_model)
         self.table.verticalHeader().hide()
         self.table.setSortingEnabled(True)
         self.table.resizeColumnsToContents()
         self.table.setShowGrid(False)
+        self.table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.table.setAlternatingRowColors(True)
         self.table.setStyleSheet(
             "alternate-background-color: #262E38;"
@@ -155,7 +163,7 @@ class MappingPointsDock(CustomDockWidget):
         self.setWidget(self.main)
         
         self._init_header_context_menu()
-        self.table.resizeColumnsToContents()
+        self._init_table_context_menu()
 
     def _init_header_context_menu(self):
         """Create menu for selecting which columns to show when right-clicking on the header"""
@@ -163,7 +171,7 @@ class MappingPointsDock(CustomDockWidget):
         header = self.table.horizontalHeader()
         # header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         header.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        header.customContextMenuRequested.connect(self.header_context_menu)
+        header.customContextMenuRequested.connect(self._launch_header_context_menu)
         
         self.header_menu = QtWidgets.QMenu()
         show_menu = QtWidgets.QMenu("Show/hide")
@@ -176,9 +184,40 @@ class MappingPointsDock(CustomDockWidget):
                 lambda checked, name=column_name: self.column_visibility(checked, self.model._column_indices[name])
             )
         
-    def header_context_menu(self, pos):
+    def _launch_header_context_menu(self, pos):
         # column_index = self.table.horizontalHeader().logicalIndexAt(pos)
         self.header_menu.exec_(QtGui.QCursor.pos())
 
     def column_visibility(self, show, column_index):
         self.table.setColumnHidden(column_index, not show)
+
+    def _init_table_context_menu(self):
+        """Create menu for hiding selected rows."""
+
+        self.table.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.table.customContextMenuRequested.connect(self._launch_table_context_menu)
+
+        self.table_menu = QtWidgets.QMenu()
+        self.delete_points = QtWidgets.QAction("Delete point(s)", self.main, checkable=False)
+        self.table_menu.addAction(self.delete_points)
+        
+    def _launch_table_context_menu(self, pos):
+        self.table_menu.exec_(QtGui.QCursor.pos())
+
+
+class RecycleBinDock(MappingPointsDock):
+    """Dock for storing and displaying deleted mapping points."""
+
+    def __init__(self, title: str, system: Optional[System] = None, model=None, proxy_model=None):
+
+        super().__init__(title, system, model, proxy_model)
+
+    def _init_table_context_menu(self):
+        """Create menu for hiding selected rows."""
+
+        self.table.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.table.customContextMenuRequested.connect(self._launch_table_context_menu)
+
+        self.table_menu = QtWidgets.QMenu()
+        self.restore_points = QtWidgets.QAction("Restore point(s)", self.main, checkable=False)
+        self.table_menu.addAction(self.restore_points)

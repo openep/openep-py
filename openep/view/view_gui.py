@@ -214,6 +214,28 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             title="Mapping points",
             system=None,
         )
+        self.mapping_points.delete_points.triggered.connect(
+            lambda: self.delete_mapping_points(table=self.mapping_points.table, restore=False)
+        )
+        self.mapping_points.table.horizontalHeader().sortIndicatorChanged.connect(
+            lambda: self.sort_mapping_points_and_recycle_bin(self.mapping_points, self.recycle_bin),
+        )
+        self.mapping_points._ignore_sort_signal = False
+
+        self.recycle_bin = openep.view.mapping_points.RecycleBinDock(
+            title="Recycle bin",
+            system=None,
+            model=self.mapping_points.model,
+            proxy_model=self.mapping_points.proxy_model,
+        )
+        self.recycle_bin.restore_points.triggered.connect(
+            lambda: self.delete_mapping_points(table=self.recycle_bin.table, restore=True)
+        )
+
+        self.recycle_bin.table.horizontalHeader().sortIndicatorChanged.connect(
+            lambda: self.sort_mapping_points_and_recycle_bin(self.recycle_bin, self.mapping_points)
+        )
+        self.recycle_bin._ignore_sort_signal = False
 
     def _create_analysis_canvas_dock(self):
         """
@@ -256,8 +278,9 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.system_manager_ui)
         self.splitDockWidget(self.system_manager_ui, self.mapping_points, Qt.Vertical)
         self.splitDockWidget(self.mapping_points, self.annotate_dock, Qt.Vertical)
+        self.splitDockWidget(self.mapping_points, self.recycle_bin, Qt.Horizontal)
         
-        for dock in [self.system_manager_ui, self.annotate_dock, self.mapping_points]:
+        for dock in [self.system_manager_ui, self.annotate_dock, self.mapping_points, self.recycle_bin]:
             dock.setAllowedAreas(Qt.AllDockWidgetAreas)
 
         self.setDockOptions(self.GroupedDragging | self.AllowTabbedDocks | self.AllowNestedDocks)
@@ -789,7 +812,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             
             self.annotate_dock.deactivate_figure()
         
-        self.mapping_points.model.system = system
+        self.mapping_points.model.system = system  # the recycle bin shares the same model
+        self._hide_mapping_points()
 
     def change_active_scalars(self, system, index, scalars):
         """Change the scalar values that are being projected onto the mesh."""
@@ -1498,6 +1522,48 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         reference_annotation = annotations.reference_activation_time[0]
         annotations.window_of_interest[:, 0] = start_woi - reference_annotation
         annotations.window_of_interest[:, 1] = stop_woi - reference_annotation
+
+    def _hide_mapping_points(self):
+        """Show presiously deleted mapping points in the recycle bin, not the mapping points list"""
+
+        non_recycled_rows = np.argwhere(self.mapping_points.model._include).squeeze()
+        for row_number in non_recycled_rows:
+            self.recycle_bin.table.setRowHidden(row_number, True)
+        
+        recycled_rows = np.argwhere(self.mapping_points.model._include == False).squeeze()
+        for row_number in recycled_rows:
+            self.mapping_points.table.setRowHidden(row_number, True)
+
+    def delete_mapping_points(self, table, restore):
+        """Move the selected mapping points into the recycle bin."""
+
+        rows = table.selectionModel().selectedRows()
+        row_numbers = [row.row() for row in rows]
+        point_indices = np.asarray([row.sibling(row_number, 0).data() for row, row_number in zip(rows, row_numbers)], dtype=int)
+        self.mapping_points.model._include[point_indices] = restore
+        
+        for row_number in row_numbers:
+            self.mapping_points.table.setRowHidden(row_number, not restore)
+            self.recycle_bin.table.setRowHidden(row_number, restore)
+
+    def sort_mapping_points_and_recycle_bin(self, table, table_to_sort):
+        """When one table is sorted by a column, sort the other table by the same column"""
+
+        # prevent infinite recursion
+        if table_to_sort._ignore_sort_signal:
+            return
+        
+        table._ignore_sort_signal = True
+        table_to_sort._ignore_sort_signal = True
+
+        # sort second table based on first table
+        sort_column = table.table.horizontalHeader().sortIndicatorSection()
+        sort_order = table.table.horizontalHeader().sortIndicatorOrder()
+        table_to_sort.table.sortByColumn(sort_column, sort_order)
+
+
+        table._ignore_sort_signal = False
+        table_to_sort._ignore_sort_signal = False
 
     def highlight_menubars_of_active_plotters(self):
         """Make the menubars of all docks in the active system blue."""
