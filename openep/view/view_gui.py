@@ -686,8 +686,9 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             self.change_active_system(system)
             self.addDockWidget(Qt.LeftDockWidgetArea, dock)
         else:
-            active_parent = self.system_manager.active_system.plotters[0]
-            self.tabifyDockWidgets(active_parent, dock)
+            active_parent = self.system_manager.active_system.docks[0]
+            self.tabifyDockWidget(active_parent, dock)
+            dock.setTitleBarWidget(QtWidgets.QWidget())
 
         self.highlight_menubars_of_active_plotters()
 
