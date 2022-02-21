@@ -646,6 +646,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             xmin = self.egm_times[0] - 100
             xmax = self.egm_times[-1] + 100
             self.annotate_dock.activate_figure(xmin, xmax)
+            self.create_annotation_plot()
             self.initialise_annotation_egm_selection()
 
         else:
@@ -847,7 +848,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         self.annotate_dock.initialise_egm_selection(names)
 
-    def update_annotation_plot(self):
+    def create_annotation_plot(self):
         """Update the data plotted in the annotation viewer."""
         
         # TODO: this will currently fail unless there is both reference
@@ -872,15 +873,15 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         labels = np.asarray(["Ref", "Bipolar", "ECG"])
 
         self.annotate_dock.plot_signals(times, signals, labels, signal_gains)
+        
+        # add the annotations
         self.annotate_dock._initialise_annotations()
-        
-        # Also plot the annotations and window of interest
         annotations = electric.annotations
-        
+        times = self.egm_times
+
         local_annotation = annotations.local_activation_time[current_index]
         local_annotation_index = np.searchsorted(times, local_annotation)
-        if local_annotation_index == times.size:
-            local_annotation -= 1
+        local_annotation_index = min(local_annotation_index, times.size)
         self.annotate_dock.update_annotation(
             signal=self.annotate_dock.signal_artists['Bipolar'],
             annotation=self.annotate_dock.annotation_artists['local_annotation_point'],
@@ -890,8 +891,66 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         reference_annotation = annotations.reference_activation_time[current_index]
         reference_annotation_index = np.searchsorted(times, reference_annotation)
-        if reference_annotation_index == times.size:
-            reference_annotation_index -= 1
+        reference_annotation_index = min(reference_annotation_index, times.size)
+        self.annotate_dock.update_annotation(
+            signal=self.annotate_dock.signal_artists['Ref'],
+            annotation=self.annotate_dock.annotation_artists['reference_annotation_point'],
+            annotation_line=self.annotate_dock.annotation_artists['reference_annotation_line'],
+            index=reference_annotation_index,
+        )
+
+        start_woi, stop_woi = annotations.window_of_interest[current_index]
+        start_woi += reference_annotation
+        stop_woi += reference_annotation
+        self.annotate_dock.update_window_of_interest(start_woi, stop_woi)
+
+        self.annotate_dock._initialise_scrollbar(start_woi=start_woi)
+        self.annotate_dock.canvas.draw()
+        self.annotate_dock.update_active_artist()  # ensure the annotations/woi are added to the background
+
+    def update_annotation_plot(self):
+                
+        # TODO: this will currently fail unless there is both reference
+        # and bipolar electrograms as well as ecgs. Annotations
+        # are also required. And the gain of each signal.
+        
+        # Plot electrical data for this point
+        current_index = self.annotate_dock.egm_selection.currentIndex()
+        electric = self.system_manager.active_system.case.electric
+
+        reference = electric.reference_egm.egm[current_index]
+        bipolar = electric.bipolar_egm.egm[current_index]
+        ecg = electric.ecg.ecg[current_index]
+        signals = np.asarray([reference, bipolar, ecg])
+
+        reference_gain = electric.reference_egm.gain[current_index]
+        bipolar_gain = electric.bipolar_egm.gain[current_index]
+        ecg_gain = electric.ecg.gain[current_index]
+        signal_gains = np.asarray([reference_gain, bipolar_gain, ecg_gain])
+
+        labels = np.asarray(["Ref", "Bipolar", "ECG"])
+        for label, signal, gain in zip(labels, signals, signal_gains):
+            artist = self.annotate_dock.signal_artists[label]
+            artist._original_ydata = signal
+            artist.set_ydata(artist._ystart + signal * np.exp(gain))
+
+        # add the annotations
+        annotations = electric.annotations
+        times = self.egm_times
+
+        local_annotation = annotations.local_activation_time[current_index]
+        local_annotation_index = np.searchsorted(times, local_annotation)
+        local_annotation_index = min(local_annotation_index, times.size)
+        self.annotate_dock.update_annotation(
+            signal=self.annotate_dock.signal_artists['Bipolar'],
+            annotation=self.annotate_dock.annotation_artists['local_annotation_point'],
+            annotation_line=self.annotate_dock.annotation_artists['local_annotation_line'],
+            index=local_annotation_index,
+        )
+
+        reference_annotation = annotations.reference_activation_time[current_index]
+        reference_annotation_index = np.searchsorted(times, reference_annotation)
+        reference_annotation_index = min(reference_annotation_index, times.size)
         self.annotate_dock.update_annotation(
             signal=self.annotate_dock.signal_artists['Ref'],
             annotation=self.annotate_dock.annotation_artists['reference_annotation_point'],
@@ -904,9 +963,11 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         stop_woi += reference_annotation
         self.annotate_dock.update_window_of_interest(start_woi, stop_woi)
 
-        self.annotate_dock.canvas.draw()
-        self.annotate_dock._initialise_scrollbar(start_woi=start_woi)
-        self.annotate_dock.update_active_artist()  # ensure the annotations/woi are added to the background
+        self.annotate_dock._update_scrollbar_from_woi(start_woi)
+        self.annotate_dock.blit_artists()
+        #self.annotate_dock.canvas.draw()
+        #self.annotate_dock._initialise_scrollbar(start_woi=start_woi)
+        #self.annotate_dock.update_active_artist()  # ensure the annotations/woi are added to the background
 
         # TODO: Display this point in the 3d viewer (e.g. render as large blue sphere)
 

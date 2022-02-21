@@ -514,7 +514,6 @@ class AnnotationWidget(CustomDockWidget):
             line._original_ydata = signal.copy()
             line._ystart = separation
             self.add_artist(artist=line, label=label, signal=True)
-            self.signal_artists[label] = line
 
         # Set an active artists (has a thicker linewidth than other lines. The gain can be set by scrolling).
         self.active_signal_artist = labels[0]
