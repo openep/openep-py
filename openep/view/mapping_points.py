@@ -130,10 +130,6 @@ class SortProxyModel(QtCore.QSortFilterProxyModel):
             if not str(e).startswith("could not convert string to float:"):
                 raise e
             return left_var < right_var
-    
-    #def filterAcceptsRow(self, source_row: int, source_parent: QtCore.QModelIndex) -> bool:
-    #    index = self.sourceModel().index(source_row, 0, source_parent)
-    #    return self.sourceModel()._include[index.row()]
 
 class MappingPointsDock(CustomDockWidget):
     """A dockable widget for handling and viewing the mapping points data."""
@@ -169,7 +165,6 @@ class MappingPointsDock(CustomDockWidget):
         """Create menu for selecting which columns to show when right-clicking on the header"""
 
         header = self.table.horizontalHeader()
-        # header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         header.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         header.customContextMenuRequested.connect(self._launch_header_context_menu)
         
@@ -185,7 +180,6 @@ class MappingPointsDock(CustomDockWidget):
             )
         
     def _launch_header_context_menu(self, pos):
-        # column_index = self.table.horizontalHeader().logicalIndexAt(pos)
         self.header_menu.exec_(QtGui.QCursor.pos())
 
     def column_visibility(self, show, column_index):
