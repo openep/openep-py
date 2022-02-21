@@ -20,6 +20,7 @@
 """
 Create a dock widget for the annotation viewer.
 """
+from re import A
 from PySide2 import QtCore, QtWidgets
 
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
@@ -64,15 +65,15 @@ class AnnotationWidget(CustomDockWidget):
         self.main  = QtWidgets.QMainWindow()
         
         # The central widget will hold a matplotlib canvas and toolbar.
-        # The canvas widget will also contain a QComboBox for selecting
-        # the electrogram to annnotate.
+        # The canvas widget will also contain a QLabel that displays which
+        # mapping point is currently selected
         self.canvas, self.figure, self.axes = self._init_canvas()
         self.signal_artists = {}  # dictionary of artists (lines, points, etc.)
         self.annotation_artists = {}  # dictionary of artists (for woi, annotations, etc.)
         self.active_signal_artist = None
         self.active_annotation_artist = None
         
-        self.egm_selection, egm_selection_layout = self._init_selection()
+        self.egm_selected, egm_selected_layout = self._init_selected()
         self.scrollbar = QtWidgets.QScrollBar(QtCore.Qt.Horizontal)
         self.scrollbar.actionTriggered.connect(self._update_limits_from_scrollbar)
         self.scrollbar_step = 0.1
@@ -84,7 +85,7 @@ class AnnotationWidget(CustomDockWidget):
 
         # Setting nested layouts
         central_widget = self._init_central_widget(
-            egm_selection_layout, self.canvas, self.scrollbar, self.toolbar,
+            egm_selected_layout, self.canvas, self.scrollbar, self.toolbar,
         )
         self.main.setCentralWidget(central_widget)
         self.setWidget(self.main)
@@ -115,25 +116,28 @@ class AnnotationWidget(CustomDockWidget):
 
         return canvas, figure, axes
 
-    def _init_selection(self):
-        """Create a layout with widgets for selecting which electrogram to annotate.
+    def _init_selected(self):
+        """Create a layout with widget that displays the point currently plotted.
         """
 
-        annotate_selection = QtWidgets.QComboBox()
-        annotate_selection.setMinimumWidth(220)
+        annotate_selected = QtWidgets.QLabel()
+        annotate_selected.setMinimumWidth(220)
+        size_policy = QtWidgets.QSizePolicy()
+        size_policy.setVerticalStretch(0)
+        annotate_selected.setSizePolicy(size_policy)
 
-        annotate_selection_layout = QtWidgets.QHBoxLayout()
-        annotate_selection_layout.addWidget(annotate_selection)
-        annotate_selection_layout.addStretch()
+        annotate_selected_layout = QtWidgets.QHBoxLayout()
+        annotate_selected_layout.addWidget(annotate_selected)
+        annotate_selected_layout.addStretch()
+        
+        return annotate_selected, annotate_selected_layout
 
-        return annotate_selection, annotate_selection_layout
-
-    def _init_central_widget(self, egm_selection_layout, canvas, scrollbar, toolbar):
+    def _init_central_widget(self, egm_selected_layout, canvas, scrollbar, toolbar):
         """Create a placeholder widget to hold the toolbar and canvas.
         """
         
         central_layout = QtWidgets.QVBoxLayout()
-        central_layout.addLayout(egm_selection_layout)
+        central_layout.addLayout(egm_selected_layout)
         central_layout.addWidget(canvas)
         central_layout.addWidget(scrollbar)
         central_layout.addWidget(toolbar)
@@ -473,12 +477,6 @@ class AnnotationWidget(CustomDockWidget):
         elif label == "Bipolar":
             annotation_artist = self.annotation_artists['local_annotation_point']
             self._update_annotation_ydata(signal=artist, annotation=annotation_artist)
-
-    def initialise_egm_selection(self, selections):
-        """Set the selections available in the QComboBox"""
-        
-        self.egm_selection.clear()
-        self.egm_selection.insertItems(0, selections)
 
     def plot_signals(self, times, signals, labels, gains):
         """Plot electrogram/ecg signals.
