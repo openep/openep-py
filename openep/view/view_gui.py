@@ -25,7 +25,6 @@ import platform
 import sys
 import os
 import pathlib
-import re
 
 import qdarkstyle
 from PySide2 import QtCore, QtGui, QtWidgets
@@ -68,7 +67,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self._init_systems()
         self._init_ui()
         self._create_system_manager_ui()
-        self._create_egm_canvas_dock()
         self._create_annotate_dock()
         self._create_mapping_points_dock()
         self._create_analysis_canvas_dock()
@@ -79,10 +77,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         """Containers and variables for keeping track of the systems loaded into the GUI."""
 
         self.system_manager = openep.view.system_manager.SystemManager()
-
-        self.egm_slider = None
         self.egm_times = None
-        self.egm_selection_filter = re.compile(r'\d+')
 
     def _init_ui(self):
         """
@@ -107,73 +102,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.system_manager_ui.main.load_openep_mat_action.triggered.connect(self._load_openep_mat)
         self.system_manager_ui.main.load_opencarp_action.triggered.connect(self._load_opencarp)
 
-    def _create_egm_canvas_dock(self):
-        """
-        Create a dockable widget for plotting interactive electrograms with matplotlib.
-
-        The user can select which points the electrograms will be plotted for, as well
-        as the type(s) of electrograms to plot: reference, bipolar, unipolar A,
-        unipolar B.
-
-        The user can also change the window of interest with a RangeSlider,
-        and setting the window of interest with a push button will re-interpolate
-        the electrogram data onto the surface (for OpenEP datasets) or re-calculate
-        voltages directly from electrograms (for openCARP datasets).
-        """
-
-        self.egm_dock = openep.view.custom_widgets.CustomDockWidget("Electrograms")
-        self.egm_canvas, self.egm_figure, self.egm_axis = openep.view.canvases.create_canvas()
-        egm_layout = QtWidgets.QVBoxLayout(self.egm_canvas)
-
-        # Add widgets for manually selecting electrograms from point indices
-        egm_selection_layout, self.egm_selection = openep.view.canvases.create_egm_selection_layout()
-        self.egm_selection.returnPressed.connect(self.update_electrograms_from_text)
-        egm_layout.addLayout(egm_selection_layout)
-
-        # Add radio buttons to select bipolar, unipolar (A/B), and reference electrograms
-        egm_type_layout, *checkboxes = openep.view.canvases.create_egm_type_layout()
-
-        for box in checkboxes:
-            box.stateChanged.connect(self.plot_electrograms)
-
-        self.egm_reference_checkbox, self.egm_bipolar_checkbox, self.egm_unipolar_A_checkbox, self.egm_unipolar_B_checkbox = \
-            checkboxes
-
-        egm_layout.addLayout(egm_type_layout)
-        egm_layout.addStretch()
-
-        # Button for setting the window of interest
-        self.set_woi_button = openep.view.canvases.add_woi_set_button(
-            figure=self.egm_figure,
-            axis=[0.782, 0.02, 0.09, 0.025],
-        )
-        self.set_woi_button.on_clicked(self.update_scalar_fields)
-
-        # Create toolbar for saving, zooming etc.
-        toolbar = openep.view.canvases.add_toolbar(
-            canvas=self.egm_canvas,
-            parent=self.egm_dock,
-        )
-
-        # Create a placeholder widget to hold our toolbar and canvas.
-        canvas_widget = openep.view.canvases.create_canvas_widget(
-            canvas=self.egm_canvas,
-            toolbar=toolbar,
-        )
-
-        # Create a placeholder widget to hold our canvas, toolbar, and selection widgets
-        # We're using a QMainWindow so we can easily add a menubar
-        egm_canvas_main = QtWidgets.QMainWindow()
-        egm_canvas_main.setCentralWidget(canvas_widget)
-
-        # The dock is set to have bold font (so the title stands out)
-        # But all other widgets should have normal weighted font
-        #main_font = QtGui.QFont()
-        #main_font.setBold(False)
-        #egm_canvas_main.setFont(main_font)
-
-        self.egm_dock.setWidget(egm_canvas_main)
-    
     def _create_annotate_dock(self):
         """
         Create a dockable widget for annotating electrograms with matplotlib.
@@ -294,7 +222,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         the GUI will crash.
         """
 
-        self.egm_dock.setEnabled(False)
         self.analysis_dock.setEnabled(False)
         self.annotate_dock.setEnabled(False)
 
@@ -786,31 +713,14 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.system_manager.active_system = system
 
         self.highlight_menubars_of_active_plotters()
-
-        self.remove_woi_slider()
         self.check_available_electrograms()
         if self.has_electrograms:
-            
             xmin = self.egm_times[0] - 100
             xmax = self.egm_times[-1] + 100
             self.annotate_dock.activate_figure(xmin, xmax)
             self.initialise_annotation_egm_selection()
 
-            self.egm_axis.axis('on')  # make sure we can see the axes now
-            self.egm_axis.set_xlim(xmin, xmax)
-            self.egm_axis.set_ylim(-1, 13)
-
-            # We can't create the slider earlier because we need to know the min and max egm times
-            self.create_woi_slider()
-            self.initialise_woi_slider_limits()
-            self.egm_slider.on_changed(self.update_egm_woi)
-            self.update_electrograms_from_stored()
-
         else:
-            self.egm_axis.cla()
-            self.egm_axis.axis('off')
-            self.egm_canvas.draw()
-            
             self.annotate_dock.deactivate_figure()
         
         self.mapping_points.model.system = system  # the recycle bin shares the same model
@@ -977,20 +887,14 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         plotter.add_mesh(mesh, **add_discs_kws)
 
     def check_available_electrograms(self):
-        """Update the electrom types that can be plotted."""
+        """Check whether the active case has electrograms.
+        
+        If so, enable to annotation viewer, and determine times at which each
+        sample was taken."""
 
         has_reference, has_bipolar, has_unipolar = self.system_manager.check_available_electrograms()
-
         self.has_electrograms = any([has_reference, has_bipolar, has_unipolar])
-
-        self.egm_dock.setEnabled(self.has_electrograms)
-        self.egm_reference_checkbox.setEnabled(has_reference)
-        self.egm_bipolar_checkbox.setEnabled(has_bipolar)
-        self.egm_unipolar_A_checkbox.setEnabled(has_unipolar)
-        self.egm_unipolar_B_checkbox.setEnabled(has_unipolar)
-
         self.annotate_dock.setEnabled(self.has_electrograms)
-
         self._set_electrogram_times()
 
     def _set_electrogram_times(self):
@@ -1304,225 +1208,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         
         annotations.window_of_interest[current_index, 0] = start_woi - reference_annotation
         annotations.window_of_interest[current_index, 1] = stop_woi - reference_annotation
-
-    def update_electrograms_from_text(self):
-        """
-        Extract electrograms at specified indices and re-plot.
-
-        The points are specified by the user and set via use of the
-        self.egm_select (QLineEdit) and button_egm_select (QPushButton) widgets.
-        """
-
-        # Get data for new set of points
-        egm_text = self.egm_selection.text()
-        selected_indices = self.egm_selection_filter.findall(egm_text)
-        self.system_manager.active_system.egm_points = np.asarray(selected_indices, dtype=int)
-
-        self.extract_electrograms()
-        self.plot_electrograms()
-
-    def update_electrograms_from_stored(self):
-
-        # Retrieve data for the stored set of points
-        egm_points = self.system_manager.active_system.egm_points
-        egm_text = " ".join(egm_points.astype(str))
-        self.egm_selection.setText(egm_text)
-
-        self.extract_electrograms()
-        self.plot_electrograms()
-
-    def extract_electrograms(self):
-
-        system = self.system_manager.active_system
-
-        if self.egm_reference_checkbox.isEnabled():
-            self.egm_reference_traces, self.egm_names = openep.case.get_electrograms_at_points(
-                system.case,
-                within_woi=False,
-                buffer=0,
-                indices=system.egm_points,
-                egm_type="reference",
-                return_names=True,
-                return_lat=False,
-            )
-
-        if self.egm_bipolar_checkbox.isEnabled():
-            self.egm_bipolar_traces, self.egm_names = openep.case.get_electrograms_at_points(
-                system.case,
-                within_woi=False,
-                buffer=0,
-                indices=system.egm_points,
-                egm_type="bipolar",
-                return_names=True,
-                return_lat=False,
-            )
-
-        if self.egm_unipolar_A_checkbox.isEnabled():
-            unipolar_traces, self.egm_names = openep.case.get_electrograms_at_points(
-                system.case,
-                within_woi=False,
-                buffer=0,
-                indices=system.egm_points,
-                egm_type="unipolar",
-                return_names=True,
-                return_lat=False,
-            )
-            self.egm_unipolar_A_traces = unipolar_traces[:, :, 0]
-            self.egm_unipolar_B_traces = unipolar_traces[:, :, 1]
-
-    def plot_electrograms(self):
-        """
-        Plot electrograms for the currently-selected set of points.
-
-        Electrograms must first have been extracted using update_electrograms.
-        Here we will plot the reference, bipolar, unipolar A, unipolar B
-        electrograms for each point.
-        """
-
-        # Set up axis for new plots
-        ylim = self.egm_axis.get_ylim()
-        xlim = self.egm_axis.get_xlim()
-
-        self.egm_axis.cla()
-        self.egm_axis.set_yticklabels([])
-        self.egm_axis.set_ylim(ylim)
-        self.egm_axis.set_xlim(xlim)
-
-        # Reference voltage
-        if self.egm_reference_checkbox.isEnabled() and self.egm_reference_checkbox.isChecked():
-
-            _, self.egm_axis.axes = openep.draw.plot_electrograms(
-                self.egm_times,
-                self.egm_reference_traces,
-                axes=self.egm_axis.axes,
-                colour="xkcd:scarlet",
-                y_separation=2,
-            )
-
-        # Bipolar voltage
-        if self.egm_bipolar_checkbox.isEnabled() and self.egm_bipolar_checkbox.isChecked():
-
-            _, self.egm_axis.axes = openep.draw.plot_electrograms(
-                self.egm_times,
-                self.egm_bipolar_traces,
-                axes=self.egm_axis.axes,
-                colour="xkcd:cerulean",
-                y_separation=2,
-            )
-
-        # Unipolar A voltage
-        if self.egm_unipolar_A_checkbox.isEnabled() and self.egm_unipolar_A_checkbox.isChecked():
-
-            _, self.egm_axis.axes = openep.draw.plot_electrograms(
-                self.egm_times,
-                self.egm_unipolar_A_traces,
-                axes=self.egm_axis.axes,
-                colour="xkcd:tree green",
-                y_start=1,
-                y_separation=2,
-            )
-
-        # Unipolar B voltage
-        if self.egm_unipolar_B_checkbox.isEnabled() and self.egm_unipolar_B_checkbox.isChecked():
-
-            _, self.egm_axis.axes = openep.draw.plot_electrograms(
-                self.egm_times,
-                self.egm_unipolar_B_traces,
-                axes=self.egm_axis.axes,
-                colour="xkcd:pumpkin",
-                y_start=1,
-                y_separation=2,
-            )
-
-        # Add labels if necessary
-        yticks = []
-        yticklabels = []
-        separations = np.arange(self.system_manager.active_system.egm_points.size) * 2
-
-        if (
-            (self.egm_reference_checkbox.isEnabled() and self.egm_reference_checkbox.isChecked()) or
-            (self.egm_bipolar_checkbox.isEnabled() and self.egm_bipolar_checkbox.isChecked())
-        ):
-            yticks.extend(separations)
-            yticklabels.extend(self.egm_names)
-
-        # Unipolar A and B are shifted above the bipolar and reference electrograms for clarity
-        if (
-            (self.egm_unipolar_A_checkbox.isEnabled() and self.egm_unipolar_A_checkbox.isChecked()) or
-            (self.egm_unipolar_B_checkbox.isEnabled() and self.egm_unipolar_B_checkbox.isChecked())
-        ):
-            yticks.extend(separations + 1)
-            yticklabels.extend(self.egm_names)
-
-        self.egm_axis.set_yticks(yticks)
-        self.egm_axis.set_yticklabels(yticklabels)
-
-        # draw vertical lines at the window of interest
-        self.initialise_woi_slider_limits()
-
-        self.egm_canvas.draw()
-
-    def create_woi_slider(self):
-        """Add a window of interest range slider to the electrogram canvas"""
-
-        self.egm_slider = openep.view.canvases.add_woi_range_slider(
-            figure=self.egm_figure,
-            axis=[0.1535, 0.05, 0.7185, 0.01],  # location of the RangeSlider on the figure
-            valmin=self.egm_times[0],
-            valmax=self.egm_times[-1],
-        )
-
-    def remove_woi_slider(self):
-        """Remove the window of interest range slider from the electrogram canvas"""
-
-        if self.egm_slider is not None:
-            self.egm_slider.ax.remove()
-            self.egm_slider = None
-
-    def initialise_woi_slider_limits(self):
-        """Set the limits to be the window of interest."""
-
-        annotations = self.system_manager.active_system.case.electric.annotations
-
-        start_woi, stop_woi = annotations.window_of_interest[0]
-        start_woi += annotations.reference_activation_time[0]
-        stop_woi += annotations.reference_activation_time[0]
-
-        self.egm_slider.set_val([start_woi, stop_woi])
-
-        self.egm_slider_lower_limit = self.egm_axis.axvline(
-            start_woi,
-            color="grey",
-            linestyle='--',
-            linewidth=0.8,
-            alpha=0.6,
-        )
-
-        self.egm_slider_upper_limit = self.egm_axis.axvline(
-            stop_woi,
-            color="grey",
-            linestyle='--',
-            linewidth=0.8,
-            alpha=0.6,
-        )
-
-    def update_egm_woi(self, val):
-        """
-        Take the min and max values from the RangeSlider widget.
-        Use this to set the window of interest and to change the x location
-        of the two axvlines drawn on the EGM canvas.
-        """
-
-        annotations = self.system_manager.active_system.case.electric.annotations
-
-        # from https://matplotlib.org/devdocs/gallery/widgets/range_slider.html
-        start_woi, stop_woi = val
-        self.egm_slider_lower_limit.set_xdata([start_woi, start_woi])
-        self.egm_slider_upper_limit.set_xdata([stop_woi, stop_woi])
-
-        reference_annotation = annotations.reference_activation_time[0]
-        annotations.window_of_interest[:, 0] = start_woi - reference_annotation
-        annotations.window_of_interest[:, 1] = stop_woi - reference_annotation
 
     def _hide_mapping_points(self):
         """Show presiously deleted mapping points in the recycle bin, not the mapping points list"""
