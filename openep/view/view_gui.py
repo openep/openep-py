@@ -465,6 +465,12 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             system_name=system.name,
             scalar_fields=system.scalar_fields,
         )
+        for action_name, action in plotter.scalar_field_actions.items():
+            action.toggled.connect(
+                lambda checked, scalars=action_name: self.change_active_scalars(
+                    system, index=index, scalars=scalars
+                )
+            )
 
         # Add a Show/Hide menu to the menubar. This is used for showing/hiding the surface mesh, mapping points,
         # and surface-projected mapping points
@@ -472,6 +478,20 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             dock=dock,
             plotter=plotter,
         )
+        for action_name, action in plotter.show_actions.items():
+            action.toggled.connect(
+                lambda checked, actor_name=action_name: self.update_actor_visibility(
+                    plotter, actor_name=actor_name,
+                )
+            )
+        
+        # Connect slots for controlling colourbar limits, mesh opacity, and linking of plotters
+        plotter.lower_limit.returnPressed.connect(lambda: self.update_colourbar_limits(system, index=index))
+        plotter.upper_limit.returnPressed.connect(lambda: self.update_colourbar_limits(system, index=index))
+        plotter.opacity.valueChanged.connect(lambda: self.update_opacity(system, index=index))
+        if plotter_is_secondary_view:
+            system.plotters[0].link_views_across_plotters(plotter)
+            plotter.link_view_with_primary.toggled.connect(lambda: self.link_views_across_plotters(system, index=index))
 
         mesh = system.create_mesh()
         mapping_points = system.create_mapping_points_mesh()
@@ -479,59 +499,13 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         add_mesh_kws, add_points_kws, add_discs_kws = system._create_default_kws()
         free_boundaries = openep.mesh.get_free_boundaries(mesh)
 
-        plotter.lower_limit.returnPressed.connect(lambda: self.update_colourbar_limits(system, index=index))
-        plotter.upper_limit.returnPressed.connect(lambda: self.update_colourbar_limits(system, index=index))
-        plotter.opacity.valueChanged.connect(lambda: self.update_opacity(system, index=index))
-
-        # Link views across plotters
-        if plotter_is_secondary_view:
-            system.plotters[0].link_views_across_plotters(plotter)
-            plotter.link_view_with_primary.toggled.connect(lambda: self.link_views_across_plotters(system, index=index))
-
         system.docks.append(dock)
         system.plotters.append(plotter)
         system.meshes.append(mesh)
         system.mapping_points_meshes.append(mapping_points)
         system.surface_projected_discs_meshes.append(projected_discs)
         system.add_mesh_kws.append(add_mesh_kws)
-
         system.free_boundaries.append(free_boundaries)
-
-        # We can't put this into a for loop.
-        # For some reason, when iterating over the items in plotter.scalar_field_actions
-        # all actions are passed the key in the iteration for the scalars argument
-        # TODO: Don't distinguish between Clinical and non-clinical data. Use clinical by default. If
-        #       values are interpolated from mapping points onto the surface, then overwrite the
-        #       default clinical values. Add an option to reset the interpolated values to the original
-        #       clinical ones. This can be done by simply reading the file.
-        if 'Bipolar voltage' in plotter.scalar_field_actions:
-            plotter.scalar_field_actions['Bipolar voltage'].triggered.connect(
-                lambda: self.change_active_scalars(system, index=index, scalars='Bipolar voltage')
-            )
-        if 'Unipolar voltage' in plotter.scalar_field_actions:
-            plotter.scalar_field_actions['Unipolar voltage'].triggered.connect(
-                lambda: self.change_active_scalars(system, index=index, scalars='Unipolar voltage')
-            )
-        if 'Clinical bipolar voltage' in plotter.scalar_field_actions:
-            plotter.scalar_field_actions['Clinical bipolar voltage'].triggered.connect(
-                lambda: self.change_active_scalars(system, index=index, scalars='Clinical bipolar voltage')
-            )
-        if 'Clinical unipolar voltage' in plotter.scalar_field_actions:
-            plotter.scalar_field_actions['Clinical unipolar voltage'].triggered.connect(
-                lambda: self.change_active_scalars(system, index=index, scalars='Clinical unipolar voltage')
-            )
-        if 'Clinical LAT' in plotter.scalar_field_actions:
-            plotter.scalar_field_actions['Clinical LAT'].triggered.connect(
-                lambda: self.change_active_scalars(system, index=index, scalars='Clinical LAT')
-            )
-        if 'Clinical force' in plotter.scalar_field_actions:
-            plotter.scalar_field_actions['Clinical force'].triggered.connect(
-                lambda: self.change_active_scalars(system, index=index, scalars='Clinical force')
-            )
-        if 'Clinical impedance' in plotter.scalar_field_actions:
-            plotter.scalar_field_actions['Clinical impedance'].triggered.connect(
-                lambda: self.change_active_scalars(system, index=index, scalars='Clinical impedance')
-            )
 
         dock.setWindowTitle(f"{system.name}: {mesh.active_scalars_info.name}")
         active_scalars_name = mesh.active_scalars_info.name
@@ -561,16 +535,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             add_discs_kws=add_discs_kws,
         )
         plotter.renderer._actors['Surface-projected mapping points'].SetVisibility(False)
-
-        plotter.show_actions['Surface'].triggered.connect(
-            lambda: self.update_actor_visibility(plotter, actor_name="Surface")
-        )
-        plotter.show_actions['Mapping points'].triggered.connect(
-            lambda: self.update_actor_visibility(plotter, actor_name="Mapping points")
-        )
-        plotter.show_actions['Surface-projected mapping points'].triggered.connect(
-            lambda: self.update_actor_visibility(plotter, actor_name="Surface-projected mapping points")
-        )
 
         # If this is the first 3d viewer for the first system loaded, we need to update the egms etc.
         if (system.name == self.system_manager.active_system.name) and (len(system.plotters) == 1):
