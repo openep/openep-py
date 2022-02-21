@@ -64,6 +64,11 @@ class System:
     def _determine_available_fields(self):
         """Create a dictionary of scalar fields that can be used to colour the 3D map."""
 
+        # TODO: Don't distinguish between Clinical and non-clinical data. Use clinical by default. If
+        #       values are interpolated from mapping points onto the surface, then overwrite the
+        #       default clinical values. Add an option to reset the interpolated values to the original
+        #       clinical ones. This can be done by simply reading the file.
+
         if self.type == 'OpenEP':
             self._determine_available_OpenEP_fields()
         elif self.type == 'openCARP':
