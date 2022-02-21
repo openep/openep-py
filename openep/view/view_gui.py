@@ -655,9 +655,9 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             xmax = self.egm_times[-1] + 100
             self.annotate_dock.activate_figure(xmin, xmax)
             self.create_annotation_plot()
-            self.initialise_annotation_egm_selection()
 
         else:
+            self.annotate_dock.egm_selected.setText("")
             self.annotate_dock.deactivate_figure()
         
         self.mapping_points.model.system = system  # the recycle bin shares the same model
@@ -851,18 +851,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         self.egm_times = self.system_manager.electrogram_times()
 
-    def initialise_annotation_egm_selection(self):
-        """Set the available electrogram for annotating"""
-
-        electric = self.system_manager.active_system.case.electric
-        
-        if electric.internal_names is not None:
-            names = electric.internal_names
-        else:
-            names = np.asarray([f"P{index}" for index in range(len(electric.bipolar_egm.egm))], dtype=str)
-
-        self.annotate_dock.initialise_egm_selection(names)
-
     def create_annotation_plot(self):
         """Update the data plotted in the annotation viewer."""
         
@@ -870,9 +858,11 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         # and bipolar electrograms as well as ecgs. Annotations
         # are also required. And the gain of each signal.
         
-        # Plot electrical data for this point
-        current_index = self.annotate_dock.egm_selection.currentIndex()
+        # Plot electrical data for the first non-deleted point
         electric = self.system_manager.active_system.case.electric
+        current_index = np.argwhere(electric.include).squeeze()[0]
+        current_name = electric.internal_names[current_index]
+        self.annotate_dock.egm_selected.setText(f"Point: {current_name}")
         
         reference = electric.reference_egm.egm[current_index]
         bipolar = electric.bipolar_egm.egm[current_index]
@@ -933,10 +923,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         row = table.currentIndex()
         row_number = row.row()
         current_index = int(row.sibling(row_number, 0).data())
-        print(table, current_index)
         
         # update the electrical data plotted for the mapping points
-        #current_index = self.annotate_dock.egm_selection.currentIndex()
         electric = self.system_manager.active_system.case.electric
         reference = electric.reference_egm.egm[current_index]
         bipolar = electric.bipolar_egm.egm[current_index]
@@ -985,9 +973,11 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         self.annotate_dock._update_scrollbar_from_woi(start_woi)
         self.annotate_dock.blit_artists()
-        #self.annotate_dock.canvas.draw()
-        #self.annotate_dock._initialise_scrollbar(start_woi=start_woi)
-        #self.annotate_dock.update_active_artist()  # ensure the annotations/woi are added to the background
+
+        current_name = electric.internal_names[current_index]
+        included = electric.include[current_index]
+        deleted = "" if included else " (deleted)"
+        self.annotate_dock.egm_selected.setText(f"Point: {current_name}{deleted}")
 
         # TODO: Display this point in the 3d viewer (e.g. render as large blue sphere)
 
@@ -1084,7 +1074,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         annotater.canvas.mpl_disconnect(annotater.cid_button_release_event)
         
         # We also need to store the updated data
-        current_index = self.annotate_dock.egm_selection.currentIndex()
+        current_index = self.annotate_dock.egm_selected.currentIndex()
         annotations = self.system_manager.active_system.case.electric.annotations
         annotation_artists = annotater.annotation_artists
         
@@ -1109,19 +1099,19 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             return
 
         # First check whether we need to change the electrogram that is displayed
-        current_index = self.annotate_dock.egm_selection.currentIndex()
+        current_index = self.annotate_dock.egm_selected.currentIndex()
 
         if event.key == 'down':
             # move the the next electrogram
-            n_items = self.annotate_dock.egm_selection.count()
+            n_items = self.annotate_dock.egm_selected.count()
             new_index = min(n_items-1, current_index+1)
-            self.annotate_dock.egm_selection.setCurrentIndex(new_index)
+            self.annotate_dock.egm_selected.setCurrentIndex(new_index)
             
         
         elif event.key == 'up':
             # move to the previous electrogram
             new_index = max(0, current_index - 1)
-            self.annotate_dock.egm_selection.setCurrentIndex(new_index)
+            self.annotate_dock.egm_selected.setCurrentIndex(new_index)
 
         # If we're chaning a point/line, ensure the key press was inside the figure
         if event.xdata is None:
@@ -1184,7 +1174,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     def annotation_on_scroll_wheel(self, event):
         """Set the gain of the active line in the annotation viewer"""
         
-        current_index = self.annotate_dock.egm_selection.currentIndex()
+        current_index = self.annotate_dock.egm_selected.currentIndex()
         electric = self.system_manager.active_system.case.electric
         gain_diff = 0.1 * (event.step * -1)  # scrolling up will decrease gain, down will increase gain
         
@@ -1209,7 +1199,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         # TODO: create a button/toolbar/menu option to update the woi/
         # reference annotation/LAT based on the current values
 
-        current_index = self.annotate_dock.egm_selection.currentIndex()
+        current_index = self.annotate_dock.egm_selected.currentIndex()
         start_woi, stop_woi = self.annotate_dock.woi_slider.val
 
         annotations = self.system_manager.active_system.case.electric.annotations
@@ -1221,11 +1211,11 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     def _hide_mapping_points(self):
         """Show presiously deleted mapping points in the recycle bin, not the mapping points list"""
 
-        non_recycled_rows = np.argwhere(self.mapping_points.model._include).squeeze()
+        non_recycled_rows = np.argwhere(self.mapping_points.model.include).squeeze()
         for row_number in non_recycled_rows:
             self.recycle_bin.table.setRowHidden(row_number, True)
         
-        recycled_rows = np.argwhere(self.mapping_points.model._include == False).squeeze()
+        recycled_rows = np.argwhere(self.mapping_points.model.include == False).squeeze()
         for row_number in recycled_rows:
             self.mapping_points.table.setRowHidden(row_number, True)
 
@@ -1235,7 +1225,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         rows = table.selectionModel().selectedRows()
         row_numbers = [row.row() for row in rows]
         point_indices = np.asarray([row.sibling(row_number, 0).data() for row, row_number in zip(rows, row_numbers)], dtype=int)
-        self.mapping_points.model._include[point_indices] = restore
+        self.mapping_points.model.include[point_indices] = restore
         
         for row_number in row_numbers:
             self.mapping_points.table.setRowHidden(row_number, not restore)

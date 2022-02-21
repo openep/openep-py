@@ -35,8 +35,8 @@ class MappingPointsModel(QtCore.QAbstractTableModel):
     
     The following data for each mapping point is stored in a 2D Numpy Array:
         - index (0-based)
-        - tag (internal name used by clinical mapping system)
-        - name (name presented to the user of the clinical mapping system)
+        - tag  (physician-visible name of the point applied during the clinical case)
+        - name (internal name used by clinical mapping system)
         - bipolar voltage
         - local activation time
 
@@ -86,7 +86,7 @@ class MappingPointsModel(QtCore.QAbstractTableModel):
         
         if self._system is None:
             self._data = None
-            self._include = np.array([])
+            self.include = np.array([])
             return
 
         electric = self._system.case.electric
@@ -94,17 +94,10 @@ class MappingPointsModel(QtCore.QAbstractTableModel):
         
         if not has_bipolar:
             self._data = None
-            self._include = np.array([])
+            self.include = np.array([])
             return
 
-        # TODO: this should be handled when loading the data set
-        if not hasattr(electric, '_include'):
-            electric._include = self._include = np.full_like(
-                electric.bipolar_egm.voltage,
-                fill_value=True,
-                dtype=bool,
-            )
-
+        self.include = electric.include
         self._index = np.arange(electric.bipolar_egm.voltage.shape[0], dtype=int)
         
         # TODO: should the activation time be absolute, or relative to the window of interest?

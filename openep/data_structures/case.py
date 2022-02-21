@@ -282,3 +282,7 @@ class Case:
                 reference_activation_time=np.zeros_like(woi[:, 0], dtype=int)
             )
             self.electric.annotations = annotations
+
+        # whether the mapping points have been rejected (include==False)
+        include = np.full_like(names, fill_value=True, dtype=bool)
+        self.electric.include = include
