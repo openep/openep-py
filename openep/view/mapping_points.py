@@ -31,7 +31,17 @@ from openep.view.custom_widgets import CustomDockWidget
 from openep.view.system_manager import System
 
 class MappingPointsModel(QtCore.QAbstractTableModel):
+    """Table model for handling data associated with mapping points.
     
+    The following data for each mapping point is stored in a 2D Numpy Array:
+        - index (0-based)
+        - tag (internal name used by clinical mapping system)
+        - name (name presented to the user of the clinical mapping system)
+        - bipolar voltage
+        - local activation time
+
+    """
+
     def __init__(
         self,
         system,
@@ -54,9 +64,13 @@ class MappingPointsModel(QtCore.QAbstractTableModel):
     def _init_headers(self):
         
         self.headers = ["Index", "Tag", "Name", "Voltage", "LAT"]
+        
+        # these will later be used for showing/hiding specific columns
         self._column_indices = {header: index for index, header in enumerate(self.headers)}
 
     def headerData(self, section, orientation, role):
+        """Set the table header."""
+
         if role == QtCore.Qt.DisplayRole :
             if orientation == QtCore.Qt.Horizontal :
                 return self.headers[section]
@@ -80,8 +94,10 @@ class MappingPointsModel(QtCore.QAbstractTableModel):
         
         if not has_bipolar:
             self._data = None
+            self._include = np.array([])
             return
 
+        # TODO: this should be handled when loading the data set
         if not hasattr(electric, '_include'):
             electric._include = self._include = np.full_like(
                 electric.bipolar_egm.voltage,
@@ -90,7 +106,9 @@ class MappingPointsModel(QtCore.QAbstractTableModel):
             )
 
         self._index = np.arange(electric.bipolar_egm.voltage.shape[0], dtype=int)
-        activation_time = electric.annotations.local_activation_time - electric.annotations.reference_activation_time
+        
+        # TODO: should the activation time be absolute, or relative to the window of interest?
+        activation_time = electric.annotations.local_activation_time
         self._data = np.concatenate(
             [
                 self._index[:, np.newaxis],
@@ -106,7 +124,7 @@ class MappingPointsModel(QtCore.QAbstractTableModel):
     def data(self, index, role):
         
         if role == Qt.DisplayRole:
-            
+
             value = self._data[index.row(), index.column()]
             return value
 
@@ -118,8 +136,10 @@ class MappingPointsModel(QtCore.QAbstractTableModel):
 
 
 class SortProxyModel(QtCore.QSortFilterProxyModel):
+    """Model for sorting and filtering data in a table."""
     
     def lessThan(self, left_index, right_index):
+        """Compare two neighbouring values, for sorting rows."""
 
         left_var = self.sourceModel().data(left_index, Qt.DisplayRole)
         right_var = self.sourceModel().data(right_index, Qt.DisplayRole)
@@ -132,7 +152,7 @@ class SortProxyModel(QtCore.QSortFilterProxyModel):
             return left_var < right_var
 
 class MappingPointsDock(CustomDockWidget):
-    """A dockable widget for handling and viewing the mapping points data."""
+    """A dockable widget for handling and displaying the mapping points data."""
 
     def __init__(self, title: str, system: Optional[System] = None, model=None, proxy_model=None):
 
@@ -186,7 +206,7 @@ class MappingPointsDock(CustomDockWidget):
         self.table.setColumnHidden(column_index, not show)
 
     def _init_table_context_menu(self):
-        """Create menu for hiding selected rows."""
+        """Create a menu for hiding selected rows."""
 
         self.table.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self._launch_table_context_menu)
@@ -200,14 +220,14 @@ class MappingPointsDock(CustomDockWidget):
 
 
 class RecycleBinDock(MappingPointsDock):
-    """Dock for storing and displaying deleted mapping points."""
+    """A dockable widget for handling and displaying deleted mapping points."""
 
     def __init__(self, title: str, system: Optional[System] = None, model=None, proxy_model=None):
 
         super().__init__(title, system, model, proxy_model)
 
     def _init_table_context_menu(self):
-        """Create menu for hiding selected rows."""
+        """Create a menu for hiding selected rows. These """
 
         self.table.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self._launch_table_context_menu)
