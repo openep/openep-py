@@ -156,6 +156,7 @@ class Electric:
 
     names: np.ndarray
     internal_names: np.ndarray
+    include: np.ndarray
     bipolar_egm: Electrogram
     unipolar_egm: Electrogram
     reference_egm: Electrogram
@@ -183,6 +184,14 @@ def extract_electric_data(electric_data):
 
     names = electric_data['tags'].astype(str)
     internal_names = electric_data['names'].astype(str)
+    if 'include' in electric_data:
+        include = electric_data['include'].astype(bool)
+    else:
+        include = np.full_like(
+            names,
+            fill_value=True,
+            dtype=bool,
+        )
 
     # TODO: check if gain values are stored in electric_data before creating the default values
     bipolar_egm = Electrogram(
@@ -228,6 +237,7 @@ def extract_electric_data(electric_data):
     electric = Electric(
         names=names,
         internal_names=internal_names,
+        include=include,
         bipolar_egm=bipolar_egm,
         unipolar_egm=unipolar_egm,
         reference_egm=reference_egm,
@@ -250,6 +260,7 @@ def empty_electric():
 
     names = None
     internal_names = None
+    include = None
 
     bipolar_egm = Electrogram(
         egm=None,
@@ -291,6 +302,7 @@ def empty_electric():
     electric = Electric(
         names=names,
         internal_names=internal_names,
+        include=include,
         bipolar_egm=bipolar_egm,
         unipolar_egm=unipolar_egm,
         reference_egm=reference_egm,
