@@ -24,7 +24,6 @@ from PySide2 import QtCore, QtWidgets
 
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backend_tools import Cursors
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 from cycler import cycler
 import mplcyberpunk
