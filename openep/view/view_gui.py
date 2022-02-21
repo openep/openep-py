@@ -37,7 +37,6 @@ import openep
 
 import openep.view.custom_widgets
 import openep.view.mapping_points
-import openep.view.canvases
 import openep.view.annotations_ui
 import openep.view.plotters_ui
 import openep.view.system_manager_ui
@@ -69,7 +68,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self._create_system_manager_ui()
         self._create_annotate_dock()
         self._create_mapping_points_dock()
-        self._create_analysis_canvas_dock()
         self._add_dock_widgets()
         self._disable_dock_widgets()
 
@@ -165,39 +163,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         )
         self.recycle_bin._ignore_sort_signal = False
 
-    def _create_analysis_canvas_dock(self):
-        """
-        Create a dockable widget for other matplotlib plots.
-
-        For example, plotting a histogram of the surface area occupied by
-        a range of bipolar voltages.
-        """
-
-        self.analysis_dock = openep.view.custom_widgets.CustomDockWidget("Analysis")
-        self.analysis_canvas, self.analysis_figure, self.analysis_axis = openep.view.canvases.create_canvas()
-        analysis_layout = QtWidgets.QVBoxLayout(self.analysis_canvas)
-
-        analysis_layout.addStretch()
-
-        # Create toolbar for saving, zooming etc.
-        toolbar = openep.view.canvases.add_toolbar(
-            canvas=self.analysis_canvas,
-            parent=self.analysis_dock,
-            keep_actions=['Save'],
-        )
-
-        # Create a placeholder widget to hold our toolbar and canvas.
-        canvas_widget = openep.view.canvases.create_canvas_widget(
-            canvas=self.analysis_canvas,
-            toolbar=toolbar,
-        )
-
-        # Create a placeholder widget to hold our canvas, toolbar, and selection widgets
-        analysis_canvas_main = QtWidgets.QMainWindow()
-        analysis_canvas_main.setCentralWidget(canvas_widget)
-
-        self.analysis_dock.setWidget(analysis_canvas_main)
-
     def _add_dock_widgets(self):
         """
         Add dockable widgets to the main window.
@@ -222,7 +187,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         the GUI will crash.
         """
 
-        self.analysis_dock.setEnabled(False)
         self.annotate_dock.setEnabled(False)
 
     def _load_openep_mat(self):
