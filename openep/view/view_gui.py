@@ -111,7 +111,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         
         self.annotate_dock = openep.view.annotations_ui.AnnotationWidget(title="Annotate")
     
-        self.annotate_dock.egm_selection.currentIndexChanged[int].connect(self.update_annotation_plot)
+        #self.annotate_dock.egm_selection.currentIndexChanged[int].connect(self.update_annotation_plot)
         self.annotate_dock.canvas.mpl_connect('key_press_event', self.annotation_on_key_press)
         self.annotate_dock.canvas.mpl_connect('scroll_event', self.annotation_on_scroll_wheel)  # this is scrolling with the wheel, not scrollbar
         
@@ -147,6 +147,10 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             lambda: self.sort_mapping_points_and_recycle_bin(self.mapping_points, self.recycle_bin),
         )
         self.mapping_points._ignore_sort_signal = False
+        
+        self.mapping_points.table.selectionModel().currentChanged.connect(
+            lambda: self.update_annotation_plot(table=self.mapping_points.table)
+        )
 
         self.recycle_bin = openep.view.mapping_points.RecycleBinDock(
             title="Recycle bin",
@@ -162,6 +166,11 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             lambda: self.sort_mapping_points_and_recycle_bin(self.recycle_bin, self.mapping_points)
         )
         self.recycle_bin._ignore_sort_signal = False
+        
+        self.recycle_bin.table.selectionModel().currentChanged.connect(
+            lambda: self.update_annotation_plot(table=self.recycle_bin.table)
+        )
+        
 
     def _add_dock_widgets(self):
         """
@@ -653,7 +662,14 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             self.annotate_dock.deactivate_figure()
         
         self.mapping_points.model.system = system  # the recycle bin shares the same model
+        
+        # move points to the recycle bin if necessary
         self._hide_mapping_points()
+        
+        # Sort by the index of the mapping points (this will also sort the recycle bin)
+        self.mapping_points.table.horizontalHeader().setSortIndicator(
+            0, Qt.AscendingOrder,
+        )
 
     def change_active_scalars(self, system, index, scalars):
         """Change the scalar values that are being projected onto the mesh."""
@@ -908,16 +924,21 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.annotate_dock.canvas.draw()
         self.annotate_dock.update_active_artist()  # ensure the annotations/woi are added to the background
 
-    def update_annotation_plot(self):
+    def update_annotation_plot(self, table=None):
                 
         # TODO: this will currently fail unless there is both reference
         # and bipolar electrograms as well as ecgs. Annotations
         # are also required. And the gain of each signal.
         
-        # Plot electrical data for this point
-        current_index = self.annotate_dock.egm_selection.currentIndex()
+        table = table if table is not None else self.mapping_points.table
+        row = table.currentIndex()
+        row_number = row.row()
+        current_index = int(row.sibling(row_number, 0).data())
+        print(table, current_index)
+        
+        # update the electrical data plotted for the mapping points
+        #current_index = self.annotate_dock.egm_selection.currentIndex()
         electric = self.system_manager.active_system.case.electric
-
         reference = electric.reference_egm.egm[current_index]
         bipolar = electric.bipolar_egm.egm[current_index]
         ecg = electric.ecg.ecg[current_index]
