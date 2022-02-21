@@ -642,9 +642,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         Update selected active system.
 
         Make the menubars blue for all 3d viewers of the active system.
-        If the active system has electrograms, plot these in the electrogram viewer.
-        Change the window of interest range slider in the electrogram viewer to reflect
-        those of the active system.
+        If the active system has electrograms, plot these in the annotation viewer.
+        Update the mapping points and recycle bin tables with the electrical data.
         """
 
         self.system_manager.active_system = system
