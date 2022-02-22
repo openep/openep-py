@@ -863,7 +863,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         current_index = np.argwhere(electric.include).squeeze()[0]
         current_name = electric.internal_names[current_index]
         self.annotate_dock.egm_selected.setText(f"Point: {current_name}")
-        
+        self.annotate_dock._current_index = current_index
+
         reference = electric.reference_egm.egm[current_index]
         bipolar = electric.bipolar_egm.egm[current_index]
         ecg = electric.ecg.ecg[current_index]
@@ -923,6 +924,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         row = table.currentIndex()
         row_number = row.row()
         current_index = int(row.sibling(row_number, 0).data())
+        self.annotate_dock._current_index = current_index
         
         # update the electrical data plotted for the mapping points
         electric = self.system_manager.active_system.case.electric
@@ -1074,7 +1076,9 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         annotater.canvas.mpl_disconnect(annotater.cid_button_release_event)
         
         # We also need to store the updated data
-        current_index = self.annotate_dock.egm_selected.currentIndex()
+        #current_index = self.annotate_dock.egm_selected.currentIndex()
+        current_index = self.annotate_dock._current_index
+
         annotations = self.system_manager.active_system.case.electric.annotations
         annotation_artists = annotater.annotation_artists
         
@@ -1088,50 +1092,37 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         annotations.window_of_interest[current_index] = woi
         
         # And re-interpolate onto the surface
-        self.update_scalar_fields(event=None)
+        #self.update_scalar_fields(event=None)
 
     def annotation_on_key_press(self, event):
-        """Bindings for key press events in the annotation viewer"""
+        """Bindings for key press events in the annotation viewer.
+        
+        - r: move the reference annotation to the cursor's x position
+        - l: move the local annotation to the cursor's x position
+        - w: move the lower boundary of the woi to the cursor's x position
+        - W: move the upper boundary of the woi to the cursor's x position
+        """
         
         sys.stdout.flush()
         
-        if event.key not in [ 'down', 'up', 'r', 'w', 'W', 'l']:
+        if event.key not in ['r', 'w', 'W', 'l'] or event.xdata is None:
             return
 
-        # First check whether we need to change the electrogram that is displayed
-        current_index = self.annotate_dock.egm_selected.currentIndex()
-
-        if event.key == 'down':
-            # move the the next electrogram
-            n_items = self.annotate_dock.egm_selected.count()
-            new_index = min(n_items-1, current_index+1)
-            self.annotate_dock.egm_selected.setCurrentIndex(new_index)
-            
-        
-        elif event.key == 'up':
-            # move to the previous electrogram
-            new_index = max(0, current_index - 1)
-            self.annotate_dock.egm_selected.setCurrentIndex(new_index)
-
-        # If we're chaning a point/line, ensure the key press was inside the figure
-        if event.xdata is None:
-            return
-        
+        current_index = self.annotate_dock._current_index
         time_index = np.searchsorted(self.egm_times, event.xdata)
-        if time_index == self.egm_times.size:
-            time_index -= 1
+        time_index = min(time_index, self.egm_times.size - 1)
         time = self.egm_times[time_index]
         
         electric = self.system_manager.active_system.case.electric
 
         # TODO: Annotation times are signal indices. Collected at a specific frequency.
-        #       Should be plotted a ms on the x-axis, taking into accoutnt the paper size
+        #       Should be plotted a ms on the x-axis, taking into account the paper size
         #       and paper speed.
         if event.key == 'r':
             
             electric.annotations.reference_activation_time[current_index] = time_index
             
-            voltage = electric.reference_egm.egm[current_index, time_index]  # + 2  # y offset
+            voltage = electric.reference_egm.egm[current_index, time_index]
             gain = electric.reference_egm.gain[current_index]
             self.annotate_dock.update_reference_annotation(time, voltage, gain)
             self.annotate_dock.blit_artists()
@@ -1165,7 +1156,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             
             electric.annotations.local_activation_time[current_index] = time_index
             
-            voltage = electric.bipolar_egm.egm[current_index, time_index]  # + 6  # y offset
+            voltage = electric.bipolar_egm.egm[current_index, time_index]
             gain = electric.bipolar_egm.gain[current_index]
             self.annotate_dock.update_local_annotation(time, voltage, gain)
             self.annotate_dock.blit_artists()
@@ -1173,8 +1164,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
     def annotation_on_scroll_wheel(self, event):
         """Set the gain of the active line in the annotation viewer"""
-        
-        current_index = self.annotate_dock.egm_selected.currentIndex()
+
+        current_index = self.annotate_dock._current_index
         electric = self.system_manager.active_system.case.electric
         gain_diff = 0.1 * (event.step * -1)  # scrolling up will decrease gain, down will increase gain
         
@@ -1192,21 +1183,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         
         self.annotate_dock.update_gain(gain)
         self.annotate_dock.blit_artists()
-
-    def update_annotation_woi(self):
-        """Set the woi based on the current value of the range slider"""
-
-        # TODO: create a button/toolbar/menu option to update the woi/
-        # reference annotation/LAT based on the current values
-
-        current_index = self.annotate_dock.egm_selected.currentIndex()
-        start_woi, stop_woi = self.annotate_dock.woi_slider.val
-
-        annotations = self.system_manager.active_system.case.electric.annotations
-        reference_annotation = annotations.reference_activation_time[current_index]
-        
-        annotations.window_of_interest[current_index, 0] = start_woi - reference_annotation
-        annotations.window_of_interest[current_index, 1] = stop_woi - reference_annotation
 
     def _hide_mapping_points(self):
         """Show presiously deleted mapping points in the recycle bin, not the mapping points list"""
@@ -1245,7 +1221,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         sort_column = table.table.horizontalHeader().sortIndicatorSection()
         sort_order = table.table.horizontalHeader().sortIndicatorOrder()
         table_to_sort.table.sortByColumn(sort_column, sort_order)
-
 
         table._ignore_sort_signal = False
         table_to_sort._ignore_sort_signal = False

@@ -52,6 +52,7 @@ class AnnotationWidget(CustomDockWidget):
         super().__init__(title)
         self._init_main_window()
         self._initialise_annotations()
+        self._current_index = None  # index of mapping point currently plotted in the viewer
 
         # TODO: Get the resolution of the screen
         #       We can use this to set the size of the figure and the font size
