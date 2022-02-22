@@ -193,6 +193,7 @@ class System:
         """Create a dictionary of keyword arguments for plotting meshes, points, and surface-projected discs."""
 
         add_mesh_kws = {
+            "pickable": False,  # never set to True
             "clim": [0, 5],
             "name": "Surface",
             "opacity": 1,
@@ -202,6 +203,7 @@ class System:
         }
 
         add_points_kws = {
+            "pickable": False,  # only set to True for the primary viewer
             "name": "Mapping points",
             "opacity": 1,
             "show_scalar_bar": False,
@@ -210,6 +212,7 @@ class System:
         }
 
         add_discs_kws = {
+            "pickable": False,  # only set to True for the primary viewer
             "name": "Surface-projected mapping points",
             "opacity": 1,
             "show_scalar_bar": False,

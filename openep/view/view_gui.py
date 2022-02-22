@@ -498,15 +498,20 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         plotter.lower_limit.returnPressed.connect(lambda: self.update_colourbar_limits(system, index=index))
         plotter.upper_limit.returnPressed.connect(lambda: self.update_colourbar_limits(system, index=index))
         plotter.opacity.valueChanged.connect(lambda: self.update_opacity(system, index=index))
-        if plotter_is_secondary_view:
-            system.plotters[0].link_views_across_plotters(plotter)
-            plotter.link_view_with_primary.toggled.connect(lambda: self.link_views_across_plotters(system, index=index))
 
         mesh = system.create_mesh()
         mapping_points = system.create_mapping_points_mesh()
         projected_discs = system.create_surface_discs_mesh()
         add_mesh_kws, add_points_kws, add_discs_kws = system._create_default_kws()
         free_boundaries = openep.mesh.get_free_boundaries(mesh)
+
+        if plotter_is_secondary_view:
+            system.plotters[0].link_views_across_plotters(plotter)
+            plotter.link_view_with_primary.toggled.connect(lambda: self.link_views_across_plotters(system, index=index))
+        else:
+            plotter.enable_point_picking(pickable_window=False)
+            add_points_kws['pickable'] = True
+            add_discs_kws['pickable'] = True
 
         system.docks.append(dock)
         system.plotters.append(plotter)
@@ -645,6 +650,10 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         If the active system has electrograms, plot these in the annotation viewer.
         Update the mapping points and recycle bin tables with the electrical data.
         """
+        
+        previous_system = self.system_manager.active_system
+        if previous_system is not None and len(previous_system.plotters):
+            previous_system.plotters[0].pickable_actors = []
 
         self.system_manager.active_system = system
 
@@ -669,6 +678,13 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.mapping_points.table.horizontalHeader().setSortIndicator(
             0, Qt.AscendingOrder,
         )
+
+        if len(system.plotters):
+            plotter = system.plotters[0]
+            plotter.pickable_actors = [
+                plotter.renderer._actors['Mapping points'],
+                plotter.renderer._actors['Surface-projected mapping points'],
+            ]
 
     def change_active_scalars(self, system, index, scalars):
         """Change the scalar values that are being projected onto the mesh."""
