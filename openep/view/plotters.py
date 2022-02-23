@@ -48,6 +48,7 @@ def create_plotter():
         auto_update=100,
     )
     plotter.background_color = '#19232D'
+    plotter.parallel_projection = True
     plotter.setMinimumSize(QtCore.QSize(50, 50))
 
     return plotter
