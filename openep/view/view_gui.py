@@ -149,7 +149,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.mapping_points._ignore_sort_signal = False
         
         self.mapping_points.table.selectionModel().currentChanged.connect(
-            lambda: self.update_annotation_plot(table=self.mapping_points.table)
+            lambda: self.update_selected_mapping_point(table=self.mapping_points.table)
         )
 
         self.recycle_bin = openep.view.mapping_points.RecycleBinDock(
@@ -168,7 +168,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.recycle_bin._ignore_sort_signal = False
         
         self.recycle_bin.table.selectionModel().currentChanged.connect(
-            lambda: self.update_annotation_plot(table=self.recycle_bin.table)
+            lambda: self.update_selected_mapping_point(table=self.recycle_bin.table)
         )
         
 
@@ -509,7 +509,23 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             system.plotters[0].link_views_across_plotters(plotter)
             plotter.link_view_with_primary.toggled.connect(lambda: self.link_views_across_plotters(system, index=index))
         else:
-            plotter.enable_point_picking(pickable_window=False)
+            plotter.enable_point_picking(
+                pickable_window=False,
+                show_message=False,
+                show_point=False,
+            )
+            first_point_included = np.argwhere(system.case.electric.include).squeeze()[0]
+            highlight_point = system.create_selected_point_mesh(point=mapping_points.points[first_point_included][np.newaxis, :])
+            highlight_actor = plotter.add_mesh(
+                highlight_point,
+                color="red",
+                name="_picked_point",
+                pickable=False,
+                reset_camera=False,
+            )
+            highlight_actor.SetVisibility(False)
+            system._highlight_point = highlight_point
+            
             add_points_kws['pickable'] = True
             add_discs_kws['pickable'] = True
 
@@ -612,6 +628,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             for actor_name, actor in plotter.renderer._actors.items():
                 if actor_name.startswith('free_boundary_'):
                     actor.SetVisibility(show)
+        elif actor_name == "Mapping points":
+            plotter.renderer._actors["_picked_point"].SetVisibility(show)
 
     def link_views_across_plotters(self, system, index):
         """Link or unlink the views of two plotters.
@@ -868,7 +886,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.egm_times = self.system_manager.electrogram_times()
 
     def create_annotation_plot(self):
-        """Update the data plotted in the annotation viewer."""
+        """Create a new annotation plot for the current system."""
         
         # TODO: this will currently fail unless there is both reference
         # and bipolar electrograms as well as ecgs. Annotations
@@ -930,7 +948,11 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.annotate_dock.canvas.draw()
         self.annotate_dock.update_active_artist()  # ensure the annotations/woi are added to the background
 
-    def update_annotation_plot(self, table=None):
+    def update_selected_mapping_point(self, table=None):
+        """Plot the electrgrom for the current mapping point.
+        
+        And highlight the point in the 3D viewer.
+        """
                 
         # TODO: this will currently fail unless there is both reference
         # and bipolar electrograms as well as ecgs. Annotations
@@ -996,8 +1018,14 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         included = electric.include[current_index]
         deleted = "" if included else " (deleted)"
         self.annotate_dock.egm_selected.setText(f"Point: {current_name}{deleted}")
-
-        # TODO: Display this point in the 3d viewer (e.g. render as large blue sphere)
+        
+        # Translate the highlighted point
+        system = self.system_manager.active_system
+        points = system.case.electric.bipolar_egm.points - system.case._mesh_center
+        new_point_center = points[current_index]
+        current_point_center = system._highlight_point.center
+        translate = current_point_center - new_point_center
+        system._highlight_point.translate(-translate)
 
     def annotation_on_button_press(self, event):
         """Update active artist on mouse button press, or set up call backs for moving annotations."""

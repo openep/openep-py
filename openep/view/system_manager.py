@@ -150,6 +150,17 @@ class System:
 
         return mesh
 
+    def create_selected_point_mesh(self, point):
+        """Create a mesh that will be used for highlighting the selected point"""
+
+        point_mesh = pyvista.PolyData(point)
+        point_geometry = pyvista.Sphere(theta_resolution=20, phi_resolution=20)
+
+        factor = 2 if self.type == "OpenEP" else 2000
+        glyphed_mesh = point_mesh.glyph(scale=False, factor=factor, geom=point_geometry)
+
+        return glyphed_mesh
+
     def create_mapping_points_mesh(self):
         """Create a mesh that contains the mapping points."""
 
