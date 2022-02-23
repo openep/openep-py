@@ -514,7 +514,10 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                 show_message=False,
                 show_point=False,
             )
-            first_point_included = np.argwhere(system.case.electric.include).squeeze()[0]
+            if sum(system.case.electric.include) == 0:
+                first_point_included = 0
+            else:
+                first_point_included = np.argwhere(system.case.electric.include).ravel()[0]
             highlight_point = system.create_selected_point_mesh(point=mapping_points.points[first_point_included][np.newaxis, :])
             highlight_actor = plotter.add_mesh(
                 highlight_point,
@@ -668,9 +671,10 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         If the active system has electrograms, plot these in the annotation viewer.
         Update the mapping points and recycle bin tables with the electrical data.
         """
-        
+
+        self.system_manager_ui._active_system_button_group.blockSignals(True)
         previous_system = self.system_manager.active_system
-        if previous_system is not None and len(previous_system.plotters):
+        if len(previous_system.plotters):
             previous_system.plotters[0].pickable_actors = []
 
         self.system_manager.active_system = system
@@ -686,7 +690,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         else:
             self.annotate_dock.egm_selected.setText("")
             self.annotate_dock.deactivate_figure()
-        
+
         self.mapping_points.model.system = system  # the recycle bin shares the same model
         
         # move points to the recycle bin if necessary
@@ -703,6 +707,9 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                 plotter.renderer._actors['Mapping points'],
                 plotter.renderer._actors['Surface-projected mapping points'],
             ]
+        
+        self._changing_system = False
+        self.system_manager_ui._active_system_button_group.blockSignals(False)
 
     def change_active_scalars(self, system, index, scalars):
         """Change the scalar values that are being projected onto the mesh."""
@@ -894,7 +901,10 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         
         # Plot electrical data for the first non-deleted point
         electric = self.system_manager.active_system.case.electric
-        current_index = np.argwhere(electric.include).squeeze()[0]
+        if sum(electric.include) == 0:
+            current_index = 0
+        else:
+            current_index = np.argwhere(electric.include).ravel()[0]
         current_name = electric.internal_names[current_index]
         self.annotate_dock.egm_selected.setText(f"Point: {current_name}")
         self.annotate_dock._current_index = current_index
@@ -948,12 +958,20 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.annotate_dock.canvas.draw()
         self.annotate_dock.update_active_artist()  # ensure the annotations/woi are added to the background
 
+        # Translate the highlighted point in the 3d viewer
+        system = self.system_manager.active_system
+        points = system.case.electric.bipolar_egm.points - system.case._mesh_center
+        new_point_center = points[current_index]
+        current_point_center = system._highlight_point.center
+        translate = current_point_center - new_point_center
+        system._highlight_point.translate(-translate, inplace=True)
+
     def update_selected_mapping_point(self, table=None):
         """Plot the electrgrom for the current mapping point.
         
         And highlight the point in the 3D viewer.
         """
-                
+
         # TODO: this will currently fail unless there is both reference
         # and bipolar electrograms as well as ecgs. Annotations
         # are also required. And the gain of each signal.
@@ -1229,15 +1247,17 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.annotate_dock.blit_artists()
 
     def _hide_mapping_points(self):
-        """Show presiously deleted mapping points in the recycle bin, not the mapping points list"""
+        """Show previously deleted mapping points in the recycle bin, not the mapping points list"""
 
-        non_recycled_rows = np.argwhere(self.mapping_points.model.include).squeeze()
+        non_recycled_rows = np.argwhere(self.mapping_points.model.include).ravel()
         for row_number in non_recycled_rows:
+            self.mapping_points.table.setRowHidden(row_number, False)
             self.recycle_bin.table.setRowHidden(row_number, True)
         
-        recycled_rows = np.argwhere(self.mapping_points.model.include == False).squeeze()
+        recycled_rows = np.argwhere(self.mapping_points.model.include == False).ravel()
         for row_number in recycled_rows:
             self.mapping_points.table.setRowHidden(row_number, True)
+            self.recycle_bin.table.setRowHidden(row_number, False)
 
     def delete_mapping_points(self, table, restore):
         """Move the selected mapping points into the recycle bin."""
