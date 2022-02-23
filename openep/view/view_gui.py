@@ -516,6 +516,10 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                 callback=self.make_picked_point_current_index,
                 use_mesh=True,
             )
+            
+            # hide the bounding box after the key is released
+            plotter.iren.get_interactor_style().SetPickColor(1, 1, 1)
+            
             if sum(system.case.electric.include) == 0:
                 first_point_included = 0
             else:
@@ -1038,7 +1042,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         proxy_model = self.mapping_points.proxy_model if is_included else self.recycle_bin.proxy_model
         current_index = proxy_model.mapFromSource(proxy_model.sourceModel().index(current_model_index, 0))
         table = self.mapping_points.table if is_included else self.recycle_bin.table
-        print(current_model_index, current_index)
         table.selectRow(current_index.row())
 
     def annotation_on_button_press(self, event):
