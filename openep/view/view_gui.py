@@ -929,28 +929,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         # add the annotations
         self.annotate_dock._initialise_annotations()
         annotations = electric.annotations
-        times = self.egm_times
-
-        local_annotation = annotations.local_activation_time[current_index]
-        local_annotation_index = np.searchsorted(times, local_annotation)
-        local_annotation_index = min(local_annotation_index, times.size)
-        self.annotate_dock.update_annotation(
-            signal=self.annotate_dock.signal_artists['Bipolar'],
-            annotation=self.annotate_dock.annotation_artists['local_annotation_point'],
-            annotation_line=self.annotate_dock.annotation_artists['local_annotation_line'],
-            index=local_annotation_index,
-        )
-
         reference_annotation = annotations.reference_activation_time[current_index]
-        reference_annotation_index = np.searchsorted(times, reference_annotation)
-        reference_annotation_index = min(reference_annotation_index, times.size)
-        self.annotate_dock.update_annotation(
-            signal=self.annotate_dock.signal_artists['Ref'],
-            annotation=self.annotate_dock.annotation_artists['reference_annotation_point'],
-            annotation_line=self.annotate_dock.annotation_artists['reference_annotation_line'],
-            index=reference_annotation_index,
-        )
-
         start_woi, stop_woi = annotations.window_of_interest[current_index]
         start_woi += reference_annotation
         stop_woi += reference_annotation
@@ -1053,10 +1032,14 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         system = self.system_manager.active_system
         n_mapping_points = system.case.electric.bipolar_egm.points.size
         n_glphys_per_mapping_point = picked_mesh.points.size // n_mapping_points
-        current_index = picked_point_id // n_glphys_per_mapping_point
-        is_included = system.case.electric.include[current_index]
+        current_model_index = picked_point_id // n_glphys_per_mapping_point
+        
+        is_included = system.case.electric.include[current_model_index]
+        proxy_model = self.mapping_points.proxy_model if is_included else self.recycle_bin.proxy_model
+        current_index = proxy_model.mapFromSource(proxy_model.sourceModel().index(current_model_index, 0))
         table = self.mapping_points.table if is_included else self.recycle_bin.table
-        table.selectRow(current_index)
+        print(current_model_index, current_index)
+        table.selectRow(current_index.row())
 
     def annotation_on_button_press(self, event):
         """Update active artist on mouse button press, or set up call backs for moving annotations."""
