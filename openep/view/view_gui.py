@@ -513,6 +513,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                 pickable_window=False,
                 show_message=False,
                 show_point=False,
+                callback=self.make_picked_point_current_index,
+                use_mesh=True,
             )
             if sum(system.case.electric.include) == 0:
                 first_point_included = 0
@@ -959,12 +961,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.annotate_dock.update_active_artist()  # ensure the annotations/woi are added to the background
 
         # Translate the highlighted point in the 3d viewer
-        system = self.system_manager.active_system
-        points = system.case.electric.bipolar_egm.points - system.case._mesh_center
-        new_point_center = points[current_index]
-        current_point_center = system._highlight_point.center
-        translate = current_point_center - new_point_center
-        system._highlight_point.translate(-translate, inplace=True)
+        self.highlight_mapping_point()
 
     def update_selected_mapping_point(self, table=None):
         """Plot the electrgrom for the current mapping point.
@@ -1038,12 +1035,30 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.annotate_dock.egm_selected.setText(f"Point: {current_name}{deleted}")
         
         # Translate the highlighted point
+        self.highlight_mapping_point()
+
+    def highlight_mapping_point(self):
+        """Translate the selected point to its new location"""
+
         system = self.system_manager.active_system
         points = system.case.electric.bipolar_egm.points - system.case._mesh_center
-        new_point_center = points[current_index]
+        new_point_center = points[self.annotate_dock._current_index]
         current_point_center = system._highlight_point.center
         translate = current_point_center - new_point_center
-        system._highlight_point.translate(-translate)
+        system._highlight_point.translate(-translate, inplace=True)
+
+    def make_picked_point_current_index(self, picked_mesh, picked_point_id):
+        """Set the user-picked point to be the selected point in the tables"""
+        
+        system = self.system_manager.active_system
+        n_mapping_points = system.case.electric.bipolar_egm.points.size
+        n_glphys_per_mapping_point = picked_mesh.points.size // n_mapping_points
+        current_index = picked_point_id // n_glphys_per_mapping_point
+        is_included = system.case.electric.include[current_index]
+        
+        model = self.mapping_points.model if is_included else self.recycle_bin.model
+        table = self.mapping_points.table if is_included else self.recycle_bin.table
+        table.setCurrentIndex(model.index(current_index, 0))
 
     def annotation_on_button_press(self, event):
         """Update active artist on mouse button press, or set up call backs for moving annotations."""
