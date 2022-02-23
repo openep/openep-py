@@ -1055,10 +1055,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         n_glphys_per_mapping_point = picked_mesh.points.size // n_mapping_points
         current_index = picked_point_id // n_glphys_per_mapping_point
         is_included = system.case.electric.include[current_index]
-        
-        model = self.mapping_points.model if is_included else self.recycle_bin.model
         table = self.mapping_points.table if is_included else self.recycle_bin.table
-        table.setCurrentIndex(model.index(current_index, 0))
+        table.selectRow(current_index)
 
     def annotation_on_button_press(self, event):
         """Update active artist on mouse button press, or set up call backs for moving annotations."""
