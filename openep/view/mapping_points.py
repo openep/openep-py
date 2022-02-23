@@ -83,10 +83,11 @@ class MappingPointsModel(QtCore.QAbstractTableModel):
         
         Store data in a 2d array, as required for displaying in a table.
         """
-        
+        self.layoutAboutToBeChanged.emit()
         if self._system is None:
             self._data = None
             self.include = np.array([])
+            self.layoutChanged.emit()
             return
 
         electric = self._system.case.electric
