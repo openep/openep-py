@@ -51,4 +51,11 @@ def create_plotter():
     plotter.parallel_projection = True
     plotter.setMinimumSize(QtCore.QSize(50, 50))
 
+    # This is a hack to ensure point-picking works correctly on Mac retina displays.
+    # _getPixelRatio was introduced to fix this bug. However, it now seems to be
+    # the **cause** of this bug.
+    # See: https://gitlab.kitware.com/vtk/vtk/-/issues/18195
+    # and https://gitlab.kitware.com/vtk/vtk/-/merge_requests/4201/diffs
+    plotter.iren.interactor._getPixelRatio = lambda _: 1
+
     return plotter
