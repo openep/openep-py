@@ -933,7 +933,29 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         # add the annotations
         self.annotate_dock._initialise_annotations()
         annotations = electric.annotations
+        times = self.egm_times
+
+        local_annotation = annotations.local_activation_time[current_index]
+        local_annotation_index = np.searchsorted(times, local_annotation)
+        local_annotation_index = min(local_annotation_index, times.size)
+        self.annotate_dock.update_annotation(
+            signal=self.annotate_dock.signal_artists['Bipolar'],
+            annotation=self.annotate_dock.annotation_artists['local_annotation_point'],
+            annotation_line=self.annotate_dock.annotation_artists['local_annotation_line'],
+            index=local_annotation_index,
+        )
+
+
         reference_annotation = annotations.reference_activation_time[current_index]
+        reference_annotation_index = np.searchsorted(times, reference_annotation)
+        reference_annotation_index = min(reference_annotation_index, times.size)
+        self.annotate_dock.update_annotation(
+            signal=self.annotate_dock.signal_artists['Ref'],
+            annotation=self.annotate_dock.annotation_artists['reference_annotation_point'],
+            annotation_line=self.annotate_dock.annotation_artists['reference_annotation_line'],
+            index=reference_annotation_index,
+        )
+
         start_woi, stop_woi = annotations.window_of_interest[current_index]
         start_woi += reference_annotation
         stop_woi += reference_annotation
