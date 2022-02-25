@@ -508,7 +508,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         free_boundaries = openep.mesh.get_free_boundaries(mesh)
 
         is_active_system = True if self.system_manager.active_system.name == system.name else False
-        print(is_active_system, system.name, self.system_manager.active_system.name)
         if plotter_is_secondary_view:
             system.plotters[0].link_views_across_plotters(plotter)
             plotter.link_view_with_primary.toggled.connect(lambda: self.link_views_across_plotters(system, index=index))

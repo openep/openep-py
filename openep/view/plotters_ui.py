@@ -89,7 +89,7 @@ def _create_colourbar_layout():
 
     upper_limit = QtWidgets.QLineEdit()
     upper_limit.setFixedWidth(40)
-    upper_limit.setText("5")
+    upper_limit.setText("2")
     upper_limit.setPlaceholderText("upper")
     lower_limit.setValidator(QtGui.QDoubleValidator(bottom=0.01))
     colour_bar_layout.addWidget(upper_limit)
