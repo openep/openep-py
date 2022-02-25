@@ -49,6 +49,13 @@ class AnnotationWidget(CustomDockWidget):
 
     def __init__(self, title: str):
 
+        self._ACTIVE_LINEWIDTH = 1.2
+        self._NON_ACTIVE_LINEWIDTH = 0.8
+        self._WOI_LINEWIDTH = 0.8
+        self._ANNOTATION_LINEWITDH = 1.0
+        self._GAIN_PREFACTOR = 0.02
+        self._SCROLLBAR_STEP = 0.1
+
         super().__init__(title)
         self._init_main_window()
         self._initialise_annotations()
@@ -77,7 +84,7 @@ class AnnotationWidget(CustomDockWidget):
         self.egm_selected, egm_selected_layout = self._init_selected()
         self.scrollbar = QtWidgets.QScrollBar(QtCore.Qt.Horizontal)
         self.scrollbar.actionTriggered.connect(self._update_limits_from_scrollbar)
-        self.scrollbar_step = 0.1
+        self.scrollbar_step = self._SCROLLBAR_STEP
         self.toolbar = CustomNavigationToolbar(
             canvas_=self.canvas,
             parent_=self,
@@ -161,7 +168,7 @@ class AnnotationWidget(CustomDockWidget):
             start_woi,
             color='white',
             linestyle='--',
-            linewidth=0.8,
+            linewidth=self._WOI_LINEWIDTH,
             alpha=0.6,
             label='start_woi',
             zorder=1,
@@ -177,7 +184,7 @@ class AnnotationWidget(CustomDockWidget):
             stop_woi,
             color='white',
             linestyle='--',
-            linewidth=0.8,
+            linewidth=self._WOI_LINEWIDTH,
             alpha=0.6,
             label='stop_woi',
             zorder=1,
@@ -213,7 +220,7 @@ class AnnotationWidget(CustomDockWidget):
             time,
             color='#08F7FE',
             linestyle='--',
-            linewidth=1,
+            linewidth=self._ANNOTATION_LINEWITDH,
             alpha=0.6,
             label="reference_annotation_line",
             zorder=1,
@@ -249,7 +256,7 @@ class AnnotationWidget(CustomDockWidget):
             time,
             color='#FE53BB',
             linestyle='--',
-            linewidth=1,
+            linewidth=self._ANNOTATION_LINEWITDH,
             alpha=0.6,
             label="local_annotation_line",
             zorder=1,
@@ -340,7 +347,7 @@ class AnnotationWidget(CustomDockWidget):
         Otherwise, return None.
         """
         
-        min_distance = 6
+        min_distance = 8
         nearest_artist = None
         
         for artist in self.signal_artists.values():
@@ -417,7 +424,7 @@ class AnnotationWidget(CustomDockWidget):
         """Change the colour of the active artist"""
     
         for artist_label, artist in self.signal_artists.items():
-            lw = 2.5 if artist_label == self.active_signal_artist else 1.25
+            lw = self._ACTIVE_LINEWIDTH if artist_label == self.active_signal_artist else self._NON_ACTIVE_LINEWIDTH
             artist.set_linewidth(lw)
 
         self.blit_artists()
@@ -502,7 +509,7 @@ class AnnotationWidget(CustomDockWidget):
             line, = self.axes.plot(
                 times,
                 separation + np.exp(gain) * signal,
-                linewidth=0.8,
+                linewidth=self._NON_ACTIVE_LINEWIDTH,
                 label=label,
                 zorder=2,
                 picker=False,
