@@ -74,17 +74,21 @@ def add_field_menu(dock, plotter, system_name, scalar_fields):
     field_group = QActionGroup(dock.main)
 
     plotter.scalar_field_actions = {}
+    set_checked = True
+    checked_action = None
     for field_name in scalar_fields:
 
         dock.setWindowTitle(f"{system_name}: {field_name}")
         action = QAction(field_name, dock.main, checkable=True)
-        action.setChecked(False)
+        action.setChecked(set_checked)
+        set_checked = False  # only set the first field to be checked
+        checked_action = checked_action or action  # set the first action to be the cheked action
 
         field_menu.addAction(action)
         field_group.addAction(action)
         plotter.scalar_field_actions[field_name] = action
 
-    return dock, plotter
+    return dock, plotter, checked_action.text()
 
 
 def add_show_menu(dock, plotter):

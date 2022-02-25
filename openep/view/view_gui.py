@@ -468,7 +468,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         dock = openep.view.system_ui.create_system_dock(central_widget=central_widget)
 
         # Add a Field menu to the menubar. This is used for selecting the scalar field to project onto the surface.
-        dock, plotter = openep.view.system_ui.add_field_menu(
+        dock, plotter, active_scalars = openep.view.system_ui.add_field_menu(
             dock=dock,
             plotter=plotter,
             system_name=system.name,
@@ -547,7 +547,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         system.free_boundaries.append(free_boundaries)
 
         dock.setWindowTitle(f"{system.name}: {mesh.active_scalars_info.name}")
-        active_scalars_name = mesh.active_scalars_info.name
+        mesh.set_active_scalars(active_scalars)
         self.draw_map(
             mesh=mesh,
             plotter=plotter,
@@ -559,7 +559,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         # Doing add_mesh and setting a title to the colour bar causes pyvista to add
         # the data to the point_data array with the name of the title, and then sets this
         # new point_data array as the active scalars. We need to undo this unwanted behaviour.
-        mesh.set_active_scalars(active_scalars_name)
+        mesh.set_active_scalars(active_scalars)
 
         self.draw_mapping_points(
             mesh=mapping_points,
