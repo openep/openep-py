@@ -25,12 +25,14 @@ import platform
 import sys
 import os
 import pathlib
+from functools import partial
 
 import qdarkstyle
 from PySide2 import QtCore, QtGui, QtWidgets
 from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QAction
 from matplotlib.backend_bases import MouseButton
+from pyvista.utilities import try_callback
 import numpy as np
 
 import openep
@@ -505,6 +507,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         add_mesh_kws, add_points_kws, add_discs_kws = system._create_default_kws()
         free_boundaries = openep.mesh.get_free_boundaries(mesh)
 
+        is_active_system = True if self.system_manager.active_system.name == system.name else False
+        print(is_active_system, system.name, self.system_manager.active_system.name)
         if plotter_is_secondary_view:
             system.plotters[0].link_views_across_plotters(plotter)
             plotter.link_view_with_primary.toggled.connect(lambda: self.link_views_across_plotters(system, index=index))
@@ -524,6 +528,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                 first_point_included = 0
             else:
                 first_point_included = np.argwhere(system.case.electric.include).ravel()[0]
+            
             highlight_point = system.create_selected_point_mesh(point=mapping_points.points[first_point_included][np.newaxis, :])
             highlight_actor = plotter.add_mesh(
                 highlight_point,
@@ -532,11 +537,17 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                 pickable=False,
                 reset_camera=False,
             )
-            highlight_actor.SetVisibility(True)
-            system._highlight_point = highlight_point
+            highlight_actor.SetVisibility(is_active_system)
             
-            add_points_kws['pickable'] = True
-            add_discs_kws['pickable'] = True
+            system._highlight_actor = highlight_actor
+            system._highlight_point = highlight_point
+            plotter.iren.interactor.AddObserver(
+                "LeftButtonPressEvent",
+                partial(try_callback, openep.view.plotters_ui.launch_pick_event)
+            )
+            
+            add_points_kws['pickable'] = is_active_system
+            add_discs_kws['pickable'] = False  # TODO: allow picking of discs too
 
         system.docks.append(dock)
         system.plotters.append(plotter)
@@ -682,6 +693,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         previous_system = self.system_manager.active_system
         if len(previous_system.plotters):
             previous_system.plotters[0].pickable_actors = []
+            previous_system._highlight_actor.SetVisibility(False)
 
         self.system_manager.active_system = system
 
@@ -711,10 +723,9 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             plotter = system.plotters[0]
             plotter.pickable_actors = [
                 plotter.renderer._actors['Mapping points'],
-                plotter.renderer._actors['Surface-projected mapping points'],
-            ]
-        
-        self._changing_system = False
+            ]  # TODO: allow picking of projected discs too
+            system._highlight_actor.SetVisibility(True)
+
         self.system_manager_ui._active_system_button_group.blockSignals(False)
 
     def change_active_scalars(self, system, index, scalars):
