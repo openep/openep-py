@@ -167,6 +167,9 @@ class MappingPointsDock(CustomDockWidget):
         self.table.setStyleSheet(
             "alternate-background-color: #262E38;"
         )
+        self.table.setStyleSheet(
+            "QTableView::item:hover {background: transparent;}"
+        )
         
         self.main = QtWidgets.QMainWindow()
         self.main.setCentralWidget(self.table)
