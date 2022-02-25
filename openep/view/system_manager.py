@@ -205,7 +205,7 @@ class System:
 
         add_mesh_kws = {
             "pickable": False,  # never set to True
-            "clim": [0, 5],
+            "clim": [0, 2],
             "name": "Surface",
             "opacity": 1,
             "scalar_bar_args": {
