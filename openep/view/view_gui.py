@@ -557,8 +557,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         system.add_mesh_kws.append(add_mesh_kws)
         system.free_boundaries.append(free_boundaries)
 
-        dock.setWindowTitle(f"{system.name}: {mesh.active_scalars_info.name}")
         mesh.set_active_scalars(active_scalars)
+        dock.setWindowTitle(f"{system.name}: {mesh.active_scalars_info.name}")
         self.draw_map(
             mesh=mesh,
             plotter=plotter,
