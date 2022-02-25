@@ -1189,7 +1189,9 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
     def annotation_on_key_press(self, event):
         """Bindings for key press events in the annotation viewer.
-        
+
+        - up arrow: go to the previous mapping point in the table
+        - down arrow: go to the next mapping point in the table
         - r: move the reference annotation to the cursor's x position
         - l: move the local annotation to the cursor's x position
         - w: move the lower boundary of the woi to the cursor's x position
@@ -1198,15 +1200,40 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         
         sys.stdout.flush()
         
-        if event.key not in ['r', 'w', 'W', 'l'] or event.xdata is None:
+        if event.key not in ['down', 'up', 'r', 'w', 'W', 'l']:
             return
 
         current_index = self.annotate_dock._current_index
+        electric = self.system_manager.active_system.case.electric
+
+        # First check whether we need to change the electrogram that is displayed
+        if event.key in ['down', 'up']:
+
+            is_included = electric.include[current_index]
+            proxy_model = self.mapping_points.proxy_model if is_included else self.recycle_bin.proxy_model
+            table = self.mapping_points.table if is_included else self.recycle_bin.table
+            current_table_index = proxy_model.mapFromSource(proxy_model.sourceModel().index(current_index, 0))
+            
+            # move the the previous/next row
+            # make sure we don't request a row at -1, or a row past that which is visible
+            change = 1 if event.key == 'down' else -1
+            n_visible_rows = sum(electric.include) if is_included else sum(~electric.include)
+            next_row = current_table_index.row() + change
+            next_row = max(0, next_row)
+            next_row = min(next_row, n_visible_rows-1)
+            table.selectRow(next_row)
+
+            return
+
+        # If we're changing a point/line, ensure the key press was inside the figure
+        if event.xdata is None:
+            return
+
         time_index = np.searchsorted(self.egm_times, event.xdata)
         time_index = min(time_index, self.egm_times.size - 1)
         time = self.egm_times[time_index]
         
-        electric = self.system_manager.active_system.case.electric
+        
 
         # TODO: Annotation times are signal indices. Collected at a specific frequency.
         #       Should be plotted a ms on the x-axis, taking into account the paper size
