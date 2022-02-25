@@ -210,6 +210,7 @@ class System:
             "opacity": 1,
             "scalar_bar_args": {
                 "title": "Voltage (mV)",
+                "color": "white",
             }
         }
 
