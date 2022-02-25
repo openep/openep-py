@@ -1221,7 +1221,14 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             next_row = current_table_index.row() + change
             next_row = max(0, next_row)
             next_row = min(next_row, n_visible_rows-1)
-            table.selectRow(next_row)
+            
+            # TODO: ensure that the correct mapping point is selected when pressing the down/up keys.
+            # Need to account for the number of points that have been deleted.
+            # Cannot just use next_row
+            all_visible = np.argwhere(electric.include == is_included).ravel()
+            table.selectRow(all_visible[next_row])
+
+            print(is_included, current_table_index.row(), change, n_visible_rows, next_row, table.currentIndex().row())
 
             return
 
@@ -1324,10 +1331,30 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         row_numbers = [row.row() for row in rows]
         point_indices = np.asarray([row.sibling(row_number, 0).data() for row, row_number in zip(rows, row_numbers)], dtype=int)
         self.mapping_points.model.include[point_indices] = restore
-        
+
         for row_number in row_numbers:
             self.mapping_points.table.setRowHidden(row_number, not restore)
             self.recycle_bin.table.setRowHidden(row_number, restore)
+
+        self.annotate_dock._current_index = point_indices[0]
+        proxy_model = self.mapping_points.proxy_model if restore else self.recycle_bin.proxy_model
+        current_index = proxy_model.mapFromSource(proxy_model.sourceModel().index(point_indices[0], 0))
+        table = self.mapping_points.table if restore else self.recycle_bin.table
+        table.selectRow(current_index.row())
+
+        #print(point_indices[0], row_numbers[0], table.currentIndex().row())
+        #print()
+
+        #table = self.mapping_points.table if restore else self.recycle_bin.table
+        #self.annotate_dock._current_index = point_indices[0]
+        #table.selectRow(row_numbers[0])
+
+        #table = self.mapping_points.table if restore else self.recycle_bin.table
+        #self.annotate_dock._current_index = point_indices[0]
+        #table.selectRow(row_numbers[0])
+        #print(row_numbers[0], table.currentIndex(), table.currentIndex().row())
+        #print()
+        #table.selectRow(row_numbers[0])
 
     def sort_mapping_points_and_recycle_bin(self, table, table_to_sort):
         """When one table is sorted by a column, sort the other table by the same column"""
