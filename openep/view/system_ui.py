@@ -109,10 +109,10 @@ def add_show_menu(dock, plotter):
 
     plotter.show_actions = {}
     action_names = ["Surface", "Mapping points", "Surface-projected mapping points"]
-    for action_name in action_names:
+    show_actor = [True, True, False]
+    for action_name, show in zip(action_names, show_actor):
 
         action = QAction(action_name, dock.main, checkable=True)
-        show = True if action_name == "Surface" else False  # by default only display the mesh
         action.setChecked(show)
         show_menu.addAction(action)
         plotter.show_actions[action_name] = action

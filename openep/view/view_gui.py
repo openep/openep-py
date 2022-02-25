@@ -532,7 +532,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                 pickable=False,
                 reset_camera=False,
             )
-            highlight_actor.SetVisibility(False)
+            highlight_actor.SetVisibility(True)
             system._highlight_point = highlight_point
             
             add_points_kws['pickable'] = True
@@ -566,7 +566,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             plotter=plotter,
             add_points_kws=add_points_kws,
         )
-        plotter.renderer._actors['Mapping points'].SetVisibility(False)
+        plotter.renderer._actors['Mapping points'].SetVisibility(True)
 
         self.draw_nearest_points_discs(
             mesh=projected_discs,
