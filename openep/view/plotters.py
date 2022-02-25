@@ -48,7 +48,7 @@ def create_plotter():
         auto_update=100,
     )
     plotter.background_color = '#19232D'
-    plotter.parallel_projection = True
+    #plotter.parallel_projection = True
     plotter.setMinimumSize(QtCore.QSize(50, 50))
 
     # This is a hack to ensure point-picking works correctly on Mac retina displays.
