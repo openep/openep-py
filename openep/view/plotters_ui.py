@@ -151,3 +151,13 @@ def _create_link_views_layout():
     link_views_layout.addStretch()
 
     return link_views_layout, link_views_button
+
+def launch_pick_event(interactor, event):
+    """Launch a pick event at the clicked coordinates."""
+
+    click_x, click_y = interactor.GetEventPosition()
+    click_z = 0
+
+    picker = interactor.GetPicker()
+    renderer = interactor.GetInteractorStyle()._parent()._plotter.renderer
+    picker.Pick(click_x, click_y, click_z, renderer)
