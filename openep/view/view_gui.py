@@ -235,15 +235,15 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.update_system_manager_table(system)
 
         # We need to dynamically add options for exporting data/creating 3D viewers to the main menubar
-        export_action = self.system_manager_ui.create_export_action(
+        export_openep_action, export_openCARP_action = self.system_manager_ui.create_export_action(
             system_basename=system.basename,
-            export_name="as openCARP",
         )
         view_action = self.system_manager_ui.create_view_action(
             system_basename=system.basename,
         )
 
-        export_action.triggered.connect(lambda: self._export_data_to_openCARP(system))
+        export_openCARP_action.triggered.connect(lambda: self._export_data_to_openCARP(system))
+        export_openep_action.triggered.connect(lambda: self._export_data_to_openep_mat(system))
         view_action.triggered.connect(lambda: self.add_view(system))
 
         self.interpolate_openEP_fields(system=system)
@@ -359,6 +359,28 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
                 # And also create the first 3d viewer
                 self.add_view(system)
+
+    def _export_data_to_openep_mat(self, system):
+        """Export data into an OpenEP .mat format"""
+
+        dialogue = QtWidgets.QFileDialog()
+        dialogue.DontUseNativeDialog = True
+        dialogue.setWindowTitle('Save As')
+        dialogue.setDirectory(QtCore.QDir.currentPath())
+        dialogue.setFileMode(QtWidgets.QFileDialog.AnyFile)
+        dialogue.setNameFilter("MATLAB file (*.mat)")
+
+        filename, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self,
+            caption="Save As",
+            directory=QtCore.QDir.currentPath(),
+            filter="MATLAB file (*.mat)",
+        )
+
+        openep.export_openep_mat(
+            case=system.case,
+            filename=filename,
+        )
 
     def _export_data_to_openCARP(self, system):
         """Export mesh data form an OpenEP dataset into openCARP format."""
