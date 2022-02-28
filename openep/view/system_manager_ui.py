@@ -146,7 +146,7 @@ class SystemManagerDockWidget(CustomDockWidget):
             else:
                 self.table_layout.addWidget(heading, row, 2 * column, row_width, column_width:=1, self._alignments[column])
 
-    def create_export_action(self, system_basename, export_name):
+    def create_export_action(self, system_basename):
         """Add an action to the Menubar for exporting a system dataset to a specific format.
 
         Args:
@@ -158,13 +158,15 @@ class SystemManagerDockWidget(CustomDockWidget):
         """
 
         # TODO: the menu should be created separately from the action
+        export_openep_action = QAction("as OpenEP", self)
+        export_openCARP_action = QAction("as openCARP", self)
         export_menu = QtWidgets.QMenu(system_basename, self)
-        export_action = QAction(export_name, self)
-        export_menu.addAction(export_action)
+        export_menu.addAction(export_openep_action)
+        export_menu.addAction(export_openCARP_action)
 
         self.main.export_data_menu.addMenu(export_menu)
 
-        return export_action
+        return export_openep_action, export_openCARP_action
 
     def create_view_action(self, system_basename):
         """Add an action to the Menubar for creating a new 3d viewer of a system.
