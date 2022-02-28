@@ -120,9 +120,9 @@ def load_openep_mat(filename, name=None):
         ablation = None
 
     try:
-        notes = data['notes']
+        notes = np.asarray(data['notes']).reshape(-1, 1)
     except KeyError:
-        notes = []
+        notes = np.asarray([""], dtype=str)[:, np.newaxis]
 
     return Case(name, points, indices, fields, electric, ablation, notes)
 
