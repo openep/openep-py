@@ -168,8 +168,8 @@ def _extract_surface_data(
 
     surface_data['act_bip'] = np.concatenate(
         [
-            fields.bipolar_voltage[:, np.newaxis],
             fields.local_activation_time[:, np.newaxis],
+            fields.bipolar_voltage[:, np.newaxis],
         ],
         axis=1,
     )
