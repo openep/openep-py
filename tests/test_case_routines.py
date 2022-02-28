@@ -35,12 +35,12 @@ from openep.case.case_routines import (
     Interpolator,
     interpolate_voltage_onto_surface,
 )
-from openep._datasets.openep_datasets import DATASET_2_V73
+from openep._datasets.openep_datasets import DATASET_2
 
 
 @pytest.fixture(scope='module')
 def real_case():
-    return openep.load_openep_mat(DATASET_2_V73)
+    return openep.load_openep_mat(DATASET_2)
 
 
 @pytest.fixture()
