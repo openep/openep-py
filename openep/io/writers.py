@@ -164,7 +164,7 @@ def _extract_surface_data(
 
     surface_data['triRep'] = {}
     surface_data['triRep']['X'] = points
-    surface_data['triRep']['Triangulation'] = indices
+    surface_data['triRep']['Triangulation'] = indices + 1  # MATLAB uses 1-based indexing
 
     surface_data['act_bip'] = np.concatenate(
         [
