@@ -52,11 +52,17 @@ processed to make it suitable for performing openCARP simulations.
 """
 
 import pathlib
+from idna import alabel
 import numpy as np
+import scipy.io
+from pyvista import PolyData
 
+from openep.data_structures.ablation import Ablation
 from openep.data_structures.case import Case
+from openep.data_structures.surface import Fields
+from openep.data_structures.electric import Electric
 
-__all__ = ["export_openCARP"]
+__all__ = ["export_openCARP", "export_openep_mat"]
 
 
 def export_openCARP(
@@ -103,3 +109,156 @@ def export_openCARP(
         header=str(n_triangles),
         comments='',
     )
+
+
+def export_openep_mat(
+    case: Case,
+    filename: str,
+):
+    """Export data in OpenEP format.
+
+    Args:
+        case (Case): dataset to be exported
+        filename (str): name of file to be written
+    """
+
+    userdata = {}
+    userdata['notes'] = case.notes.astype(object)
+
+    userdata['surface'] = _extract_surface_data(
+        points=case.points,
+        indices=case.indices,
+        fields=case.fields,
+    )
+
+    userdata['electric'] = _extract_electric_data(electric=case.electric)
+    userdata['rf'] = _export_ablation_data(ablation=case.ablation)
+
+    scipy.io.savemat(
+        file_name=filename,
+        mdict={'userdata': userdata},
+        format="5",
+        do_compression=True,
+        oned_as='column',
+    )
+
+def _extract_surface_data(
+    points : np.ndarray,
+    indices: np.ndarray,
+    fields: Fields,
+):
+    """Create a dictionary of surface data.
+
+    Args:
+        points (np.ndarray): 3D coordinates of points on the mesh
+        indices (np.ndarray): Indices of points that make up each face of the mesh
+        fields (Fields): bipolar voltage, unipolar voltage, local activation time,
+            impedance, and force at each point on the mesh.
+
+    Returns:            
+        surface_data (dict): Dictionary containing numpy arrays that describe the
+            surface of a mesh as well as scalar values (fields)
+    """
+
+    surface_data = {}
+
+    surface_data['triRep'] = {}
+    surface_data['triRep']['X'] = points
+    surface_data['triRep']['Triangulation'] = indices
+
+    surface_data['act_bip'] = np.concatenate(
+        [
+            fields.bipolar_voltage[:, np.newaxis],
+            fields.local_activation_time[:, np.newaxis],
+        ],
+        axis=1,
+    )
+
+    surface_data['uni_imp_frc'] = np.concatenate(
+        [
+            fields.unipolar_voltage[:, np.newaxis],
+            fields.impedance[:, np.newaxis],
+            fields.force[:, np.newaxis],
+        ],
+        axis=1,
+    )
+
+    return surface_data
+
+
+def _extract_electric_data(electric: Electric):
+    """Create a dictionary of electric data.
+
+    Args:
+        electric (Electric): object containing electric data associated with electrograms
+            taken at various mapping points.
+
+    Returns:
+        electric_data (dict): Dictionary containing numpy arrays that describe the
+            electric data associated with electrograms taken at various mapping points.
+    """
+
+    electric_data = {}
+    electric_data['tags'] = electric.names.astype(object)
+    electric_data['names'] = electric.internal_names.astype(object)
+
+    electric_data['electrodeNames_bip'] = electric.bipolar_egm.names.astype(object)
+    electric_data['egmX'] = electric.bipolar_egm.points
+    electric_data['egm'] = electric.bipolar_egm.egm
+
+    electric_data['electrodeNames_uni'] = electric.unipolar_egm.names.astype(object)
+    electric_data['egmUniX'] = electric.unipolar_egm.points
+    electric_data['egmUni'] = electric.unipolar_egm.egm
+
+    electric_data['egmRef'] = electric.reference_egm.egm
+
+    electric_data['ecg'] = electric.ecg.ecg
+
+    electric_data['egmSurfX'] = electric.surface.nearest_point
+    electric_data['barDirection'] = electric.surface.normals
+
+    electric_data['annotations'] = {}
+    electric_data['annotations']['woi'] = electric.annotations.window_of_interest
+    electric_data['annotations']['referenceAnnot'] = electric.annotations.reference_activation_time
+    electric_data['annotations']['mapAnnot'] = electric.annotations.local_activation_time
+
+    electric_data['voltages'] = {}
+    electric_data['voltages']['bipolar'] = electric.bipolar_egm.voltage
+    electric_data['voltages']['unipolar'] = electric.unipolar_egm.voltage
+
+    electric_data['impedances'] = {}
+    electric_data['impedances']['time'] = electric.impedance.times
+    electric_data['impedances']['value'] = electric.impedance.values
+
+    return electric_data
+
+
+def _export_ablation_data(ablation: Ablation):
+    """Create a dictionary of ablation data.
+
+    Args:
+        ablation (Ablation): times, power, impedance and temperature for each ablation site,
+            as well as the force applied.
+
+    Returns:
+        ablation_data (dict): Dictionary containing numpy arrays that describe the
+            ablation sites.
+    """
+
+    ablation_data = {}
+    ablation_data['originaldata'] = {}
+
+    ablation_data['originaldata']['ablparams'] = {}
+    ablation_data['originaldata']['ablparams']['time'] = ablation.times
+    ablation_data['originaldata']['ablparams']['power'] = ablation.power
+    ablation_data['originaldata']['ablparams']['impedance'] = ablation.impedance
+    ablation_data['originaldata']['ablparams']['distaltemp'] = ablation.temperature
+
+    ablation_data['originaldata']['force'] = {}
+    ablation_data['originaldata']['force']['time'] = ablation.force.times
+    ablation_data['originaldata']['force']['force'] = ablation.force.force
+    ablation_data['originaldata']['force']['axialangle'] = ablation.force.axial_angle
+    ablation_data['originaldata']['force']['lateralangle'] = ablation.force.lateral_angle
+    ablation_data['originaldata']['force']['position'] = ablation.force.points
+
+    return ablation_data
