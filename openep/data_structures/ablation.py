@@ -84,17 +84,17 @@ def extract_ablation_data(ablation_data):
             as well as the force applied.
     """
 
-    times = ablation_data['originaldata']['ablparams']['time']
-    power = ablation_data['originaldata']['ablparams']['power']
-    impedance = ablation_data['originaldata']['ablparams']['impedance']
-    temperature = ablation_data['originaldata']['ablparams']['distaltemp']
+    times = ablation_data['originaldata']['ablparams']['time'].astype(float)
+    power = ablation_data['originaldata']['ablparams']['power'].astype(float)
+    impedance = ablation_data['originaldata']['ablparams']['impedance'].astype(float)
+    temperature = ablation_data['originaldata']['ablparams']['distaltemp'].astype(float)
 
     force = AblationForce(
-        times=ablation_data['originaldata']['force']['time'],
-        force=ablation_data['originaldata']['force']['force'],
-        axial_angle=ablation_data['originaldata']['force']['axialangle'],
-        lateral_angle=ablation_data['originaldata']['force']['lateralangle'],
-        points=ablation_data['originaldata']['force']['position'],
+        times=ablation_data['originaldata']['force']['time'].astype(float),
+        force=ablation_data['originaldata']['force']['force'].astype(float),
+        axial_angle=ablation_data['originaldata']['force']['axialangle'].astype(float),
+        lateral_angle=ablation_data['originaldata']['force']['lateralangle'].astype(float),
+        points=ablation_data['originaldata']['force']['position'].astype(float),
     )
 
     ablation = Ablation(
