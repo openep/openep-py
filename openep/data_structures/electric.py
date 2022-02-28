@@ -195,43 +195,43 @@ def extract_electric_data(electric_data):
 
     # TODO: check if gain values are stored in electric_data before creating the default values
     bipolar_egm = Electrogram(
-        egm=electric_data['egm'],
-        points=electric_data['egmX'],
-        voltage=electric_data['voltages']['bipolar'],
-        gain=np.full_like(electric_data['voltages']['bipolar'], fill_value=1.0),
-        names=electric_data['electrodeNames_bip'],
+        egm=electric_data['egm'].astype(float),
+        points=electric_data['egmX'].astype(float),
+        voltage=electric_data['voltages']['bipolar'].astype(float),
+        gain=np.full_like(electric_data['voltages']['bipolar'], fill_value=1.0, dtype=float),
+        names=electric_data['electrodeNames_bip'].astype(str),
     )
     unipolar_egm = Electrogram(
-        egm=electric_data['egmUni'],
-        points=electric_data['egmUniX'],
-        voltage=electric_data['voltages']['unipolar'],
+        egm=electric_data['egmUni'].astype(float),
+        points=electric_data['egmUniX'].astype(float),
+        voltage=electric_data['voltages']['unipolar'].astype(float),
         gain=None,
-        names=electric_data['electrodeNames_uni'],
+        names=electric_data['electrodeNames_uni'].astype(str),
     )
     reference_egm = Electrogram(
-        egm=electric_data['egmRef'],
-        gain=np.full(electric_data['egmRef'].shape[0], fill_value=-4.0),
+        egm=electric_data['egmRef'].astype(float),
+        gain=np.full(electric_data['egmRef'].shape[0], fill_value=-4.0, dtype=float),
     )
 
     ecg = ECG(
-        ecg=electric_data['ecg'],
-        gain=np.full(electric_data['ecg'].shape[0], fill_value=1.0),
+        ecg=electric_data['ecg'].astype(float),
+        gain=np.full(electric_data['ecg'].shape[0], fill_value=1.0, dtype=float),
     )
 
     impedance = Impedance(
-        times=electric_data['impedances']['time'],
-        values=electric_data['impedances']['value'],
+        times=electric_data['impedances']['time'].astype(float),
+        values=electric_data['impedances']['value'].astype(float),
     )
 
     surface = ElectricSurface(
-        nearest_point=electric_data['egmSurfX'],
-        normals=electric_data['barDirection'],
+        nearest_point=electric_data['egmSurfX'].astype(float),
+        normals=electric_data['barDirection'].astype(float),
     )
 
     annotations = Annotations(
-        window_of_interest=electric_data['annotations']['woi'],
-        local_activation_time=electric_data['annotations']['mapAnnot'],
-        reference_activation_time=electric_data['annotations']['referenceAnnot'],
+        window_of_interest=electric_data['annotations']['woi'].astype(float),
+        local_activation_time=electric_data['annotations']['mapAnnot'].astype(float),
+        reference_activation_time=electric_data['annotations']['referenceAnnot'].astype(float),
     )
 
     electric = Electric(
