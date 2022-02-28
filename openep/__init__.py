@@ -19,5 +19,5 @@
 __all__ = ['case', 'mesh', 'draw']
 
 from .io.readers import load_openep_mat, load_opencarp
-from .io.writers import export_openCARP
+from .io.writers import export_openCARP, export_openep_mat
 from . import case, mesh, draw
