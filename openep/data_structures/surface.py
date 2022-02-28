@@ -70,11 +70,11 @@ def extract_surface_data(surface_data):
             scalar fields
     """
 
-    points = surface_data['triRep']['X']
-    indices = surface_data['triRep']['Triangulation']
+    points = surface_data['triRep']['X'].astype(float)
+    indices = surface_data['triRep']['Triangulation'].astype(int)
 
-    local_activation_time, bipolar_voltage = surface_data['act_bip'].T
-    unipolar_voltage, impedance, force = surface_data['uni_imp_frc'].T
+    local_activation_time, bipolar_voltage = surface_data['act_bip'].T.astype(float)
+    unipolar_voltage, impedance, force = surface_data['uni_imp_frc'].T.astype(float)
 
     fields = Fields(
         bipolar_voltage,
