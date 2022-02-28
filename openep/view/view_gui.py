@@ -1214,21 +1214,17 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             table = self.mapping_points.table if is_included else self.recycle_bin.table
             current_table_index = proxy_model.mapFromSource(proxy_model.sourceModel().index(current_index, 0))
             
-            # move the the previous/next row
-            # make sure we don't request a row at -1, or a row past that which is visible
-            change = 1 if event.key == 'down' else -1
-            n_visible_rows = sum(electric.include) if is_included else sum(~electric.include)
-            next_row = current_table_index.row() + change
+            # move the the previous/next visible row of the current table
+            # make sure we don't request a row that is not visible in the table
+            change = 1 if event.key == 'down' else -1            
+            all_visible = np.argwhere(electric.include == is_included).ravel()
+            current_table_index_visible = np.searchsorted(all_visible, current_table_index.row())
+            n_visible_rows = all_visible.size
+            
+            next_row = current_table_index_visible + change
             next_row = max(0, next_row)
             next_row = min(next_row, n_visible_rows-1)
-            
-            # TODO: ensure that the correct mapping point is selected when pressing the down/up keys.
-            # Need to account for the number of points that have been deleted.
-            # Cannot just use next_row
-            all_visible = np.argwhere(electric.include == is_included).ravel()
             table.selectRow(all_visible[next_row])
-
-            print(is_included, current_table_index.row(), change, n_visible_rows, next_row, table.currentIndex().row())
 
             return
 
@@ -1341,20 +1337,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         current_index = proxy_model.mapFromSource(proxy_model.sourceModel().index(point_indices[0], 0))
         table = self.mapping_points.table if restore else self.recycle_bin.table
         table.selectRow(current_index.row())
-
-        #print(point_indices[0], row_numbers[0], table.currentIndex().row())
-        #print()
-
-        #table = self.mapping_points.table if restore else self.recycle_bin.table
-        #self.annotate_dock._current_index = point_indices[0]
-        #table.selectRow(row_numbers[0])
-
-        #table = self.mapping_points.table if restore else self.recycle_bin.table
-        #self.annotate_dock._current_index = point_indices[0]
-        #table.selectRow(row_numbers[0])
-        #print(row_numbers[0], table.currentIndex(), table.currentIndex().row())
-        #print()
-        #table.selectRow(row_numbers[0])
 
     def sort_mapping_points_and_recycle_bin(self, table, table_to_sort):
         """When one table is sorted by a column, sort the other table by the same column"""
