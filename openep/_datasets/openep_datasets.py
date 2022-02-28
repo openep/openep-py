@@ -13,5 +13,5 @@ __all__ = [
 
 from pkg_resources import resource_filename
 
-DATASET_2_V73 = resource_filename(__name__,
+DATASET_2 = resource_filename(__name__,
                                   "OpenEP-MATLAB/openep_dataset_2.mat")
