@@ -39,9 +39,9 @@ Case data can be loaded as follows:
 .. code:: python
 
     import openep
-    from openep._datasets.openep_datasets import DATASET_2_V73
+    from openep._datasets.openep_datasets import DATASET_2
 
-    case = openep.load_openep_mat(DATASET_2_V73)
+    case = openep.load_openep_mat(DATASET_2)
 
 This will load the dataset and store the information in a `Case` object.
 See :class:`openep.data_structures.case.Case` for information on the attributes
