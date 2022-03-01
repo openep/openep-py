@@ -165,13 +165,13 @@ class System:
         """Create a mesh that contains the mapping points."""
 
         mapping_points_centered = self.case.electric.bipolar_egm.points - self.case._mesh_center
-        mapping_points_mesh = pyvista.PolyData(mapping_points_centered)
+        mapping_points_meshes = {index: pyvista.PolyData(point) for index, point in enumerate(mapping_points_centered)}
         point_geometry = pyvista.Sphere(theta_resolution=8, phi_resolution=8)
         
         factor = 1.5 if self.type == "OpenEP" else 1200
-        glyphed_mesh = mapping_points_mesh.glyph(scale=False, factor=factor, geom=point_geometry)
+        glyphed_meshes = {index: mesh.glyph(scale=False, factor=factor, geom=point_geometry) for index, mesh in mapping_points_meshes.items()}
 
-        return glyphed_mesh
+        return glyphed_meshes
 
     def create_surface_discs_mesh(self):
         """Create a mesh that contains the surface-projected mapping points"""

@@ -513,8 +513,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         )
         for action_name, action in plotter.show_actions.items():
             action.toggled.connect(
-                lambda checked, actor_name=action_name: self.update_actor_visibility(
-                    plotter, actor_name=actor_name,
+                lambda checked, actor_type=action_name: self.update_actor_visibility(
+                    system, plotter, actor_type=actor_type,
                 )
             )
         
@@ -524,7 +524,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         plotter.opacity.valueChanged.connect(lambda: self.update_opacity(system, index=index))
 
         mesh = system.create_mesh()
-        mapping_points = system.create_mapping_points_mesh()
+        mapping_points_meshes = system.create_mapping_points_mesh()
         projected_discs = system.create_surface_discs_mesh()
         add_mesh_kws, add_points_kws, add_discs_kws = system._create_default_kws()
         free_boundaries = openep.mesh.get_free_boundaries(mesh)
@@ -550,7 +550,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             else:
                 first_point_included = np.argwhere(system.case.electric.include).ravel()[0]
             
-            highlight_point = system.create_selected_point_mesh(point=mapping_points.points[first_point_included][np.newaxis, :])
+            highlight_point = system.create_selected_point_mesh(point=mapping_points_meshes[first_point_included].points)
             highlight_actor = plotter.add_mesh(
                 highlight_point,
                 color="red",
@@ -573,7 +573,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         system.docks.append(dock)
         system.plotters.append(plotter)
         system.meshes.append(mesh)
-        system.mapping_points_meshes.append(mapping_points)
+        system.mapping_points_meshes.append(mapping_points_meshes)
         system.surface_projected_discs_meshes.append(projected_discs)
         system.add_mesh_kws.append(add_mesh_kws)
         system.free_boundaries.append(free_boundaries)
@@ -593,12 +593,15 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         # new point_data array as the active scalars. We need to undo this unwanted behaviour.
         mesh.set_active_scalars(active_scalars)
 
-        self.draw_mapping_points(
-            mesh=mapping_points,
-            plotter=plotter,
-            add_points_kws=add_points_kws,
-        )
-        plotter.renderer._actors['Mapping points'].SetVisibility(True)
+        for index, mesh in mapping_points_meshes.items():
+            add_points_kws['name'] = f"Mapping points: {index}"
+            actor = self.draw_mapping_points(
+                mesh=mesh,
+                plotter=plotter,
+                add_points_kws=add_points_kws,
+            )
+            mesh._mapping_point_index = index  # we need this later when picking points in the 3d viewer
+            plotter.renderer._actors[f"Mapping points: {index}"].SetVisibility(system.case.electric.include[index])
 
         self.draw_nearest_points_discs(
             mesh=projected_discs,
@@ -659,18 +662,25 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                 actor_properties = actor.GetProperty()
                 actor_properties.SetOpacity(plotter.opacity.value())
 
-    def update_actor_visibility(self, plotter, actor_name):
+    def update_actor_visibility(self, system, plotter, actor_type):
         """Make an actor (e.g. a mesh or point cloud) visible or invisible."""
 
-        show = True if plotter.show_actions[actor_name].isChecked() else False
-        plotter.renderer._actors[actor_name].SetVisibility(show)
+        show = True if plotter.show_actions[actor_type].isChecked() else False
 
-        if actor_name == "Surface":
+        if actor_type == "Surface":
+            plotter.renderer._actors[actor_type].SetVisibility(show)
             for actor_name, actor in plotter.renderer._actors.items():
                 if actor_name.startswith('free_boundary_'):
                     actor.SetVisibility(show)
-        elif actor_name == "Mapping points":
-            plotter.renderer._actors["_picked_point"].SetVisibility(show)
+        elif actor_type == "Mapping points":
+            include = system.case.electric.include
+            mapping_point_actors = [actor for actor_name, actor in plotter.renderer._actors.items() if actor_name.startswith("Mapping points:")]
+            plotter.pickable_actors = mapping_point_actors  # we can set them all to pickable - the invisible ones can't be picked
+            for index, actor in enumerate(mapping_point_actors):
+                actor.SetVisibility(show and include[index])
+            system._highlight_actor.SetVisibility(include[self.annotate_dock._current_index])
+        else:
+            plotter.renderer._actors[actor_type].SetVisibility(show)
 
     def link_views_across_plotters(self, system, index):
         """Link or unlink the views of two plotters.
@@ -741,11 +751,14 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         )
 
         if len(system.plotters):
+
             plotter = system.plotters[0]
-            plotter.pickable_actors = [
-                plotter.renderer._actors['Mapping points'],
-            ]  # TODO: allow picking of projected discs too
-            system._highlight_actor.SetVisibility(True)
+            include = system.case.electric.include
+            mapping_point_actors = [actor for actor_name, actor in plotter.renderer._actors.items() if actor_name.startswith("Mapping points:")]
+            plotter.pickable_actors = [actor for index, actor in enumerate(mapping_point_actors) if include[index]]
+
+            picked_point_included = include[self.annotate_dock._current_index]
+            system._highlight_actor.SetVisibility(picked_point_included)
 
         self.system_manager_ui._active_system_button_group.blockSignals(False)
 
@@ -1078,6 +1091,10 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         """Translate the selected point to its new location"""
 
         system = self.system_manager.active_system
+
+        current_point_visible = system.case.electric.include[self.annotate_dock._current_index]
+        system._highlight_actor.SetVisibility(current_point_visible)
+
         points = system.case.electric.bipolar_egm.points - system.case._mesh_center
         new_point_center = points[self.annotate_dock._current_index]
         current_point_center = system._highlight_point.center
@@ -1088,10 +1105,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         """Set the user-picked point to be the selected point in the tables"""
         
         system = self.system_manager.active_system
-        n_mapping_points = system.case.electric.bipolar_egm.points.size
-        n_glphys_per_mapping_point = picked_mesh.points.size // n_mapping_points
-        current_model_index = picked_point_id // n_glphys_per_mapping_point
-        
+        current_model_index = picked_mesh._mapping_point_index
+
         is_included = system.case.electric.include[current_model_index]
         proxy_model = self.mapping_points.proxy_model if is_included else self.recycle_bin.proxy_model
         current_index = proxy_model.mapFromSource(proxy_model.sourceModel().index(current_model_index, 0))
@@ -1359,6 +1374,10 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         current_index = proxy_model.mapFromSource(proxy_model.sourceModel().index(point_indices[0], 0))
         table = self.mapping_points.table if restore else self.recycle_bin.table
         table.selectRow(current_index.row())
+
+        mapping_points_actors = [actor for actor_name, actor in self.system_manager.active_system.plotters[0].renderer._actors.items() if actor_name.startswith("Mapping points:")]
+        for index in point_indices:
+            mapping_points_actors[index].SetVisibility(restore)
 
     def sort_mapping_points_and_recycle_bin(self, table, table_to_sort):
         """When one table is sorted by a column, sort the other table by the same column"""
