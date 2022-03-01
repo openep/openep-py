@@ -528,7 +528,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             scalars=system.case.electric.include.astype(int),
             scalars_name="Include",
         )
-        projected_discs = system.create_surface_discs_mesh()
+        projected_discs = system.create_surface_discs_mesh(mesh=mesh)
         add_mesh_kws, add_points_kws, add_discs_kws = system._create_default_kws()
         free_boundaries = openep.mesh.get_free_boundaries(mesh)
 
