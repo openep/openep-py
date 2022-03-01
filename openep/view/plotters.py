@@ -28,7 +28,6 @@ import pyvista
 
 pyvista.set_plot_theme('paraview')
 
-
 def create_plotter():
     """Initialise a BackgroundPlotter"""
 
