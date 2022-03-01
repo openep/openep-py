@@ -524,7 +524,10 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         plotter.opacity.valueChanged.connect(lambda: self.update_opacity(system, index=index))
 
         mesh = system.create_mesh()
-        mapping_points = system.create_mapping_points_mesh()
+        mapping_points = system.create_mapping_points_mesh(
+            scalars=system.case.electric.include.astype(int),
+            scalars_name="Include",
+        )
         projected_discs = system.create_surface_discs_mesh()
         add_mesh_kws, add_points_kws, add_discs_kws = system._create_default_kws()
         free_boundaries = openep.mesh.get_free_boundaries(mesh)
@@ -1075,9 +1078,10 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.highlight_mapping_point()
 
     def highlight_mapping_point(self):
-        """Translate the selected point to its new location"""
+        """Show/hide the selected point, and translate it to its new location."""
 
         system = self.system_manager.active_system
+
         points = system.case.electric.bipolar_egm.points - system.case._mesh_center
         new_point_center = points[self.annotate_dock._current_index]
         current_point_center = system._highlight_point.center
@@ -1359,6 +1363,14 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         current_index = proxy_model.mapFromSource(proxy_model.sourceModel().index(point_indices[0], 0))
         table = self.mapping_points.table if restore else self.recycle_bin.table
         table.selectRow(current_index.row())
+
+        # Need to show or hide the point(s) in the 3d-viewer too
+        n_mapping_points = self.mapping_points.model.include.size
+        meshes = self.system_manager.active_system.mapping_points_meshes
+        n_glphys_per_mapping_point = meshes[0].points.size // (3 * n_mapping_points)
+
+        for mesh in meshes:
+            mesh.point_data["Include"][:] = self.mapping_points.model.include.astype(int).repeat(n_glphys_per_mapping_point)
 
     def sort_mapping_points_and_recycle_bin(self, table, table_to_sort):
         """When one table is sorted by a column, sort the other table by the same column"""

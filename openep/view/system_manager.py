@@ -161,8 +161,13 @@ class System:
 
         return glyphed_mesh
 
-    def create_mapping_points_mesh(self):
-        """Create a mesh that contains the mapping points."""
+    def create_mapping_points_mesh(self, scalars, scalars_name):
+        """Create a mesh that contains the mapping points.
+
+        Args:
+            scalars (np.ndarray): Integer scalar values that will be used to colour the points.
+            scalars_name (str): Name given to the scalars. Can be used to set active scalars of the mesh.
+        """
 
         mapping_points_centered = self.case.electric.bipolar_egm.points - self.case._mesh_center
         mapping_points_mesh = pyvista.PolyData(mapping_points_centered)
@@ -170,6 +175,11 @@ class System:
         
         factor = 1.5 if self.type == "OpenEP" else 1200
         glyphed_mesh = mapping_points_mesh.glyph(scale=False, factor=factor, geom=point_geometry)
+
+        n_mapping_points = mapping_points_centered.size
+        n_glphys_per_mapping_point = glyphed_mesh.points.size // n_mapping_points
+
+        glyphed_mesh.point_data[scalars_name] = scalars.repeat(n_glphys_per_mapping_point)
 
         return glyphed_mesh
 
@@ -219,8 +229,11 @@ class System:
             "name": "Mapping points",
             "opacity": 1,
             "show_scalar_bar": False,
-            "smooth_shading": True,
+            "smooth_shading": False,
             "lighting": True,
+            "cmap": ["yellow", "#FFFFFF"],
+            #"opacity": "Include",  # Do not set opacity using active scalars - even if a point has zero opacity, it is still pickable.
+            "clim": [0, 1],
         }
 
         add_discs_kws = {
