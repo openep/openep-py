@@ -528,7 +528,11 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             scalars=system.case.electric.include.astype(int),
             scalars_name="Include",
         )
-        projected_cylinders = system.create_surface_cylinders_mesh(mesh=mesh)
+        projected_cylinders = system.create_surface_cylinders_mesh(
+            mesh=mesh,
+            scalars=system.case.electric.include.astype(int),
+            scalars_name="Include",
+        )
         add_mesh_kws, add_points_kws, add_cylinders_kws = system._create_default_kws()
         free_boundaries = openep.mesh.get_free_boundaries(mesh)
 
@@ -1093,8 +1097,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         
         system = self.system_manager.active_system
         n_mapping_points = system.case.electric.bipolar_egm.points.size
-        n_glphys_per_mapping_point = picked_mesh.points.size // n_mapping_points
-        current_model_index = picked_point_id // n_glphys_per_mapping_point
+        n_sphere_points_per_mapping_point = picked_mesh.points.size // n_mapping_points
+        current_model_index = picked_point_id // n_sphere_points_per_mapping_point
         
         is_included = system.case.electric.include[current_model_index]
         proxy_model = self.mapping_points.proxy_model if is_included else self.recycle_bin.proxy_model
@@ -1366,11 +1370,16 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         # Need to show or hide the point(s) in the 3d-viewer too
         n_mapping_points = self.mapping_points.model.include.size
-        meshes = self.system_manager.active_system.mapping_points_meshes
-        n_glphys_per_mapping_point = meshes[0].points.size // (3 * n_mapping_points)
+        point_meshes = self.system_manager.active_system.mapping_points_meshes
+        projected_point_meshes = self.system_manager.active_system.surface_projected_cylinders_meshes
+        n_sphere_points_per_mapping_point = point_meshes[0].points.size // (3 * n_mapping_points)
+        n_cylinder_points_per_mapping_point = projected_point_meshes[0].points.size // (3 * n_mapping_points)
 
-        for mesh in meshes:
-            mesh.point_data["Include"][:] = self.mapping_points.model.include.astype(int).repeat(n_glphys_per_mapping_point)
+        include_point = self.mapping_points.model.include.astype(int).repeat(n_sphere_points_per_mapping_point)
+        include_projected_point = self.mapping_points.model.include.astype(int).repeat(n_cylinder_points_per_mapping_point)
+        for point_mesh, projected_point_mesh in zip(point_meshes, projected_point_meshes):
+            point_mesh.point_data["Include"][:] = include_point
+            projected_point_mesh.point_data["Include"][:] = include_projected_point
 
     def sort_mapping_points_and_recycle_bin(self, table, table_to_sort):
         """When one table is sorted by a column, sort the other table by the same column"""
