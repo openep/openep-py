@@ -528,8 +528,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             scalars=system.case.electric.include.astype(int),
             scalars_name="Include",
         )
-        projected_discs = system.create_surface_discs_mesh(mesh=mesh)
-        add_mesh_kws, add_points_kws, add_discs_kws = system._create_default_kws()
+        projected_cylinders = system.create_surface_cylinders_mesh(mesh=mesh)
+        add_mesh_kws, add_points_kws, add_cylinders_kws = system._create_default_kws()
         free_boundaries = openep.mesh.get_free_boundaries(mesh)
 
         is_active_system = True if self.system_manager.active_system.name == system.name else False
@@ -571,13 +571,13 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             )
             
             add_points_kws['pickable'] = is_active_system
-            add_discs_kws['pickable'] = False  # TODO: allow picking of discs too
+            add_cylinders_kws['pickable'] = False  # TODO: allow picking of cylinders too
 
         system.docks.append(dock)
         system.plotters.append(plotter)
         system.meshes.append(mesh)
         system.mapping_points_meshes.append(mapping_points)
-        system.surface_projected_discs_meshes.append(projected_discs)
+        system.surface_projected_cylinders_meshes.append(projected_cylinders)
         system.add_mesh_kws.append(add_mesh_kws)
         system.free_boundaries.append(free_boundaries)
 
@@ -603,10 +603,10 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         )
         plotter.renderer._actors['Mapping points'].SetVisibility(True)
 
-        self.draw_nearest_points_discs(
-            mesh=projected_discs,
+        self.draw_nearest_points_cylinders(
+            mesh=projected_cylinders,
             plotter=plotter,
-            add_discs_kws=add_discs_kws,
+            add_cylinders_kws=add_cylinders_kws,
         )
         plotter.renderer._actors['Surface-projected mapping points'].SetVisibility(False)
 
@@ -747,7 +747,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             plotter = system.plotters[0]
             plotter.pickable_actors = [
                 plotter.renderer._actors['Mapping points'],
-            ]  # TODO: allow picking of projected discs too
+            ]  # TODO: allow picking of projected cylinders too
             system._highlight_actor.SetVisibility(True)
 
         self.system_manager_ui._active_system_button_group.blockSignals(False)
@@ -901,16 +901,16 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         plotter.add_mesh(mesh, **add_points_kws)
 
-    def draw_nearest_points_discs(self, mesh, plotter, add_discs_kws):
-        """Render the surface-projected mapping points as 2D discs.
+    def draw_nearest_points_cylinders(self, mesh, plotter, add_cylinders_kws):
+        """Render the surface-projected mapping points as 3D cylinders
 
         Args:
             mesh (pyvista.PolyData): mesh to be added to the plotter
             plotter (BackgroundPlotter): plotter to which the mesh will be added
-            add_discs_kws (dict): keyword arguments to pass to `plotter.add_mesh`
+            add_cylinders_kws (dict): keyword arguments to pass to `plotter.add_mesh`
         """
 
-        plotter.add_mesh(mesh, **add_discs_kws)
+        plotter.add_mesh(mesh, **add_cylinders_kws)
 
     def check_available_electrograms(self):
         """Check whether the active case has electrograms.

@@ -52,7 +52,7 @@ class System:
         self.plotters = []
         self.meshes = []
         self.mapping_points_meshes = []
-        self.surface_projected_discs_meshes = []
+        self.surface_projected_cylinders_meshes = []
         self.free_boundaries = []
         self.add_mesh_kws = []
         self.scalar_fields = None
@@ -183,7 +183,7 @@ class System:
 
         return glyphed_mesh
 
-    def create_surface_discs_mesh(self, mesh):
+    def create_surface_cylinders_mesh(self, mesh):
         """Create a mesh that contains the surface-projected mapping points.
 
         Args:
@@ -204,20 +204,20 @@ class System:
         projected_mapping_points_mesh.point_data["Normals"] = mesh.point_normals[nearest_point_indices]
         projected_mapping_points_mesh.set_active_vectors("Normals", preference="point")
 
-        disc_geometry = pyvista.Disc(inner=0, r_res=1, c_res=360, normal=[1, 0, 0], center=[0, 0, 0])
+        cylinder_geometry = pyvista.Cylinder(height=0.5, resolution=360, direction=[1, 0, 0])
         factor = 1.5 if self.type == "OpenEP" else 1200
 
         glyphed_mesh = projected_mapping_points_mesh.glyph(
             orient="Normals",
             scale=False,
             factor=factor,
-            geom=disc_geometry,
+            geom=cylinder_geometry,
         )
 
         return glyphed_mesh
 
     def _create_default_kws(self):
-        """Create a dictionary of keyword arguments for plotting meshes, points, and surface-projected discs."""
+        """Create a dictionary of keyword arguments for plotting meshes, points, and surface-projected cylinders."""
 
         add_mesh_kws = {
             "pickable": False,  # never set to True
@@ -242,7 +242,7 @@ class System:
             "clim": [0, 1],
         }
 
-        add_discs_kws = {
+        add_cylinders_kws = {
             "pickable": False,  # only set to True for the primary viewer
             "name": "Surface-projected mapping points",
             "opacity": 1,
@@ -252,7 +252,7 @@ class System:
             "color": "#FFFFFF",
         }
 
-        return add_mesh_kws, add_points_kws, add_discs_kws
+        return add_mesh_kws, add_points_kws, add_cylinders_kws
 
 
 class SystemManager:
