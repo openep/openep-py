@@ -183,11 +183,13 @@ class System:
 
         return glyphed_mesh
 
-    def create_surface_cylinders_mesh(self, mesh):
+    def create_surface_cylinders_mesh(self, mesh, scalars, scalars_name):
         """Create a mesh that contains the surface-projected mapping points.
 
         Args:
             mesh (pyvista.PolyData): Triangulated surface (from the clinical mapping system)
+            scalars (np.ndarray): Integer scalar values that will be used to colour the cylinders.
+            scalars_name (str): Name given to the scalars. Can be used to set active scalars of the cylinders.
         """
 
         mapping_points_centered = self.case.electric.bipolar_egm.points - self.case._mesh_center
@@ -213,6 +215,11 @@ class System:
             factor=factor,
             geom=cylinder_geometry,
         )
+
+        n_mapping_points = mapping_points_centered.size
+        n_glphys_per_mapping_point = glyphed_mesh.points.size // n_mapping_points
+
+        glyphed_mesh.point_data[scalars_name] = scalars.repeat(n_glphys_per_mapping_point)
 
         return glyphed_mesh
 
@@ -249,7 +256,8 @@ class System:
             "show_scalar_bar": False,
             "smooth_shading": True,
             "lighting": True,
-            "color": "#FFFFFF",
+            "cmap": ["yellow", "#FFFFFF"],
+            "clim": [0, 1],
         }
 
         return add_mesh_kws, add_points_kws, add_cylinders_kws
