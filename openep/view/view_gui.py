@@ -1104,17 +1104,17 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         current_index = self.annotate_dock._current_index
         system = self.system_manager.active_system
-        plotter = system.plotters[0]
+        n_mapping_points = system.case.electric.bipolar_egm.points.size // 3
 
-        plotter.update_coordinates(
-            points=system._highlight_point.field_data["All points"][current_index],
-            mesh=system._highlight_point,
-        )
+        # 3D mapping points
+        mesh = system._highlight_point
+        all_points = mesh.field_data["All points"].reshape(n_mapping_points, mesh.n_points, 3)
+        mesh.points[:] = all_points[current_index]
 
-        plotter.update_coordinates(
-            points=system._highlight_projected_point.field_data["All points"][current_index],
-            mesh=system._highlight_projected_point,
-        )
+        # Projected points
+        mesh = system._highlight_projected_point
+        all_points = mesh.field_data["All points"].reshape(n_mapping_points, mesh.n_points, 3)
+        mesh.points[:] = all_points[current_index]
 
     def make_picked_point_current_index(self, picked_mesh, picked_point_id):
         """Set the user-picked point to be the selected point in the tables"""
