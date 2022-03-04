@@ -171,7 +171,7 @@ class System:
 
         factor = 2 if self.type == "OpenEP" else 2000
         glyphed_mesh = point_mesh.glyph(scale=False, factor=factor, geom=point_geometry)
-        glyphed_mesh.field_data["All points"] = self._create_selected_point_data()
+        glyphed_mesh.field_data["All points"] = self._create_selected_point_data(geometry=geometry)
 
         return glyphed_mesh
 
@@ -190,19 +190,27 @@ class System:
 
         if geometry.lower() == 'sphere':
             points = self.case.electric.bipolar_egm.points - self.case._mesh_center
+            point_mesh = pyvista.PolyData(points)
             point_geometry = pyvista.Sphere(theta_resolution=20, phi_resolution=20)
+            orient = False
         elif geometry.lower() == 'cylinder':
             points = self.case.electric.surface.nearest_point # this assume nearest points have been calculated
+            normals = self.case.electric.surface.normals
+            point_mesh = pyvista.PolyData(points)
+            point_mesh.point_data["Normals"] = normals
+            point_mesh.set_active_vectors("Normals", preference="point")
             point_geometry = pyvista.Cylinder(height=0.5, resolution=360, direction=[1, 0, 0])
+            orient="Normals"
 
         factor = 2 if self.type == "OpenEP" else 2000
-        point_mesh = pyvista.PolyData(points)
-        glyphed_mesh = point_mesh.glyph(scale=False, factor=factor, geom=point_geometry)
+        glyphed_mesh = point_mesh.glyph(
+            orient=orient,
+            scale=False,
+            factor=factor,
+            geom=point_geometry,
+        )
 
-        n_mapping_points = point_mesh.n_points
-        n_glphys_per_mapping_point = glyphed_mesh.n_points // n_mapping_points
-
-        return glyphed_mesh.points.reshape(n_mapping_points, n_glphys_per_mapping_point, 3)
+        return glyphed_mesh.points
 
     def create_mapping_points_mesh(self, scalars, scalars_name):
         """Create a mesh that contains the mapping points.
