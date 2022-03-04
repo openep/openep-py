@@ -581,7 +581,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                 pickable=False,
                 reset_camera=False,
             )
-            highlight_projected_actor.SetVisibility(is_active_system)
+            highlight_projected_actor.SetVisibility(False)
             system._highlight_projected_actor = highlight_projected_actor
             system._highlight_projected_point = highlight_projected_point
 
@@ -694,6 +694,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                     actor.SetVisibility(show)
         elif actor_name == "Mapping points":
             plotter.renderer._actors["_picked_point"].SetVisibility(show)
+        elif actor_name == "Surface-projected mapping points":
+            plotter.renderer._actors["_picked_projected_point"].SetVisibility(show)
 
     def link_views_across_plotters(self, system, index):
         """Link or unlink the views of two plotters.
