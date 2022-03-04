@@ -528,11 +528,14 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             scalars=system.case.electric.include.astype(int),
             scalars_name="Include",
         )
-        projected_cylinders = system.create_surface_cylinders_mesh(
+        projected_cylinders, projected_cylinders_mesh = system.create_surface_cylinders_mesh(
             mesh=mesh,
             scalars=system.case.electric.include.astype(int),
             scalars_name="Include",
         )
+        system.case.electric.surface.nearest_point = projected_cylinders_mesh.points
+        system.case.electric.surface.normals = projected_cylinders_mesh.point_normals
+        
         add_mesh_kws, add_points_kws, add_cylinders_kws = system._create_default_kws()
         free_boundaries = openep.mesh.get_free_boundaries(mesh)
 
@@ -566,9 +569,24 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                 reset_camera=False,
             )
             highlight_actor.SetVisibility(is_active_system)
-            
             system._highlight_actor = highlight_actor
             system._highlight_point = highlight_point
+
+            highlight_projected_point = system.create_selected_point_mesh(
+                point=system.case.electric.surface.nearest_point[first_point_included][np.newaxis, :],
+                geometry='cylinder',
+            )
+            highlight_projected_actor = plotter.add_mesh(
+                highlight_projected_point,
+                color="blue",
+                name="_picked_projected_point",
+                pickable=False,
+                reset_camera=False,
+            )
+            highlight_projected_actor.SetVisibility(is_active_system)
+            system._highlight_projected_actor = highlight_projected_actor
+            system._highlight_projected_point = highlight_projected_point
+
             plotter.iren.interactor.AddObserver(
                 "LeftButtonPressEvent",
                 partial(try_callback, openep.view.plotters_ui.launch_pick_event)
@@ -722,6 +740,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         if len(previous_system.plotters):
             previous_system.plotters[0].pickable_actors = []
             previous_system._highlight_actor.SetVisibility(False)
+            previous_system._highlight_projected_actor.SetVisibility(False)
 
         self.system_manager.active_system = system
 
@@ -753,6 +772,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                 plotter.renderer._actors['Mapping points'],
             ]  # TODO: allow picking of projected cylinders too
             system._highlight_actor.SetVisibility(True)
+            system._highlight_projected_actor.SetVisibility(True)
 
         self.system_manager_ui._active_system_button_group.blockSignals(False)
 
@@ -1091,6 +1111,13 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         current_point_center = system._highlight_point.center
         translate = current_point_center - new_point_center
         system._highlight_point.translate(-translate, inplace=True)
+
+        new_projected_point_center = system.case.electric.surface.nearest_point[self.annotate_dock._current_index]
+        current_projected_point_center = system._highlight_projected_point.center
+        translate_projected = current_projected_point_center - new_projected_point_center
+        system._highlight_projected_point.translate(-translate_projected, inplace=True)
+
+        # TODO: need to change the orientation of the cylinder
 
     def make_picked_point_current_index(self, picked_mesh, picked_point_id):
         """Set the user-picked point to be the selected point in the tables"""
