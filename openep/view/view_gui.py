@@ -41,6 +41,7 @@ import openep.view.custom_widgets
 import openep.view.mapping_points
 import openep.view.annotations_ui
 import openep.view.plotters_ui
+import openep.view.preferences_ui
 import openep.view.system_manager_ui
 import openep.view.system_ui
 
@@ -68,6 +69,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self._init_systems()
         self._init_ui()
         self._create_system_manager_ui()
+        self._create_preferences_dock()
         self._create_annotate_dock()
         self._create_mapping_points_dock()
         self._add_dock_widgets()
@@ -102,6 +104,19 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.system_manager_ui.main.load_openep_mat_action.triggered.connect(self._load_openep_mat)
         self.system_manager_ui.main.load_opencarp_action.triggered.connect(self._load_opencarp)
 
+    def _create_preferences_dock(self):
+        """Create a dockable widget for storing user preferences."""
+
+        self.preferences = openep.view.preferences_ui.PreferencesWidget("Preferences")
+        self.preferences.apply_or_discard.accepted.connect(self.accept_preferences)
+        self.preferences.apply_or_discard.rejected.connect(self.reject_preferences)
+
+    def accept_preferences(self):
+        self.preferences.apply_or_discard.setEnabled(False)
+      
+    def reject_preferences(self):
+        self.preferences.apply_or_discard.setEnabled(False)
+    
     def _create_annotate_dock(self):
         """
         Create a dockable widget for annotating electrograms with matplotlib.
@@ -179,12 +194,19 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         Add dockable widgets to the main window.
         """
 
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.preferences)
         self.addDockWidget(Qt.RightDockWidgetArea, self.system_manager_ui)
         self.splitDockWidget(self.system_manager_ui, self.mapping_points, Qt.Vertical)
         self.splitDockWidget(self.mapping_points, self.annotate_dock, Qt.Vertical)
         self.splitDockWidget(self.mapping_points, self.recycle_bin, Qt.Horizontal)
         
-        for dock in [self.system_manager_ui, self.annotate_dock, self.mapping_points, self.recycle_bin]:
+        for dock in [
+            self.system_manager_ui,
+            self.preferences,
+            self.annotate_dock,
+            self.mapping_points,
+            self.recycle_bin,
+        ]:
             dock.setAllowedAreas(Qt.AllDockWidgetAreas)
 
         self.setDockOptions(self.GroupedDragging | self.AllowTabbedDocks | self.AllowNestedDocks)
