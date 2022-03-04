@@ -171,8 +171,38 @@ class System:
 
         factor = 2 if self.type == "OpenEP" else 2000
         glyphed_mesh = point_mesh.glyph(scale=False, factor=factor, geom=point_geometry)
+        glyphed_mesh.field_data["All points"] = self._create_selected_point_data()
 
         return glyphed_mesh
+
+    def _create_selected_point_data(self, geometry='sphere'):
+        """
+        Determine the 3D coordinates in a glyped mesh of all mapping points.
+
+        Args:
+            points (np.ndarray): x, y, z, coordinates of the points
+            geometry (str): The geometric mesh to create, can be either
+                'sphere' or 'cylinder'.
+        """
+
+        if geometry.lower() not in ['sphere', 'cylinder']:
+            raise NotImplementedError("Only 'sphere' or 'cylinder' is supported.")
+
+        if geometry.lower() == 'sphere':
+            points = self.case.electric.bipolar_egm.points - self.case._mesh_center
+            point_geometry = pyvista.Sphere(theta_resolution=20, phi_resolution=20)
+        elif geometry.lower() == 'cylinder':
+            points = self.case.electric.surface.nearest_point # this assume nearest points have been calculated
+            point_geometry = pyvista.Cylinder(height=0.5, resolution=360, direction=[1, 0, 0])
+
+        factor = 2 if self.type == "OpenEP" else 2000
+        point_mesh = pyvista.PolyData(points)
+        glyphed_mesh = point_mesh.glyph(scale=False, factor=factor, geom=point_geometry)
+
+        n_mapping_points = point_mesh.n_points
+        n_glphys_per_mapping_point = glyphed_mesh.n_points // n_mapping_points
+
+        return glyphed_mesh.points.reshape(n_mapping_points, n_glphys_per_mapping_point, 3)
 
     def create_mapping_points_mesh(self, scalars, scalars_name):
         """Create a mesh that contains the mapping points.
@@ -219,6 +249,10 @@ class System:
         projected_mapping_points_mesh.point_data["Normals"] = mesh.point_normals[nearest_point_indices]
         projected_mapping_points_mesh.set_active_vectors("Normals", preference="point")
 
+        # Update the case to have the correct data
+        self.case.electric.surface.nearest_point = projected_mapping_points_mesh.points
+        self.case.electric.surface.normals = projected_mapping_points_mesh.point_normals
+
         cylinder_geometry = pyvista.Cylinder(height=0.5, resolution=360, direction=[1, 0, 0])
         factor = 1.5 if self.type == "OpenEP" else 1500
 
@@ -234,7 +268,7 @@ class System:
 
         glyphed_mesh.point_data[scalars_name] = scalars.repeat(n_glphys_per_mapping_point)
 
-        return glyphed_mesh, projected_mapping_points_mesh
+        return glyphed_mesh
 
     def _create_default_kws(self):
         """Create a dictionary of keyword arguments for plotting meshes, points, and surface-projected cylinders."""
