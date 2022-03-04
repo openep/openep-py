@@ -150,11 +150,24 @@ class System:
 
         return mesh
 
-    def create_selected_point_mesh(self, point):
-        """Create a mesh that will be used for highlighting the selected point"""
+    def create_selected_point_mesh(self, point, geometry='sphere'):
+        """
+        Create a mesh that will be used for highlighting the selected point.
+
+        Args:
+            point (np.ndarray): x, y, z, coordinates of the point
+            geometry (str): The geometric mesh to create, can be either
+                'sphere' or 'cylinder'.
+        """
+
+        if geometry.lower() not in ['sphere', 'cylinder']:
+            raise NotImplementedError("Only 'sphere' or 'cylinder' is supported.")
 
         point_mesh = pyvista.PolyData(point)
-        point_geometry = pyvista.Sphere(theta_resolution=20, phi_resolution=20)
+        if geometry.lower() == 'sphere':
+            point_geometry = pyvista.Sphere(theta_resolution=20, phi_resolution=20)
+        elif geometry.lower() == 'cylinder':
+            point_geometry = pyvista.Cylinder(height=0.5, resolution=360, direction=[1, 0, 0])
 
         factor = 2 if self.type == "OpenEP" else 2000
         glyphed_mesh = point_mesh.glyph(scale=False, factor=factor, geom=point_geometry)
@@ -173,7 +186,7 @@ class System:
         mapping_points_mesh = pyvista.PolyData(mapping_points_centered)
         point_geometry = pyvista.Sphere(theta_resolution=8, phi_resolution=8)
         
-        factor = 1.5 if self.type == "OpenEP" else 1200
+        factor = 1.5 if self.type == "OpenEP" else 1500
         glyphed_mesh = mapping_points_mesh.glyph(scale=False, factor=factor, geom=point_geometry)
 
         n_mapping_points = mapping_points_centered.size
@@ -207,7 +220,7 @@ class System:
         projected_mapping_points_mesh.set_active_vectors("Normals", preference="point")
 
         cylinder_geometry = pyvista.Cylinder(height=0.5, resolution=360, direction=[1, 0, 0])
-        factor = 1.5 if self.type == "OpenEP" else 1200
+        factor = 1.5 if self.type == "OpenEP" else 1500
 
         glyphed_mesh = projected_mapping_points_mesh.glyph(
             orient="Normals",
@@ -221,7 +234,7 @@ class System:
 
         glyphed_mesh.point_data[scalars_name] = scalars.repeat(n_glphys_per_mapping_point)
 
-        return glyphed_mesh
+        return glyphed_mesh, projected_mapping_points_mesh
 
     def _create_default_kws(self):
         """Create a dictionary of keyword arguments for plotting meshes, points, and surface-projected cylinders."""
