@@ -528,14 +528,12 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             scalars=system.case.electric.include.astype(int),
             scalars_name="Include",
         )
-        projected_cylinders, projected_cylinders_mesh = system.create_surface_cylinders_mesh(
+        projected_cylinders = system.create_surface_cylinders_mesh(
             mesh=mesh,
             scalars=system.case.electric.include.astype(int),
             scalars_name="Include",
         )
-        system.case.electric.surface.nearest_point = projected_cylinders_mesh.points
-        system.case.electric.surface.normals = projected_cylinders_mesh.point_normals
-        
+
         add_mesh_kws, add_points_kws, add_cylinders_kws = system._create_default_kws()
         free_boundaries = openep.mesh.get_free_boundaries(mesh)
 
@@ -1104,20 +1102,19 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     def highlight_mapping_point(self):
         """Show/hide the selected point, and translate it to its new location."""
 
+        current_index = self.annotate_dock._current_index
         system = self.system_manager.active_system
+        plotter = system.plotters[0]
 
-        points = system.case.electric.bipolar_egm.points - system.case._mesh_center
-        new_point_center = points[self.annotate_dock._current_index]
-        current_point_center = system._highlight_point.center
-        translate = current_point_center - new_point_center
-        system._highlight_point.translate(-translate, inplace=True)
+        plotter.update_coordinates(
+            points=system._highlight_point.field_data["All points"][current_index],
+            mesh=system._highlight_point,
+        )
 
-        new_projected_point_center = system.case.electric.surface.nearest_point[self.annotate_dock._current_index]
-        current_projected_point_center = system._highlight_projected_point.center
-        translate_projected = current_projected_point_center - new_projected_point_center
-        system._highlight_projected_point.translate(-translate_projected, inplace=True)
-
-        # TODO: need to change the orientation of the cylinder
+        plotter.update_coordinates(
+            points=system._highlight_projected_point.field_data["All points"][current_index],
+            mesh=system._highlight_projected_point,
+        )
 
     def make_picked_point_current_index(self, picked_mesh, picked_point_id):
         """Set the user-picked point to be the selected point in the tables"""
