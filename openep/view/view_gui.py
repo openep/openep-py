@@ -107,15 +107,15 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     def _create_preferences_dock(self):
         """Create a dockable widget for storing user preferences."""
 
-        self.preferences = openep.view.preferences_ui.PreferencesWidget("Preferences")
-        self.preferences.apply_or_discard.accepted.connect(self.accept_preferences)
-        self.preferences.apply_or_discard.rejected.connect(self.reject_preferences)
+        self.preferences_ui = openep.view.preferences_ui.PreferencesWidget("Preferences")
+        self.preferences_ui.apply_or_discard.accepted.connect(self.accept_preferences)
+        self.preferences_ui.apply_or_discard.rejected.connect(self.reject_preferences)
 
     def accept_preferences(self):
-        self.preferences.apply_or_discard.setEnabled(False)
+        self.preferences_ui.apply_or_discard.setEnabled(False)
       
     def reject_preferences(self):
-        self.preferences.apply_or_discard.setEnabled(False)
+        self.preferences_ui.apply_or_discard.setEnabled(False)
     
     def _create_annotate_dock(self):
         """
@@ -194,7 +194,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         Add dockable widgets to the main window.
         """
 
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.preferences)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.preferences_ui)
         self.addDockWidget(Qt.RightDockWidgetArea, self.system_manager_ui)
         self.splitDockWidget(self.system_manager_ui, self.mapping_points, Qt.Vertical)
         self.splitDockWidget(self.mapping_points, self.annotate_dock, Qt.Vertical)
@@ -202,7 +202,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         
         for dock in [
             self.system_manager_ui,
-            self.preferences,
+            self.preferences_ui,
             self.annotate_dock,
             self.mapping_points,
             self.recycle_bin,
