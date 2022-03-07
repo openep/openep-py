@@ -21,10 +21,8 @@
 Create a dock widget for the setting preferences.
 """
 
-from unittest.util import sorted_list_difference
 from PySide2 import QtWidgets, QtCore, QtGui
 from PySide2.QtCore import Qt
-from numpy import sign
 import qdarkstyle
 
 from openep.view.custom_widgets import CustomDockWidget
