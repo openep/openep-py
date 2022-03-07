@@ -339,9 +339,25 @@ class PreferencesWidget(CustomDockWidget):
         gain = QtWidgets.QGroupBox("Gain")
         gain_row = QtWidgets.QHBoxLayout()
         gain_options = QtWidgets.QFormLayout()
-        gain_options.addRow(QtWidgets.QLabel("Min."), QtWidgets.QLineEdit())
-        gain_options.addRow(QtWidgets.QLabel("Max."), QtWidgets.QLineEdit())
-        gain_options.addRow(QtWidgets.QLabel("Scroll speed."), QtWidgets.QLineEdit())
+
+        min_gain = QtWidgets.QLineEdit("-5")
+        min_gain_validator = QtGui.QDoubleValidator()
+        min_gain_validator.setRange(-1e6, 1e6)
+        min_gain.setValidator(min_gain_validator)        
+        gain_options.addRow(QtWidgets.QLabel("Min."), min_gain)
+
+        max_gain = QtWidgets.QLineEdit("5")
+        max_gain_validator = QtGui.QDoubleValidator()
+        max_gain_validator.setRange(-1e6, 1e6)
+        max_gain.setValidator(max_gain_validator)        
+        gain_options.addRow(QtWidgets.QLabel("Max."), max_gain)
+
+        scroll_speed = QtWidgets.QLineEdit("0.2")
+        scroll_speed_validator = QtGui.QDoubleValidator()
+        scroll_speed_validator.setRange(0, 1)
+        scroll_speed.setValidator(scroll_speed_validator)
+        gain_options.addRow(QtWidgets.QLabel("Scroll speed."), scroll_speed)
+
         gain_row.addLayout(gain_options, 0)
         gain_row.addStretch(1)
         gain.setLayout(gain_row)
@@ -364,8 +380,8 @@ class PreferencesWidget(CustomDockWidget):
     def create_interpolation_settings(self):
         """Settings for interpolation method and parameters."""
 
+        # Selecting the interpolation method
         method = QtWidgets.QGroupBox("Method")
-
         select_method = QtWidgets.QComboBox()
         select_method.setMinimumWidth(120)
         select_method.setEditable(False)
@@ -374,17 +390,90 @@ class PreferencesWidget(CustomDockWidget):
         select_method_layout = QtWidgets.QHBoxLayout()
         select_method_layout.addWidget(select_method)
         select_method_layout.addStretch()
-
-        # TODO: Add options for RBF.
-        # See: https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.RBFInterpolator.html
-        method_options = QtWidgets.QGroupBox("Parameters")
-        method_options_layout = QtWidgets.QStackedLayout()
-        method_options.setLayout(method_options_layout)
         
         method_layout = QtWidgets.QVBoxLayout()
         method_layout.addLayout(select_method_layout)
         method.setLayout(method_layout)
+
+        # Setting the interpolation parameters
+        method_options = QtWidgets.QGroupBox("Parameters")
+        method_options_layout = QtWidgets.QStackedLayout()
+        select_method.activated.connect(method_options_layout.setCurrentIndex)
+
+        # Setting the interpolation parameters: RBF
+        rbf = QtWidgets.QWidget()
+        rbf_layout = QtWidgets.QVBoxLayout()
+        rbf_parameters_layout = QtWidgets.QFormLayout()
+
+        neighbours = QtWidgets.QLineEdit()
+        neighbours.setText("0")
+        neighbours_validator = QtGui.QIntValidator()
+        neighbours_validator.setRange(0, 1e7)
+        neighbours.setValidator(neighbours_validator)
+        rbf_parameters_layout.addRow("Neighbours<sup>*</sup>", neighbours)
+
+        smoothing = QtWidgets.QDoubleSpinBox()
+        smoothing.setRange(0, 20)
+        smoothing.setSingleStep(0.1)
+        smoothing.setDecimals(1)
+        smoothing.setWrapping(False)
+        smoothing.setValue(4)
+        rbf_parameters_layout.addRow("Smoothing", smoothing)
+
+        kernel = QtWidgets.QComboBox()
+        kernel.addItems([
+            "linear",
+            "thin_plate_spline",
+            "cubic",
+            "quintic",
+            "multiquadric",
+            "inverse_multiquadric",
+            "inverse_quadratic",
+            "gaussian",
+        ])
+        kernel.setCurrentText("multiquadric")
+        rbf_parameters_layout.addRow("Kernel", kernel)
+
+        epsilon = QtWidgets.QDoubleSpinBox()
+        epsilon.setRange(0.1, 20)
+        epsilon.setSingleStep(0.1)
+        epsilon.setDecimals(1)
+        epsilon.setWrapping(False)
+        epsilon.setValue(1)
+        rbf_parameters_layout.addRow("Epsilon", epsilon)
+
+        # TODO: Add custom validator. Need to ensure degree is not too small
+        #       See: https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.RBFInterpolator.html
+        #       And: https://doc.qt.io/qt-5/qvalidator.html
+        degree = QtWidgets.QSpinBox()
+        degree.setRange(-1, 10)
+        degree.setSingleStep(1)
+        degree.setWrapping(False)
+        degree.setValue(1)
+        rbf_parameters_layout.addRow("Degree", degree)
+
+        zero_is_none = QtWidgets.QLabel("<sup>*</sup>A value of 0 will include all neighbours.")
+        scipy_docs = QtWidgets.QLabel()
+        scipy_docs.setOpenExternalLinks(True)
+        scipy_url = "https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.RBFInterpolator.html"
+        scipy_text = "See the Scipy documenation for a description of the parameters."
+        scipy_docs.setText(f"<a href={scipy_url}>{scipy_text}</a>")
+
+        rbf_layout.addLayout(rbf_parameters_layout)
+        rbf_layout.addWidget(zero_is_none)
+        rbf_layout.addWidget(scipy_docs)
+        rbf.setLayout(rbf_layout)
+
+        # Add all parameter layouts
+        method_options_layout.addWidget(rbf)
         
+        # For some reason, the QStackedLayout overlaps with the QGroupBox title
+        # Need to put the stacked layout inside a VBox so there's no overlap
+        method_options_overall_layout = QtWidgets.QVBoxLayout()
+        method_options_overall_layout.addLayout(method_options_layout)
+        method_options.setLayout(method_options_overall_layout)
+
+        # Setting the nested layout
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(method, 0)  # do not expand vertical size
         layout.addWidget(method_options, 0)
