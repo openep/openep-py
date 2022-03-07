@@ -22,8 +22,9 @@ Create a dock widget for the setting preferences.
 """
 
 from unittest.util import sorted_list_difference
-from PySide2 import QtWidgets, QtCore
+from PySide2 import QtWidgets, QtCore, QtGui
 from PySide2.QtCore import Qt
+from numpy import sign
 import qdarkstyle
 
 from openep.view.custom_widgets import CustomDockWidget
@@ -39,6 +40,10 @@ class PreferencesWidget(CustomDockWidget):
         # Make the preferences widget scrollable
         self.scroll = QtWidgets.QScrollArea()
         self.set_scroll_properties()
+
+        # Create bold font for highlighting some text
+        self.bold_font = QtGui.QFont()
+        self.bold_font.setBold(True)
 
         # Add widgets for settings
         self.tabs = QtWidgets.QTabWidget()
@@ -234,17 +239,103 @@ class PreferencesWidget(CustomDockWidget):
         #       Annotations: WOI line thickness
         #                   Annotation Line thickness
         #                   Annotation size
+        # Linestyle options
         lines = QtWidgets.QGroupBox("Lines")
-        lines_row = QtWidgets.QHBoxLayout()
         lines_layout = QtWidgets.QVBoxLayout()
+
+        lines_row = QtWidgets.QHBoxLayout()
         line_types = QtWidgets.QComboBox()
         line_types.addItems(["Signals", "Annotations"])
         line_types.setMinimumWidth(120)
-        lines_layout.addWidget(line_types)
-        lines_row.addLayout(lines_layout, 0)
+        lines_row.addWidget(line_types)
         lines_row.addStretch(1)
-        lines.setLayout(lines_row)
 
+        line_options = QtWidgets.QStackedLayout()
+        line_types.activated.connect(line_options.setCurrentIndex)
+
+        # Linewidth: Active: [] Others: []
+        # Linewidth: [] Point size: 
+        # Linestyle options: Signals
+        signal_options = QtWidgets.QWidget()
+        signal_options_layout = QtWidgets.QVBoxLayout()
+        signal_linewidth_heading = QtWidgets.QLabel("Linewidth")
+        signal_linewidth_heading.setFont(self.bold_font)
+        signal_options_layout.addWidget(signal_linewidth_heading)
+
+        signal_linewidth_layout = QtWidgets.QHBoxLayout()
+        active_linewidth_text = QtWidgets.QLabel("Active: ")
+        active_linewidth = QtWidgets.QDoubleSpinBox()
+        active_linewidth.setFixedWidth(60)
+        active_linewidth.setRange(0.5, 5.0)
+        active_linewidth.setSingleStep(0.1)
+        active_linewidth.setDecimals(1)
+        active_linewidth.setWrapping(False)
+        active_linewidth.setValue(1.2)
+        active_linewidth.textFromValue(1.2)
+        other_linewidth_text = QtWidgets.QLabel("Others: ")
+        other_linewidth = QtWidgets.QDoubleSpinBox()
+        other_linewidth.setFixedWidth(60)
+        other_linewidth.setRange(0.5, 5.0)
+        other_linewidth.setSingleStep(0.1)
+        other_linewidth.setDecimals(1)
+        other_linewidth.setWrapping(False)
+        other_linewidth.setValue(0.8)
+        other_linewidth.textFromValue(0.8)
+        
+        signal_linewidth_layout.addWidget(active_linewidth_text, 0)
+        signal_linewidth_layout.addWidget(active_linewidth, 0)
+        signal_linewidth_layout.addWidget(other_linewidth_text, 0)
+        signal_linewidth_layout.addWidget(other_linewidth, 0)
+        signal_linewidth_layout.addStretch(1)
+        signal_options_layout.addLayout(signal_linewidth_layout, 0)
+        signal_options_layout.addStretch(1)
+        signal_options.setLayout(signal_options_layout)
+        line_options.addWidget(signal_options)
+
+        # Linestyle options: Annotations
+        annotation_options = QtWidgets.QWidget()
+        annotation_options_layout = QtWidgets.QVBoxLayout()
+        annotation_linewidth_heading = QtWidgets.QLabel("Linewidth and size")
+        annotation_linewidth_heading.setFont(self.bold_font)
+        annotation_options_layout.addWidget(annotation_linewidth_heading)
+
+        annotation_layout = QtWidgets.QHBoxLayout()
+        annotation_linewidth_text = QtWidgets.QLabel("Linewidth: ")
+        annotation_linewidth = QtWidgets.QDoubleSpinBox()
+        annotation_linewidth.setFixedWidth(60)
+        annotation_linewidth.setRange(0.5, 5.0)
+        annotation_linewidth.setSingleStep(0.1)
+        annotation_linewidth.setDecimals(1)
+        annotation_linewidth.setWrapping(False)
+        annotation_linewidth.setValue(1.0)
+        annotation_linewidth.textFromValue(1.0)
+        annotation_size_text = QtWidgets.QLabel("Marker size: ")
+        annotation_size = QtWidgets.QDoubleSpinBox()
+        annotation_size.setFixedWidth(60)
+        annotation_size.setRange(1, 10)
+        annotation_size.setSingleStep(0.2)
+        annotation_size.setDecimals(1)
+        annotation_size.setWrapping(False)
+        annotation_size.setValue(4)
+        annotation_size.textFromValue(4)
+
+        annotation_layout.addWidget(annotation_linewidth_text, 0)
+        annotation_layout.addWidget(annotation_linewidth, 0)
+        annotation_layout.addWidget(annotation_size_text, 0)
+        annotation_layout.addWidget(annotation_size, 0)
+        annotation_layout.addStretch(1)
+        annotation_options_layout.addLayout(annotation_layout, 0)
+        annotation_options_layout.addStretch(1)
+        annotation_options.setLayout(annotation_options_layout)
+        line_options.addWidget(annotation_options)
+
+        # Linestyle options: Set nested layout
+        lines_layout.addLayout(lines_row, 0)
+        lines_layout.addLayout(line_options, 0)
+        lines_layout.addStretch(1)
+        lines.setLayout(lines_layout)
+
+        # Signal gain
         gain = QtWidgets.QGroupBox("Gain")
         gain_row = QtWidgets.QHBoxLayout()
         gain_options = QtWidgets.QFormLayout()
@@ -255,15 +346,16 @@ class PreferencesWidget(CustomDockWidget):
         gain_row.addStretch(1)
         gain.setLayout(gain_row)
 
+        # Interpolation settings
         interpolate = QtWidgets.QCheckBox("Interpolate after re-annotating")
         interpolate.setCheckable(True)
         interpolate.setChecked(False)
 
         #layout.addWidget(figure)
-        layout.addWidget(lines)
-        layout.addWidget(gain)
-        layout.addWidget(interpolate)
-        layout.addStretch()
+        layout.addWidget(lines, 0)
+        layout.addWidget(gain, 0)
+        layout.addWidget(interpolate, 0)
+        layout.addStretch(1)
 
         annotate = QtWidgets.QWidget()
         annotate.setLayout(layout)
