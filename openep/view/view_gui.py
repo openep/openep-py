@@ -47,6 +47,7 @@ import openep.view.system_ui
 
 import openep.view.plotters
 import openep.view.system_manager
+import openep.view.preferences
 
 import openep.view.static
 
@@ -111,12 +112,51 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.preferences_ui.apply_or_discard.accepted.connect(self.accept_preferences)
         self.preferences_ui.apply_or_discard.rejected.connect(self.reject_preferences)
 
+        self.preferences_store = openep.view.preferences.PreferencesManager()
+        self.preferences_store.settings_changed.connect(self.update_preferences)
+        self.preferences = {}
+
+        # Load the previously-stored settings
+        self.preferences_store.update_widgets_from_settings(map=self.preferences_ui.map)
+
     def accept_preferences(self):
+        """Copy widget state to the settings manager."""
+
+        # prevent changes to the GUI whilst settings are being updated
+        self.blockSignals(True)
+
         self.preferences_ui.apply_or_discard.setEnabled(False)
+        self.preferences_store.update_settings_from_widgets(map=self.preferences_ui.map)
+        self.preferences_store.sync()
+
+        self.blockSignals(False)
       
     def reject_preferences(self):
+        """ Reload the settings from the settings store."""
         self.preferences_ui.apply_or_discard.setEnabled(False)
-    
+        self.preferences_store.update_widgets_from_settings(map=self.preferences_ui.map)
+
+    def update_preferences(self):
+        """Update settings used by widgets in the GUI from the settings store."""
+
+        data = {}
+        data["3D viewers"] = {}
+        data['3D viewers']['Secondary viewers'] = {}
+
+        # 3D viewers settings
+        point_selection_id = self.preferences_store.settings.value('3D viewers/Point selection')
+        if point_selection_id == 0:
+            data['3D viewers']['Point selection'] = "3D points"
+        elif point_selection_id == 1:
+            data['3D viewers']['Point selection'] = "Projected points"
+        elif point_selection_id == 2:
+            data['3D viewers']['Point selection'] = "Off"
+
+        link_secondary_viewers = self.preferences_store.value('3D viewers/Secondary viewers/Link')
+        data['3D viewers']['Secondary viewers']['Link'] = link_secondary_viewers
+
+        self.preferences = data
+
     def _create_annotate_dock(self):
         """
         Create a dockable widget for annotating electrograms with matplotlib.
