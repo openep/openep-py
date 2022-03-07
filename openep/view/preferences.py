@@ -45,8 +45,8 @@ class PreferencesManager(QtCore.QSettings):
     def __init__(self):
         super().__init__()
 
-        self.settings = QtCore.QSettings("MyApp", "settings")
-        print(f"Settings file located at: {self.settings.fileName()}")
+        self.settings = QtCore.QSettings("OpenEP-GUI", "settings")
+        print(f"Loading preferences from {self.settings.fileName()}")
 
     def update_widgets_from_settings(self, map):
         for name, widget in map.items():
