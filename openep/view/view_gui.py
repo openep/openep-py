@@ -116,8 +116,14 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.preferences_store.settings_changed.connect(self.update_preferences)
         self.preferences = {}
 
-        # Load the previously-stored settings
-        self.preferences_store.update_widgets_from_settings(map=self.preferences_ui.map)
+        # Load the previously-stored settings if it exists.
+        # Otherwise write one
+        home = pathlib.Path.home()
+        config = home / ".config/MyApp/settings.conf"
+        if config.is_file():
+            self.preferences_store.update_widgets_from_settings(map=self.preferences_ui.map)
+        else:
+            self.preferences_store.update_settings_from_widgets(map=self.preferences_ui.map)
 
     def accept_preferences(self):
         """Copy widget state to the settings manager."""
