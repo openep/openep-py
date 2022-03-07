@@ -44,6 +44,7 @@ class PreferencesWidget(CustomDockWidget):
         self.bold_font.setBold(True)
 
         # Add widgets for settings
+        self.map = {}  # store all settings widgets in here so we can modify/retrieve values
         self.tabs = QtWidgets.QTabWidget()
         self.tabs.setTabPosition(self.tabs.North)
         self.create_3d_viewer_settings()
@@ -84,6 +85,9 @@ class PreferencesWidget(CustomDockWidget):
         select.addButton(select_3d)
         select.addButton(select_surface)
         select.addButton(select_none)
+        select.setId(select_3d, 0)
+        select.setId(select_surface, 1)
+        select.setId(select_none, 2)
         select.setExclusive(True)
 
         point_selection = QtWidgets.QGroupBox("Point selection")
@@ -117,6 +121,12 @@ class PreferencesWidget(CustomDockWidget):
         viewer = QtWidgets.QWidget()
         viewer.setLayout(layout)
         self.tabs.addTab(viewer, "3D viewers")
+
+        # Add widgets to map
+        self.map['3D viewers/Point selection/3D'] = select_3d
+        self.map['3D viewers/Point selection/Surface'] = select_surface
+        self.map['3D viewers/Point selection/Off'] = select_none
+        self.map['3D viewers/Secondary viewers/Link'] = link
 
     def create_table_settings(self):
         """Settings for the mapping points and recycle bin tables."""
@@ -535,11 +545,11 @@ class PreferencesWidget(CustomDockWidget):
 
         spin_boxes = self.tabs.findChildren(QtWidgets.QSpinBox)
         for spin_box in spin_boxes:
-            spin_box.toggled.connect(self.enable_apply_or_discard)
+            spin_box.valueChanged.connect(self.enable_apply_or_discard)
 
         double_spin_boxes = self.tabs.findChildren(QtWidgets.QDoubleSpinBox)
         for double_spin_box in double_spin_boxes:
-            double_spin_box.toggled.connect(self.enable_apply_or_discard)
+            double_spin_box.valueChanged.connect(self.enable_apply_or_discard)
 
     def enable_apply_or_discard(self):
         self.apply_or_discard.setEnabled(True)
