@@ -197,11 +197,17 @@ class PreferencesWidget(CustomDockWidget):
         sorting_layout.addStretch(1)
         sorting.setLayout(sorting_layout)
 
+        # Interpolation settings
+        interpolate = QtWidgets.QCheckBox("Interpolate after deleting or restoring points.")
+        interpolate.setCheckable(True)
+        interpolate.setChecked(True)
+
         # Set nested layouts
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(mapping_points)
         layout.addWidget(recycle_bin)
         layout.addWidget(sorting)
+        layout.addWidget(interpolate)
         layout.addStretch()
 
         viewer = QtWidgets.QWidget()
