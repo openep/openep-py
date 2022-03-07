@@ -132,12 +132,18 @@ class PreferencesWidget(CustomDockWidget):
         """Settings for the mapping points and recycle bin tables."""
 
         # Mapping points table
-        index = QtWidgets.QCheckBox("Index")
-        tag = QtWidgets.QCheckBox("Tag")
-        name = QtWidgets.QCheckBox("Name")
-        voltage = QtWidgets.QCheckBox("Voltage")
-        lat = QtWidgets.QCheckBox("LAT")
-        boxes = [index, tag, name, voltage, lat]
+        mapping_points_index = QtWidgets.QCheckBox("Index")
+        mapping_points_tag = QtWidgets.QCheckBox("Tag")
+        mapping_points_name = QtWidgets.QCheckBox("Name")
+        mapping_points_voltage = QtWidgets.QCheckBox("Voltage")
+        mapping_points_lat = QtWidgets.QCheckBox("LAT")
+        mapping_points_boxes = [
+            mapping_points_index,
+            mapping_points_tag,
+            mapping_points_name,
+            mapping_points_voltage,
+            mapping_points_lat,
+        ]
 
         mapping_points = QtWidgets.QGroupBox("Mapping points")
         mapping_points_row = QtWidgets.QHBoxLayout()
@@ -147,7 +153,7 @@ class PreferencesWidget(CustomDockWidget):
         mapping_points_text_column.addWidget(mapping_points_text)
         mapping_points_row.addLayout(mapping_points_text_column, 0)
         mapping_points_checkboxes_layout = QtWidgets.QVBoxLayout()
-        for box in boxes:
+        for box in mapping_points_boxes:
             box.setChecked(True)
             mapping_points_checkboxes_layout.addWidget(box)
         mapping_points_row.addLayout(mapping_points_checkboxes_layout, 0)
@@ -155,12 +161,18 @@ class PreferencesWidget(CustomDockWidget):
         mapping_points.setLayout(mapping_points_row)
 
         # Recycle bin table
-        index = QtWidgets.QCheckBox("Index")
-        tag = QtWidgets.QCheckBox("Tag")
-        name = QtWidgets.QCheckBox("Name")
-        voltage = QtWidgets.QCheckBox("Voltage")
-        lat = QtWidgets.QCheckBox("LAT")
-        boxes = [index, tag, name, voltage, lat]
+        recycle_bin_index = QtWidgets.QCheckBox("Index")
+        recycle_bin_tag = QtWidgets.QCheckBox("Tag")
+        recycle_bin_name = QtWidgets.QCheckBox("Name")
+        recycle_bin_voltage = QtWidgets.QCheckBox("Voltage")
+        recycle_bin_lat = QtWidgets.QCheckBox("LAT")
+        recycle_bin_boxes = [
+            recycle_bin_index,
+            recycle_bin_tag,
+            recycle_bin_name,
+            recycle_bin_voltage,
+            recycle_bin_lat,
+        ]
 
         recycle_bin = QtWidgets.QGroupBox("Recycle bin")
         recycle_bin_row = QtWidgets.QHBoxLayout()
@@ -170,7 +182,7 @@ class PreferencesWidget(CustomDockWidget):
         recycle_bin_text_column.addWidget(recycle_bin_text)
         recycle_bin_row.addLayout(recycle_bin_text_column, 0)
         recycle_bin_checkboxes_layout = QtWidgets.QVBoxLayout()
-        for box in boxes:
+        for box in recycle_bin_boxes:
             box.setChecked(True)
             recycle_bin_checkboxes_layout.addWidget(box)
         recycle_bin_row.addLayout(recycle_bin_checkboxes_layout, 0)
@@ -221,6 +233,24 @@ class PreferencesWidget(CustomDockWidget):
         viewer = QtWidgets.QWidget()
         viewer.setLayout(layout)
         self.tabs.addTab(viewer, "Tables")
+
+        # Add widgets to map
+        self.map['Tables/Mapping points/Show/Index'] = mapping_points_index
+        self.map['Tables/Mapping points/Show/Tag'] = mapping_points_tag
+        self.map['Tables/Mapping points/Show/Name'] = mapping_points_name
+        self.map['Tables/Mapping points/Show/Voltage'] = mapping_points_voltage
+        self.map['Tables/Mapping points/Show/LAT'] = mapping_points_lat
+
+        self.map['Tables/Recycle bin/Show/Index'] = recycle_bin_index
+        self.map['Tables/Recycle bin/Show/Tag'] = recycle_bin_tag
+        self.map['Tables/Recycle bin/Show/Name'] = recycle_bin_name
+        self.map['Tables/Recycle bin/Show/Voltage'] = recycle_bin_voltage
+        self.map['Tables/Recycle bin/Show/LAT'] = recycle_bin_lat
+
+        self.map['Tables/Sort by'] = sort_by
+        self.map['Tables/Sort order'] = sort_order
+
+        self.map['Tables/Interpolate'] = interpolate
 
     def create_annotation_settings(self):
         """Settings for using the annotation viewer."""
