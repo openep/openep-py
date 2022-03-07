@@ -462,8 +462,8 @@ class PreferencesWidget(CustomDockWidget):
         scipy_docs = QtWidgets.QLabel()
         scipy_docs.setOpenExternalLinks(True)
         scipy_url = "https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.RBFInterpolator.html"
-        scipy_text = "See the Scipy documenation for a description of the parameters."
-        scipy_docs.setText(f"<a href={scipy_url}>{scipy_text}</a>")
+        scipy_text = "Scipy documenation"
+        scipy_docs.setText(f"See the <a href={scipy_url}>{scipy_text}</a> for a description of the parameters.")
 
         rbf_parameters_row = QtWidgets.QHBoxLayout()
         rbf_parameters_row.addLayout(rbf_parameters_layout, 0)
