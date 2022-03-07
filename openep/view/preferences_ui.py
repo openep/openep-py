@@ -21,6 +21,7 @@
 Create a dock widget for the setting preferences.
 """
 
+from unittest.util import sorted_list_difference
 from PySide2 import QtWidgets, QtCore
 from PySide2.QtCore import Qt
 import qdarkstyle
@@ -43,6 +44,7 @@ class PreferencesWidget(CustomDockWidget):
         self.tabs = QtWidgets.QTabWidget()
         self.tabs.setTabPosition(self.tabs.North)
         self.create_3d_viewer_settings()
+        self.create_table_settings()
         self.create_annotation_settings()
         self.create_interpolation_settings()
 
@@ -112,6 +114,94 @@ class PreferencesWidget(CustomDockWidget):
         viewer = QtWidgets.QWidget()
         viewer.setLayout(layout)
         self.tabs.addTab(viewer, "3D viewers")
+
+    def create_table_settings(self):
+        """Settings for the mapping points and recycle bin tables."""
+
+        # Mapping points table
+        index = QtWidgets.QCheckBox("Index")
+        tag = QtWidgets.QCheckBox("Tag")
+        name = QtWidgets.QCheckBox("Name")
+        voltage = QtWidgets.QCheckBox("Voltage")
+        lat = QtWidgets.QCheckBox("LAT")
+        boxes = [index, tag, name, voltage, lat]
+
+        mapping_points = QtWidgets.QGroupBox("Mapping points")
+        mapping_points_row = QtWidgets.QHBoxLayout()
+        mapping_points_text_column = QtWidgets.QVBoxLayout()
+        mapping_points_text_column.setAlignment(Qt.AlignTop)
+        mapping_points_text = QtWidgets.QLabel("Columns visible at startup:")
+        mapping_points_text_column.addWidget(mapping_points_text)
+        mapping_points_row.addLayout(mapping_points_text_column, 0)
+        mapping_points_checkboxes_layout = QtWidgets.QVBoxLayout()
+        for box in boxes:
+            box.setChecked(True)
+            mapping_points_checkboxes_layout.addWidget(box)
+        mapping_points_row.addLayout(mapping_points_checkboxes_layout, 0)
+        mapping_points_row.addStretch(1)
+        mapping_points.setLayout(mapping_points_row)
+
+        # Recycle bin table
+        index = QtWidgets.QCheckBox("Index")
+        tag = QtWidgets.QCheckBox("Tag")
+        name = QtWidgets.QCheckBox("Name")
+        voltage = QtWidgets.QCheckBox("Voltage")
+        lat = QtWidgets.QCheckBox("LAT")
+        boxes = [index, tag, name, voltage, lat]
+
+        recycle_bin = QtWidgets.QGroupBox("Recycle bin")
+        recycle_bin_row = QtWidgets.QHBoxLayout()
+        recycle_bin_text_column = QtWidgets.QVBoxLayout()
+        recycle_bin_text_column.setAlignment(Qt.AlignTop)
+        recycle_bin_text = QtWidgets.QLabel("Columns visible at startup:")
+        recycle_bin_text_column.addWidget(recycle_bin_text)
+        recycle_bin_row.addLayout(recycle_bin_text_column, 0)
+        recycle_bin_checkboxes_layout = QtWidgets.QVBoxLayout()
+        for box in boxes:
+            box.setChecked(True)
+            recycle_bin_checkboxes_layout.addWidget(box)
+        recycle_bin_row.addLayout(recycle_bin_checkboxes_layout, 0)
+        recycle_bin_row.addStretch(1)
+        recycle_bin.setLayout(recycle_bin_row)
+
+        # Sorting
+        sorting = QtWidgets.QGroupBox("Default sorting")
+        sorting_layout = QtWidgets.QHBoxLayout()
+
+        sort_by_text = QtWidgets.QLabel("Sort by:")
+        sort_by = QtWidgets.QComboBox()
+        sort_by.addItems([
+            "Index",
+            "Tag",
+            "Name",
+            "Voltage",
+            "LAT",
+        ])
+        sort_by.setMinimumWidth(120)
+        # TODO: can use sort_by.setCurrentText('TEXT') to set the default selection
+        
+        sort_order_text = QtWidgets.QLabel("Order")
+        sort_order = QtWidgets.QComboBox()
+        sort_order.addItems(["Ascending", "Descending"])
+        sort_order.setMinimumWidth(120)
+        
+        sorting_layout.addWidget(sort_by_text, 0)
+        sorting_layout.addWidget(sort_by, 0)
+        sorting_layout.addWidget(sort_order_text, 0)
+        sorting_layout.addWidget(sort_order, 0)
+        sorting_layout.addStretch(1)
+        sorting.setLayout(sorting_layout)
+
+        # Set nested layouts
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(mapping_points)
+        layout.addWidget(recycle_bin)
+        layout.addWidget(sorting)
+        layout.addStretch()
+
+        viewer = QtWidgets.QWidget()
+        viewer.setLayout(layout)
+        self.tabs.addTab(viewer, "Tables")
 
     def create_annotation_settings(self):
         """Settings for using the annotation viewer."""
