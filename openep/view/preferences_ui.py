@@ -533,6 +533,14 @@ class PreferencesWidget(CustomDockWidget):
         for line_edit in line_edits:
             line_edit.editingFinished.connect(self.enable_apply_or_discard)
 
+        spin_boxes = self.tabs.findChildren(QtWidgets.QSpinBox)
+        for spin_box in spin_boxes:
+            spin_box.toggled.connect(self.enable_apply_or_discard)
+
+        double_spin_boxes = self.tabs.findChildren(QtWidgets.QDoubleSpinBox)
+        for double_spin_box in double_spin_boxes:
+            double_spin_box.toggled.connect(self.enable_apply_or_discard)
+
     def enable_apply_or_discard(self):
         self.apply_or_discard.setEnabled(True)
 
