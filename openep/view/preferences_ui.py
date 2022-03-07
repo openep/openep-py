@@ -92,7 +92,7 @@ class PreferencesWidget(CustomDockWidget):
         select_row = QtWidgets.QHBoxLayout()
         select_text_column = QtWidgets.QVBoxLayout()
         select_text_column.setAlignment(Qt.AlignTop)
-        select_text = QtWidgets.QLabel("Select mapping points using the left mouse button:")
+        select_text = QtWidgets.QLabel("Select mapping points using the left mouse button")
         select_text_column.addWidget(select_text)
         select_row.addLayout(select_text_column, 0)
         select_buttons_layout = QtWidgets.QVBoxLayout()
@@ -135,7 +135,7 @@ class PreferencesWidget(CustomDockWidget):
         mapping_points_row = QtWidgets.QHBoxLayout()
         mapping_points_text_column = QtWidgets.QVBoxLayout()
         mapping_points_text_column.setAlignment(Qt.AlignTop)
-        mapping_points_text = QtWidgets.QLabel("Columns visible at startup:")
+        mapping_points_text = QtWidgets.QLabel("Columns visible at startup")
         mapping_points_text_column.addWidget(mapping_points_text)
         mapping_points_row.addLayout(mapping_points_text_column, 0)
         mapping_points_checkboxes_layout = QtWidgets.QVBoxLayout()
@@ -158,7 +158,7 @@ class PreferencesWidget(CustomDockWidget):
         recycle_bin_row = QtWidgets.QHBoxLayout()
         recycle_bin_text_column = QtWidgets.QVBoxLayout()
         recycle_bin_text_column.setAlignment(Qt.AlignTop)
-        recycle_bin_text = QtWidgets.QLabel("Columns visible at startup:")
+        recycle_bin_text = QtWidgets.QLabel("Columns visible at startup")
         recycle_bin_text_column.addWidget(recycle_bin_text)
         recycle_bin_row.addLayout(recycle_bin_text_column, 0)
         recycle_bin_checkboxes_layout = QtWidgets.QVBoxLayout()
@@ -173,7 +173,7 @@ class PreferencesWidget(CustomDockWidget):
         sorting = QtWidgets.QGroupBox("Default sorting")
         sorting_layout = QtWidgets.QHBoxLayout()
 
-        sort_by_text = QtWidgets.QLabel("Sort by:")
+        sort_by_text = QtWidgets.QLabel("Sort by")
         sort_by = QtWidgets.QComboBox()
         sort_by.addItems([
             "Index",
@@ -465,7 +465,11 @@ class PreferencesWidget(CustomDockWidget):
         scipy_text = "See the Scipy documenation for a description of the parameters."
         scipy_docs.setText(f"<a href={scipy_url}>{scipy_text}</a>")
 
-        rbf_layout.addLayout(rbf_parameters_layout)
+        rbf_parameters_row = QtWidgets.QHBoxLayout()
+        rbf_parameters_row.addLayout(rbf_parameters_layout, 0)
+        rbf_parameters_row.addStretch(1)
+        
+        rbf_layout.addLayout(rbf_parameters_row)
         rbf_layout.addWidget(zero_is_none)
         rbf_layout.addWidget(scipy_docs)
         rbf.setLayout(rbf_layout)
