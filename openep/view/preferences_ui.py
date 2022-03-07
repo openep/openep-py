@@ -217,6 +217,7 @@ class PreferencesWidget(CustomDockWidget):
         #       Linewidth
         #       Draggable (move the legend around the canvas), False
 
+        # TODO: Add these options, provide recommended settings based on screen resolution
         figure = QtWidgets.QGroupBox("Figure")
         figure_row = QtWidgets.QHBoxLayout()
         figure_options = QtWidgets.QFormLayout()
@@ -258,7 +259,7 @@ class PreferencesWidget(CustomDockWidget):
         interpolate.setCheckable(True)
         interpolate.setChecked(False)
 
-        layout.addWidget(figure)
+        #layout.addWidget(figure)
         layout.addWidget(lines)
         layout.addWidget(gain)
         layout.addWidget(interpolate)
