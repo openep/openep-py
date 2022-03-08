@@ -21,9 +21,9 @@
 Create a preferences manager.
 """
 
-from PySide2 import QtWidgets, QtCore
+from PySide2 import QtCore
 
-__all__ = ["Preferences"]
+__all__ = ["PreferencesManager"]
 
 
 class PreferencesManager(QtCore.QSettings):
@@ -60,7 +60,7 @@ class PreferencesManager(QtCore.QSettings):
                 try:
                     fn(value)  # Set the widget.
                 except Exception as e:
-                    print(e) # handle type error
+                    print(e)  # handle type error
 
     def update_settings_from_widgets(self, map):
         for name, widget in map.items():
@@ -69,10 +69,10 @@ class PreferencesManager(QtCore.QSettings):
             print("save:", getter, setter)
             if getter:
                 fn = getattr(widget, getter)
-                value = fn()                
+                value = fn()
                 print("-- value:", value, type(value), dtype)
                 if value is not None:
-                    self.settings.setValue(name, value) # Set the settings.
+                    self.settings.setValue(name, value)  # Set the settings.
 
         # Notify watcher of changed settings.
         self.settings_changed.emit()

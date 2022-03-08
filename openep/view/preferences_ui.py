@@ -21,9 +21,8 @@
 Create a dock widget for the setting preferences.
 """
 
-from PySide2 import QtWidgets, QtCore, QtGui
+from PySide2 import QtWidgets, QtGui
 from PySide2.QtCore import Qt
-import qdarkstyle
 
 from openep.view.custom_widgets import CustomDockWidget
 
@@ -80,7 +79,7 @@ class PreferencesWidget(CustomDockWidget):
         select = QtWidgets.QButtonGroup()
         select_3d = QtWidgets.QRadioButton("3D points")
         select_surface = QtWidgets.QRadioButton("Projected points")
-        select_none  = QtWidgets.QRadioButton("Off")
+        select_none = QtWidgets.QRadioButton("Off")
         select_3d.setChecked(True)
         select.addButton(select_3d)
         select.addButton(select_surface)
@@ -204,12 +203,12 @@ class PreferencesWidget(CustomDockWidget):
         ])
         sort_by.setMinimumWidth(120)
         # TODO: can use sort_by.setCurrentText('TEXT') to set the default selection
-        
+
         sort_order_text = QtWidgets.QLabel("Order")
         sort_order = QtWidgets.QComboBox()
         sort_order.addItems(["Ascending", "Descending"])
         sort_order.setMinimumWidth(120)
-        
+
         sorting_layout.addWidget(sort_by_text, 0)
         sorting_layout.addWidget(sort_by, 0)
         sorting_layout.addWidget(sort_order_text, 0)
@@ -277,12 +276,6 @@ class PreferencesWidget(CustomDockWidget):
         figure_row.addStretch(1)
         figure.setLayout(figure_row)
 
-        # TODO: Add QStackLayout for the Signals and Annotaitons options
-        #       Add QDoubleSpinbox for line thicknesses.
-        #       Signals: Active and Non-active line thickness
-        #       Annotations: WOI line thickness
-        #                   Annotation Line thickness
-        #                   Annotation size
         # Linestyle options
         lines = QtWidgets.QGroupBox("Lines")
         lines_layout = QtWidgets.QVBoxLayout()
@@ -297,8 +290,6 @@ class PreferencesWidget(CustomDockWidget):
         line_options = QtWidgets.QStackedLayout()
         line_types.activated.connect(line_options.setCurrentIndex)
 
-        # Linewidth: Active: [] Others: []
-        # Linewidth: [] Point size: 
         # Linestyle options: Signals
         signal_options = QtWidgets.QWidget()
         signal_options_layout = QtWidgets.QVBoxLayout()
@@ -325,7 +316,7 @@ class PreferencesWidget(CustomDockWidget):
         other_linewidth.setWrapping(False)
         other_linewidth.setValue(0.8)
         other_linewidth.textFromValue(0.8)
-        
+
         signal_linewidth_layout.addWidget(active_linewidth_text, 0)
         signal_linewidth_layout.addWidget(active_linewidth, 0)
         signal_linewidth_layout.addWidget(other_linewidth_text, 0)
@@ -388,14 +379,14 @@ class PreferencesWidget(CustomDockWidget):
         min_gain_validator = QtGui.QDoubleValidator()
         min_gain_validator.setRange(-1e6, 1e6)
         min_gain_validator.setDecimals(1)
-        min_gain.setValidator(min_gain_validator)        
+        min_gain.setValidator(min_gain_validator)
         gain_options.addRow(QtWidgets.QLabel("Min."), min_gain)
 
         max_gain = QtWidgets.QLineEdit("5.0")
         max_gain_validator = QtGui.QDoubleValidator()
         max_gain_validator.setRange(-1e6, 1e6)
         max_gain_validator.setDecimals(1)
-        max_gain.setValidator(max_gain_validator)        
+        max_gain.setValidator(max_gain_validator)
         gain_options.addRow(QtWidgets.QLabel("Max."), max_gain)
 
         scroll_speed = QtWidgets.QLineEdit("0.20")
@@ -414,7 +405,7 @@ class PreferencesWidget(CustomDockWidget):
         interpolate.setCheckable(True)
         interpolate.setChecked(False)
 
-        #layout.addWidget(figure)
+        # layout.addWidget(figure)
         layout.addWidget(lines, 0)
         layout.addWidget(gain, 0)
         layout.addWidget(interpolate, 0)
@@ -435,7 +426,7 @@ class PreferencesWidget(CustomDockWidget):
         self.map['Annotate/Gain/Prefactor'] = scroll_speed
 
         self.map['Annotate/Interpolate'] = interpolate
-        
+
     def create_interpolation_settings(self):
         """Settings for interpolation method and parameters."""
 
@@ -449,7 +440,7 @@ class PreferencesWidget(CustomDockWidget):
         select_method_layout = QtWidgets.QHBoxLayout()
         select_method_layout.addWidget(select_method)
         select_method_layout.addStretch()
-        
+
         method_layout = QtWidgets.QVBoxLayout()
         method_layout.addLayout(select_method_layout)
         method.setLayout(method_layout)
@@ -521,7 +512,7 @@ class PreferencesWidget(CustomDockWidget):
         rbf_parameters_row = QtWidgets.QHBoxLayout()
         rbf_parameters_row.addLayout(rbf_parameters_layout, 0)
         rbf_parameters_row.addStretch(1)
-        
+
         rbf_layout.addLayout(rbf_parameters_row)
         rbf_layout.addWidget(zero_is_none)
         rbf_layout.addWidget(scipy_docs)
@@ -529,7 +520,7 @@ class PreferencesWidget(CustomDockWidget):
 
         # Add all parameter layouts
         method_options_layout.addWidget(rbf)
-        
+
         # For some reason, the QStackedLayout overlaps with the QGroupBox title
         # Need to put the stacked layout inside a VBox so there's no overlap
         method_options_overall_layout = QtWidgets.QVBoxLayout()
@@ -542,7 +533,7 @@ class PreferencesWidget(CustomDockWidget):
         layout.addWidget(method_options, 0)
         layout.addStretch(1)  # expand vertically to take up all remaining space
 
-        interpolation = QtWidgets.QWidget()        
+        interpolation = QtWidgets.QWidget()
         interpolation.setLayout(layout)
         self.tabs.addTab(interpolation, "Interpolation")
 
