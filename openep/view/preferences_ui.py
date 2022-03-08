@@ -122,6 +122,7 @@ class PreferencesWidget(CustomDockWidget):
         self.tabs.addTab(viewer, "3D viewers")
 
         # Add widgets to map
+        self.map['3DViewers/PointSelection'] = select
         self.map['3DViewers/PointSelection/3D'] = select_3d
         self.map['3DViewers/PointSelection/Surface'] = select_surface
         self.map['3DViewers/PointSelection/Off'] = select_none

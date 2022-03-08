@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
-
+ 
 
 """
 A GUI for OpenEP-Py.
@@ -149,12 +149,28 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     def update_preferences(self):
         """Update settings used by widgets in the GUI from the settings store."""
 
-        # TODO: If necessary, update GUI to take into account changed preferences.
-        #       e.g. Min/max gain, linewidth and markersize in the annotation viewer.
         new_preferences = self.preferences_store.extract_preferences()
         changed_preferences = {key: value for key, value in new_preferences.items() if value != self.preferences[key]}
-
         self.preferences = new_preferences
+
+        print(f"{changed_preferences=}")
+        if not changed_preferences: return
+
+        # TODO: If necessary, update GUI to take into account changed preferences.
+        #       e.g. Min/max gain, linewidth and markersize in the annotation viewer.
+
+        # Update point picking in the 3D viewer
+        if self.system_manager.active_system is None or not self.system_manager.active_system.plotters:
+            return
+        
+        plotter = self.system_manager.active_system.plotters[0]
+        if '3DViewers/PointSelection' in changed_preferences:
+            plotter.renderer._actors['Mapping points'].SetPickable(
+                self.preferences['3DViewers/PointSelection/3D'],
+            )
+            plotter.renderer._actors['Surface-projected mapping points'].SetPickable(
+                self.preferences['3DViewers/PointSelection/Surface'],
+            )
 
     def _create_annotate_dock(self):
         """
@@ -641,7 +657,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                 pickable=False,
                 reset_camera=False,
             )
-            highlight_projected_actor.SetVisibility(False)
+            highlight_projected_actor.SetVisibility(is_active_system)
             system._highlight_projected_actor = highlight_projected_actor
             system._highlight_projected_point = highlight_projected_point
 
@@ -649,9 +665,11 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                 "LeftButtonPressEvent",
                 partial(try_callback, openep.view.plotters_ui.launch_pick_event)
             )
-            
-            add_points_kws['pickable'] = is_active_system
-            add_cylinders_kws['pickable'] = False  # TODO: allow picking of cylinders too
+
+            pickable_points = self.preferences['3DViewers/PointSelection/3D']
+            pickable_cylinders = self.preferences['3DViewers/PointSelection/Surface']
+            add_points_kws['pickable'] = is_active_system and pickable_points
+            add_cylinders_kws['pickable'] = is_active_system and pickable_cylinders
 
         system.docks.append(dock)
         system.plotters.append(plotter)
@@ -752,10 +770,11 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             for actor_name, actor in plotter.renderer._actors.items():
                 if actor_name.startswith('free_boundary_'):
                     actor.SetVisibility(show)
-        elif actor_name == "Mapping points":
-            plotter.renderer._actors["_picked_point"].SetVisibility(show)
-        elif actor_name == "Surface-projected mapping points":
-            plotter.renderer._actors["_picked_projected_point"].SetVisibility(show)
+        # TODO: Should these always be visible, or hidden when the points/projected points are hidden?
+        #elif actor_name == "Mapping points":
+        #    plotter.renderer._actors["_picked_point"].SetVisibility(show)
+        #elif actor_name == "Surface-projected mapping points":
+        #    plotter.renderer._actors["_picked_projected_point"].SetVisibility(show)
 
     def link_views_across_plotters(self, system, index):
         """Link or unlink the views of two plotters.
@@ -798,6 +817,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.system_manager_ui._active_system_button_group.blockSignals(True)
         previous_system = self.system_manager.active_system
         if len(previous_system.plotters):
+            print(previous_system)
             previous_system.plotters[0].pickable_actors = []
             previous_system._highlight_actor.SetVisibility(False)
             previous_system._highlight_projected_actor.SetVisibility(False)
@@ -828,11 +848,13 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         if len(system.plotters):
             plotter = system.plotters[0]
-            plotter.pickable_actors = [
-                plotter.renderer._actors['Mapping points'],
-            ]  # TODO: allow picking of projected cylinders too
             system._highlight_actor.SetVisibility(True)
             system._highlight_projected_actor.SetVisibility(True)
+            if self.preferences['3DViewers/PointSelection/Off']:
+                plotter.pickable_actors = []
+            else:
+                pick = 'Mapping points' if self.preferences['3DViewers/PointSelection/3D'] else 'Surface-projected mapping points'
+                plotter.pickable_actors = [plotter.renderer._actors[pick]]
 
         self.system_manager_ui._active_system_button_group.blockSignals(False)
 
@@ -1185,7 +1207,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         n_mapping_points = system.case.electric.bipolar_egm.points.size
         n_sphere_points_per_mapping_point = picked_mesh.points.size // n_mapping_points
         current_model_index = picked_point_id // n_sphere_points_per_mapping_point
-        
+
         is_included = system.case.electric.include[current_model_index]
         proxy_model = self.mapping_points.proxy_model if is_included else self.recycle_bin.proxy_model
         current_index = proxy_model.mapFromSource(proxy_model.sourceModel().index(current_model_index, 0))
