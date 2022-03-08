@@ -149,7 +149,12 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     def update_preferences(self):
         """Update settings used by widgets in the GUI from the settings store."""
 
-        self.preferences = self.preferences_store.extract_preferences()
+        # TODO: If necessary, update GUI to take into account changed preferences.
+        #       e.g. Min/max gain, linewidth and markersize in the annotation viewer.
+        new_preferences = self.preferences_store.extract_preferences()
+        changed_preferences = {key: value for key, value in new_preferences.items() if value != self.preferences[key]}
+
+        self.preferences = new_preferences
 
     def _create_annotate_dock(self):
         """
