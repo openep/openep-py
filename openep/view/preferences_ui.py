@@ -123,10 +123,10 @@ class PreferencesWidget(CustomDockWidget):
         self.tabs.addTab(viewer, "3D viewers")
 
         # Add widgets to map
-        self.map['3D viewers/Point selection/3D'] = select_3d
-        self.map['3D viewers/Point selection/Surface'] = select_surface
-        self.map['3D viewers/Point selection/Off'] = select_none
-        self.map['3D viewers/Secondary viewers/Link'] = link
+        self.map['3DViewers/PointSelection/3D'] = select_3d
+        self.map['3DViewers/PointSelection/Surface'] = select_surface
+        self.map['3DViewers/PointSelection/Off'] = select_none
+        self.map['3DViewers/SecondaryViewers/Link'] = link
 
     def create_table_settings(self):
         """Settings for the mapping points and recycle bin tables."""
@@ -235,20 +235,20 @@ class PreferencesWidget(CustomDockWidget):
         self.tabs.addTab(viewer, "Tables")
 
         # Add widgets to map
-        self.map['Tables/Mapping points/Show/Index'] = mapping_points_index
-        self.map['Tables/Mapping points/Show/Tag'] = mapping_points_tag
-        self.map['Tables/Mapping points/Show/Name'] = mapping_points_name
-        self.map['Tables/Mapping points/Show/Voltage'] = mapping_points_voltage
-        self.map['Tables/Mapping points/Show/LAT'] = mapping_points_lat
+        self.map['Tables/MappingPoints/Show/Index'] = mapping_points_index
+        self.map['Tables/MappingPoints/Show/Tag'] = mapping_points_tag
+        self.map['Tables/MappingPoints/Show/Name'] = mapping_points_name
+        self.map['Tables/MappingPoints/Show/Voltage'] = mapping_points_voltage
+        self.map['Tables/MappingPoints/Show/LAT'] = mapping_points_lat
 
-        self.map['Tables/Recycle bin/Show/Index'] = recycle_bin_index
-        self.map['Tables/Recycle bin/Show/Tag'] = recycle_bin_tag
-        self.map['Tables/Recycle bin/Show/Name'] = recycle_bin_name
-        self.map['Tables/Recycle bin/Show/Voltage'] = recycle_bin_voltage
-        self.map['Tables/Recycle bin/Show/LAT'] = recycle_bin_lat
+        self.map['Tables/RecycleBin/Show/Index'] = recycle_bin_index
+        self.map['Tables/RecycleBin/Show/Tag'] = recycle_bin_tag
+        self.map['Tables/RecycleBin/Show/Name'] = recycle_bin_name
+        self.map['Tables/RecycleBin/Show/Voltage'] = recycle_bin_voltage
+        self.map['Tables/RecycleBin/Show/LAT'] = recycle_bin_lat
 
-        self.map['Tables/Sort by'] = sort_by
-        self.map['Tables/Sort order'] = sort_order
+        self.map['Tables/SortBy'] = sort_by
+        self.map['Tables/SortOrder'] = sort_order
 
         self.map['Tables/Interpolate'] = interpolate
 
@@ -384,21 +384,24 @@ class PreferencesWidget(CustomDockWidget):
         gain_row = QtWidgets.QHBoxLayout()
         gain_options = QtWidgets.QFormLayout()
 
-        min_gain = QtWidgets.QLineEdit("-5")
+        min_gain = QtWidgets.QLineEdit("-5.0")
         min_gain_validator = QtGui.QDoubleValidator()
         min_gain_validator.setRange(-1e6, 1e6)
+        min_gain_validator.setDecimals(1)
         min_gain.setValidator(min_gain_validator)        
         gain_options.addRow(QtWidgets.QLabel("Min."), min_gain)
 
-        max_gain = QtWidgets.QLineEdit("5")
+        max_gain = QtWidgets.QLineEdit("5.0")
         max_gain_validator = QtGui.QDoubleValidator()
         max_gain_validator.setRange(-1e6, 1e6)
+        max_gain_validator.setDecimals(1)
         max_gain.setValidator(max_gain_validator)        
         gain_options.addRow(QtWidgets.QLabel("Max."), max_gain)
 
-        scroll_speed = QtWidgets.QLineEdit("0.2")
+        scroll_speed = QtWidgets.QLineEdit("0.20")
         scroll_speed_validator = QtGui.QDoubleValidator()
-        scroll_speed_validator.setRange(0, 1)
+        scroll_speed_validator.setRange(0.01, 1)
+        scroll_speed_validator.setDecimals(2)
         scroll_speed.setValidator(scroll_speed_validator)
         gain_options.addRow(QtWidgets.QLabel("Scroll speed."), scroll_speed)
 
