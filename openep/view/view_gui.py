@@ -81,6 +81,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         self.system_manager = openep.view.system_manager.SystemManager()
         self.egm_times = None
+        self.has_electrograms = False
 
     def _init_ui(self):
         """
@@ -154,13 +155,16 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.preferences = new_preferences
 
         print(f"{changed_preferences=}")
-        if not changed_preferences ot self.system_manager.active_system is None:
+        if not changed_preferences or self.system_manager.active_system is None:
             return
         # TODO: If necessary, update GUI to take into account changed preferences.
         #       e.g. Min/max gain, linewidth and markersize in the annotation viewer.
 
         if self.system_manager.active_system.plotters:
             self._update_3D_viewer_preferences(changed_preferences)
+
+        if self.has_electrograms and self.annotate_dock.signal_artists:
+            self._update_annotation_viewer_preferences(changed_preferences)
 
     def _update_3D_viewer_preferences(self, changed_preferences):
         """
@@ -177,7 +181,68 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             )
             plotter.renderer._actors['Surface-projected mapping points'].SetPickable(
                 self.preferences['3DViewers/PointSelection/Surface'],
-            )    
+            )
+
+    def _update_annotation_viewer_preferences(self, changed_preferences):
+        """Update the min and max gain, as well as line thicknesses and markersize."""
+
+        if any(('Linewidth' in key) or ('Markersize' in key) for key in changed_preferences):
+
+            self.annotate_dock._ACTIVE_LINEWIDTH = self.preferences['Annotate/Lines/Signals/Linewidth/Active']
+            self.annotate_dock._NON_ACTIVE_LINEWIDTH = self.preferences['Annotate/Lines/Signals/Linewidth/Other']
+            self.annotate_dock._WOI_LINEWIDTH = self.preferences['Annotate/Lines/Annotations/Linewidth']
+            self.annotate_dock._ANNOTATION_LINEWITDH = self.preferences['Annotate/Lines/Annotations/Linewidth']
+            self.annotate_dock._ANNOTATION_MARKERSIZE = self.preferences['Annotate/Lines/Annotations/Markersize']
+
+            for artist_label, artist in self.annotate_dock.signal_artists.items():
+                lw = self.annotate_dock._ACTIVE_LINEWIDTH if artist_label == self.annotate_dock.active_signal_artist else self.annotate_dock._NON_ACTIVE_LINEWIDTH
+                artist.set_linewidth(lw)
+
+            for artist_label, artist in self.annotate_dock.annotation_artists.items():
+                if 'point' in artist_label:
+                    artist.set_markersize(self.annotate_dock._ANNOTATION_MARKERSIZE)
+                else:
+                    artist.set_linewidth(self.annotate_dock._ANNOTATION_LINEWITDH)                
+
+        if any('Gain' in key for key in changed_preferences):
+
+            self.annotate_dock._GAIN_PREFACTOR = self.preferences['Annotate/Gain/Prefactor']
+
+            min_gain = self.preferences['Annotate/Gain/Min']
+            max_gain = self.preferences['Annotate/Gain/Max']
+            electric = self.system_manager.active_system.case.electric
+            current_index = self.annotate_dock._current_index
+
+            reference_gain = electric.reference_egm.gain
+            reference_gain[reference_gain < min_gain] = min_gain
+            reference_gain[reference_gain > max_gain] = max_gain
+
+            bipolar_gain = electric.bipolar_egm.gain
+            bipolar_gain[bipolar_gain < min_gain] = min_gain
+            bipolar_gain[bipolar_gain > max_gain] = max_gain
+
+            ecg_gain = electric.ecg.gain
+            ecg_gain[ecg_gain < min_gain] = min_gain
+            ecg_gain[ecg_gain > max_gain] = max_gain
+
+            # Update the signals
+            for label, gain in zip(
+                ['Ref', 'Bipolar', 'ECG'],
+                [reference_gain, bipolar_gain, ecg_gain]
+            ):
+                artist = self.annotate_dock.signal_artists[label]
+                original_ydata = artist._original_ydata
+                artist.set_ydata(artist._ystart + original_ydata * np.exp(gain[current_index]))
+                
+                # Update the y position of the annotation if necessary
+                if label == "Ref":
+                    annotation_artist = self.annotate_dock.annotation_artists['reference_annotation_point']
+                    self.annotate_dock._update_annotation_ydata(signal=artist, annotation=annotation_artist)
+                elif label == "Bipolar":
+                    annotation_artist = self.annotate_dock.annotation_artists['local_annotation_point']
+                    self.annotate_dock._update_annotation_ydata(signal=artist, annotation=annotation_artist)
+
+        self.annotate_dock.blit_artists()
 
     def _create_annotate_dock(self):
         """
@@ -188,7 +253,15 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         time etc.
         """
         
-        self.annotate_dock = openep.view.annotations_ui.AnnotationWidget(title="Annotate")
+        self.annotate_dock = openep.view.annotations_ui.AnnotationWidget(
+            title="Annotate",
+            active_linewidth=self.preferences['Annotate/Lines/Signals/Linewidth/Active'],
+            non_active_linewidth=self.preferences['Annotate/Lines/Signals/Linewidth/Other'],
+            woi_linewidth=self.preferences['Annotate/Lines/Annotations/Linewidth'],
+            annotation_linewidth=self.preferences['Annotate/Lines/Annotations/Linewidth'],
+            annotation_markersize=self.preferences['Annotate/Lines/Annotations/Markersize'],
+            gain_prefactor=self.preferences['Annotate/Gain/Prefactor'],
+        )
     
         #self.annotate_dock.egm_selection.currentIndexChanged[int].connect(self.update_annotation_plot)
         self.annotate_dock.canvas.mpl_connect('key_press_event', self.annotation_on_key_press)
@@ -824,7 +897,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.system_manager_ui._active_system_button_group.blockSignals(True)
         previous_system = self.system_manager.active_system
         if len(previous_system.plotters):
-            print(previous_system)
             previous_system.plotters[0].pickable_actors = []
             previous_system._highlight_actor.SetVisibility(False)
             previous_system._highlight_projected_actor.SetVisibility(False)
@@ -1329,8 +1401,9 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         ])
         annotations.window_of_interest[current_index] = woi
         
-        # And re-interpolate onto the surface
-        #self.update_scalar_fields(event=None)
+        # And re-interpolate onto the surface if necessary
+        if self.preferences['Annotate/Interpolate']:
+            self.update_scalar_fields(event=None)
 
     def annotation_on_key_press(self, event):
         """Bindings for key press events in the annotation viewer.
@@ -1436,19 +1509,27 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         current_index = self.annotate_dock._current_index
         electric = self.system_manager.active_system.case.electric
         gain_diff = self.annotate_dock._GAIN_PREFACTOR * (event.step * -1)  # scrolling up will decrease gain, down will increase gain
-        
+        min_gain = self.preferences['Annotate/Gain/Min']
+        max_gain = self.preferences['Annotate/Gain/Max']
+
         if self.annotate_dock.active_signal_artist == "Ref":
-            electric.reference_egm.gain[current_index] += gain_diff
-            gain = electric.reference_egm.gain[current_index]
+            gain = electric.reference_egm.gain[current_index] + gain_diff
+            gain = max(gain, min_gain)
+            gain = min(gain, max_gain)
+            electric.reference_egm.gain[current_index] = gain
             
         elif self.annotate_dock.active_signal_artist == "Bipolar":
-            electric.bipolar_egm.gain[current_index] += gain_diff
-            gain = electric.bipolar_egm.gain[current_index]
+            gain = electric.bipolar_egm.gain[current_index] + gain_diff
+            gain = max(gain, min_gain)
+            gain = min(gain, max_gain)
+            electric.bipolar_egm.gain[current_index] = gain
             
         elif self.annotate_dock.active_signal_artist == "ECG":
-            electric.ecg.gain[current_index] += gain_diff
-            gain = electric.ecg.gain[current_index]
-        
+            gain = electric.ecg.gain[current_index] + gain_diff
+            gain = max(gain, min_gain)
+            gain = min(gain, max_gain)
+            electric.ecg.gain[current_index] = gain
+
         self.annotate_dock.update_gain(gain)
         self.annotate_dock.blit_artists()
 
