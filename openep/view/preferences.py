@@ -36,7 +36,7 @@ class PreferencesManager(QtCore.QSettings):
         'QRadioButton': ('isChecked', 'setChecked', bool),
         'QComboBox': ('currentText', 'setCurrentText', str),
         'QSpinBox': ('value', 'setValue', int),
-        'QDoublePinBox': ('value', 'setValue', float),
+        'QDoubleSpinBox': ('value', 'setValue', float),
         'QButtonGroup': ('checkedId', 'setId', int),
     }
 
@@ -51,6 +51,7 @@ class PreferencesManager(QtCore.QSettings):
     def update_widgets_from_settings(self, map):
         for name, widget in map.items():
             cls = widget.__class__.__name__
+            print(self.widget_mappers.get(cls, (None, None)), cls)
             getter, setter, dtype = self.widget_mappers.get(cls, (None, None))
             value = self.settings.value(name, type=dtype)
             print("load:", getter, setter, value, type(value), dtype)
@@ -91,6 +92,13 @@ class PreferencesManager(QtCore.QSettings):
         data["Tables"]["Recycle bin"]["Show"] = {}
         data["Tables"]["Sort"] = {}
 
+        data["Annotate"] = {}
+        data["Annotate"]["Lines"] = {}
+        data["Annotate"]["Lines"]["Signals"] = {}
+        data["Annotate"]["Lines"]["Signals"]["Linewidth"] = {}
+        data["Annotate"]["Lines"]["Annotations"] = {}
+        data["Annotate"]["Gain"] = {}
+
         # 3D viewers settings
         # 3D viewers settings: Point selection
         point_selection_id = self.settings.value('3D viewers/Point selection')
@@ -128,5 +136,17 @@ class PreferencesManager(QtCore.QSettings):
         # Table settings: Interpolate
         interpolate = self.settings.value('Tables/Interpolate')
         data['Tables']['Interpolate'] = interpolate
+
+        # Annotation settings
+        data['Annotate']['Lines']['Signals']['Linewidth']['Active'] = self.settings.value('Annotate/Lines/Signals/Linewidth/Active')
+        data['Annotate']['Lines']['Signals']['Linewidth']['Other'] = self.settings.value('Annotate/Lines/Signals/Linewidth/Other')
+        data['Annotate']['Lines']['Annotations']['Linewidth'] = self.settings.value('Annotate/Lines/Annotations/Linewidth')
+        data['Annotate']['Lines']['Annotations']['Markersize'] = self.settings.value('Annotate/Lines/Annotations/Markersize')
+
+        data['Annotate']['Gain']['Min'] = self.settings.value('Annotate/Gain/Min')
+        data['Annotate']['Gain']['Max'] = self.settings.value('Annotate/Gain/Max')
+        data['Annotate']['Gain']['Prefactor'] = self.settings.value('Annotate/Gain/Prefactor')
+
+        data['Annotate']['Interpolate'] = self.settings.value('Annotate/Interpolate')
 
         return data
