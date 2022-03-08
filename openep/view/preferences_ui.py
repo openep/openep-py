@@ -421,6 +421,18 @@ class PreferencesWidget(CustomDockWidget):
         annotate.setLayout(layout)
         self.tabs.addTab(annotate, "Annotate")
 
+        # Add widgets to map
+        self.map['Annotate/Lines/Signals/Linewidth/Active'] = active_linewidth
+        self.map['Annotate/Lines/Signals/Linewidth/Other'] = other_linewidth
+        self.map['Annotate/Lines/Annotations/Linewidth'] = annotation_linewidth
+        self.map['Annotate/Lines/Annotations/Markersize'] = annotation_size
+
+        self.map['Annotate/Gain/Min'] = min_gain
+        self.map['Annotate/Gain/Max'] = max_gain
+        self.map['Annotate/Gain/Prefactor'] = scroll_speed
+
+        self.map['Annotate/Interpolate'] = interpolate
+        
     def create_interpolation_settings(self):
         """Settings for interpolation method and parameters."""
 
