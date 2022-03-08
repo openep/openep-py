@@ -47,13 +47,23 @@ disable_all_bindings()
 class AnnotationWidget(CustomDockWidget):
     """A dockable widget for annotating electrograms."""
 
-    def __init__(self, title: str):
+    def __init__(
+        self,
+        title: str,
+        active_linewidth: float,
+        non_active_linewidth: float,
+        woi_linewidth: float,
+        annotation_linewidth: float,
+        annotation_markersize: float,
+        gain_prefactor: float,
+    ):
 
-        self._ACTIVE_LINEWIDTH = 1.2
-        self._NON_ACTIVE_LINEWIDTH = 0.8
-        self._WOI_LINEWIDTH = 0.8
-        self._ANNOTATION_LINEWITDH = 1.0
-        self._GAIN_PREFACTOR = 0.02
+        self._ACTIVE_LINEWIDTH = active_linewidth
+        self._NON_ACTIVE_LINEWIDTH = non_active_linewidth
+        self._WOI_LINEWIDTH = woi_linewidth
+        self._ANNOTATION_LINEWITDH = annotation_linewidth
+        self._ANNOTATION_MARKERSIZE = annotation_markersize
+        self._GAIN_PREFACTOR = gain_prefactor
         self._SCROLLBAR_STEP = 0.1
 
         super().__init__(title)
@@ -205,7 +215,7 @@ class AnnotationWidget(CustomDockWidget):
             color='white',
             linewidth=0.0,
             marker='o',
-            markersize=4,
+            markersize=self._ANNOTATION_MARKERSIZE,
             label="reference_annotation_point",
             zorder=3,
             picker=False,
@@ -241,7 +251,7 @@ class AnnotationWidget(CustomDockWidget):
             color='white',
             linewidth=0,
             marker='o',
-            markersize=4,
+            markersize=self._ANNOTATION_MARKERSIZE,
             label="local_annotation_point",
             zorder=3,
             picker=False,

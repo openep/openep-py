@@ -383,17 +383,17 @@ class PreferencesWidget(CustomDockWidget):
         min_gain.setValidator(min_gain_validator)
         gain_options.addRow(QtWidgets.QLabel("Min."), min_gain)
 
-        max_gain = QtWidgets.QLineEdit("5.0")
+        max_gain = QtWidgets.QLineEdit("2.0")
         max_gain_validator = QtGui.QDoubleValidator()
         max_gain_validator.setRange(-1e6, 1e6)
         max_gain_validator.setDecimals(1)
         max_gain.setValidator(max_gain_validator)
         gain_options.addRow(QtWidgets.QLabel("Max."), max_gain)
 
-        scroll_speed = QtWidgets.QLineEdit("0.20")
+        scroll_speed = QtWidgets.QLineEdit("0.001")
         scroll_speed_validator = QtGui.QDoubleValidator()
         scroll_speed_validator.setRange(0.01, 1)
-        scroll_speed_validator.setDecimals(2)
+        scroll_speed_validator.setDecimals(3)
         scroll_speed.setValidator(scroll_speed_validator)
         gain_options.addRow(QtWidgets.QLabel("Scroll speed."), scroll_speed)
 
