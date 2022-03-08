@@ -90,7 +90,6 @@ class PreferencesManager(QtCore.QSettings):
         data['3DViewers/PointSelection/Off'] = self.settings.value('3DViewers/PointSelection/Off')
 
         point_selection_id = self.settings.value('3DViewers/PointSelection')
-        print(point_selection_id)
         if point_selection_id == 0:
             data['3DViewers/PointSelection'] = "3DPoints"
         elif point_selection_id == 1:
