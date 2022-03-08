@@ -82,71 +82,54 @@ class PreferencesManager(QtCore.QSettings):
 
         data = {}
 
-        data["3D viewers"] = {}
-        data['3D viewers']['Secondary viewers'] = {}
-        
-        data["Tables"] = {}
-        data["Tables"]["Mapping points"] = {}
-        data["Tables"]["Mapping points"]["Show"] = {}
-        data["Tables"]["Recycle bin"] = {}
-        data["Tables"]["Recycle bin"]["Show"] = {}
-        data["Tables"]["Sort"] = {}
-
-        data["Annotate"] = {}
-        data["Annotate"]["Lines"] = {}
-        data["Annotate"]["Lines"]["Signals"] = {}
-        data["Annotate"]["Lines"]["Signals"]["Linewidth"] = {}
-        data["Annotate"]["Lines"]["Annotations"] = {}
-        data["Annotate"]["Gain"] = {}
-
         # 3D viewers settings
         # 3D viewers settings: Point selection
-        point_selection_id = self.settings.value('3D viewers/Point selection')
+        point_selection_id = self.settings.value('3DViewers/PointSelection')
         if point_selection_id == 0:
-            data['3D viewers']['Point selection'] = "3D points"
+            data['3DViewers/PointSelection'] = "3D points"
         elif point_selection_id == 1:
-            data['3D viewers']['Point selection'] = "Projected points"
+            data['3DViewers/PointSelection'] = "Projected points"
         elif point_selection_id == 2:
-            data['3D viewers']['Point selection'] = "Off"
+            data['3DViewers/PointSelection'] = "Off"
 
         # 3D viewers settings: Secondary viewers
-        link_secondary_viewers = self.settings.value('3D viewers/Secondary viewers/Link')
-        data['3D viewers']['Secondary viewers']['Link'] = link_secondary_viewers
+        link_secondary_viewers = self.settings.value('3DViewers/SecondaryViewers/Link')
+        data['3DViewers/SecondaryViewers/Link'] = link_secondary_viewers
 
         # Table settings
         columns = ['Index', 'Tag', 'Name', 'Voltage', 'LAT']
 
         # Table settings: Mapping points
         for column in columns:
-            show = self.settings.value(f'Tables/Mapping points/Show/{column}')
-            data['Tables']['Mapping points']['Show'][column] = show
+            show = self.settings.value(f'Tables/MappingPoints/Show/{column}')
+            data[f'Tables/MappingPoints/Show/{column}'] = show
 
         # Table settings: Recycle bin
         for column in columns:
-            show = self.settings.value(f'Tables/Recycle bin/Show/{column}')
-            data['Tables']['Recycle bin']['Show'][column] = show
+            show = self.settings.value(f'Tables/RecycleBin/Show/{column}')
+            data[f'Tables/RecycleBin/Show/{column}'] = show
 
         # Table settings: Sorting
-        sort_by = self.settings.value('Tables/Sort by')
-        sort_order_text = self.settings.value('Tables/Sort order')
+        sort_by = self.settings.value('Tables/SortBy')
+        sort_order_text = self.settings.value('Tables/SortOrder')
         sort_order = QtCore.Qt.AscendingOrder if sort_order_text == "Ascending" else QtCore.Qt.DescendingOrder
-        data['Tables']['Sort by'] = sort_by
-        data['Tables']['Sort order'] = sort_order
+        data['Tables/SortBy'] = sort_by
+        data['Tables/SortOrder'] = sort_order
 
         # Table settings: Interpolate
         interpolate = self.settings.value('Tables/Interpolate')
-        data['Tables']['Interpolate'] = interpolate
+        data['Tables/Interpolate'] = interpolate
 
         # Annotation settings
-        data['Annotate']['Lines']['Signals']['Linewidth']['Active'] = self.settings.value('Annotate/Lines/Signals/Linewidth/Active')
-        data['Annotate']['Lines']['Signals']['Linewidth']['Other'] = self.settings.value('Annotate/Lines/Signals/Linewidth/Other')
-        data['Annotate']['Lines']['Annotations']['Linewidth'] = self.settings.value('Annotate/Lines/Annotations/Linewidth')
-        data['Annotate']['Lines']['Annotations']['Markersize'] = self.settings.value('Annotate/Lines/Annotations/Markersize')
+        data['Annotate/Lines/Signals/Linewidth/Active'] = self.settings.value('Annotate/Lines/Signals/Linewidth/Active')
+        data['Annotate/Lines/Signals/Linewidth/Other'] = self.settings.value('Annotate/Lines/Signals/Linewidth/Other')
+        data['Annotate/Lines/Annotations/Linewidth'] = self.settings.value('Annotate/Lines/Annotations/Linewidth')
+        data['Annotate/Lines/Annotations/Markersize'] = self.settings.value('Annotate/Lines/Annotations/Markersize')
 
-        data['Annotate']['Gain']['Min'] = self.settings.value('Annotate/Gain/Min')
-        data['Annotate']['Gain']['Max'] = self.settings.value('Annotate/Gain/Max')
-        data['Annotate']['Gain']['Prefactor'] = self.settings.value('Annotate/Gain/Prefactor')
+        data['Annotate/Gain/Min'] = self.settings.value('Annotate/Gain/Min')
+        data['Annotate/Gain/Max'] = self.settings.value('Annotate/Gain/Max')
+        data['Annotate/Gain/Prefactor'] = self.settings.value('Annotate/Gain/Prefactor')
 
-        data['Annotate']['Interpolate'] = self.settings.value('Annotate/Interpolate')
+        data['Annotate/Interpolate'] = self.settings.value('Annotate/Interpolate')
 
         return data
