@@ -1617,6 +1617,10 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             point_mesh.point_data["Include"][:] = include_point
             projected_point_mesh.point_data["Include"][:] = include_projected_point
 
+        # TODO: Interpolation should be based on Include==True, rather than on annotation being within the WOI
+        if self.preferences['Tables/Interpolate']:
+            self.update_scalar_fields(event=None)
+
     def sort_mapping_points_and_recycle_bin(self, table, table_to_sort):
         """When one table is sorted by a column, sort the other table by the same column"""
 
