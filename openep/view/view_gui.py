@@ -154,23 +154,30 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.preferences = new_preferences
 
         print(f"{changed_preferences=}")
-        if not changed_preferences: return
-
+        if not changed_preferences ot self.system_manager.active_system is None:
+            return
         # TODO: If necessary, update GUI to take into account changed preferences.
         #       e.g. Min/max gain, linewidth and markersize in the annotation viewer.
 
-        # Update point picking in the 3D viewer
-        if self.system_manager.active_system is None or not self.system_manager.active_system.plotters:
-            return
+        if self.system_manager.active_system.plotters:
+            self._update_3D_viewer_preferences(changed_preferences)
+
+    def _update_3D_viewer_preferences(self, changed_preferences):
+        """
+        Update point picking in the primary 3D viewer of the active system.
         
+        Set whether points or projected points are pickable, or neither.
+        """
+
         plotter = self.system_manager.active_system.plotters[0]
+
         if '3DViewers/PointSelection' in changed_preferences:
             plotter.renderer._actors['Mapping points'].SetPickable(
                 self.preferences['3DViewers/PointSelection/3D'],
             )
             plotter.renderer._actors['Surface-projected mapping points'].SetPickable(
                 self.preferences['3DViewers/PointSelection/Surface'],
-            )
+            )    
 
     def _create_annotate_dock(self):
         """
