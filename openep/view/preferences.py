@@ -106,14 +106,18 @@ class PreferencesManager(QtCore.QSettings):
         columns = ['Index', 'Tag', 'Name', 'Voltage', 'LAT']
 
         # Table settings: Mapping points
+        data[f'Tables/MappingPoints/Hide'] = []
         for column in columns:
             show = self.settings.value(f'Tables/MappingPoints/Show/{column}')
-            data[f'Tables/MappingPoints/Show/{column}'] = show
+            if not show:
+                data[f'Tables/MappingPoints/Hide'].append(column)
 
         # Table settings: Recycle bin
+        data[f'Tables/RecycleBin/Hide'] = []
         for column in columns:
             show = self.settings.value(f'Tables/RecycleBin/Show/{column}')
-            data[f'Tables/RecycleBin/Show/{column}'] = show
+            if not show:
+                data[f'Tables/RecycleBin/Hide'].append(column)
 
         # Table settings: Sorting
         sort_by = self.settings.value('Tables/SortBy')
