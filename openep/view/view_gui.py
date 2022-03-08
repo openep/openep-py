@@ -108,14 +108,17 @@ class OpenEPGUI(QtWidgets.QMainWindow):
     def _create_preferences_dock(self):
         """Create a dockable widget for storing user preferences."""
 
+        # Create the preferences dock widget
         self.preferences_ui = openep.view.preferences_ui.PreferencesWidget("Preferences")
         self.preferences_ui.apply_or_discard.accepted.connect(self.accept_preferences)
         self.preferences_ui.apply_or_discard.rejected.connect(self.reject_preferences)
 
+        # Create the QSettings object that loads/write the settings from/to disk
         self.preferences_store = openep.view.preferences.PreferencesManager()
         self.preferences_store.settings_changed.connect(self.update_preferences)
 
-        self._create_preferences()
+        # Create the dictionary of preferences
+        self.preferences = self.preferences_store.extract_preferences()
 
         # Load the previously-stored settings if it exists.
         # Otherwise write one
@@ -139,94 +142,14 @@ class OpenEPGUI(QtWidgets.QMainWindow):
       
     def reject_preferences(self):
         """ Reload the settings from the settings store."""
+
         self.preferences_ui.apply_or_discard.setEnabled(False)
         self.preferences_store.update_widgets_from_settings(map=self.preferences_ui.map)
-
-    def _create_preferences(self):
-        """Create dictionary of preferences."""
-
-        data = {}
-
-        data["3D viewers"] = {}
-        data['3D viewers']['Secondary viewers'] = {}
-        
-        data["Tables"] = {}
-        data["Tables"]["Mapping points"] = {}
-        data["Tables"]["Mapping points"]["Show"] = {}
-        data["Tables"]["Recycle bin"] = {}
-        data["Tables"]["Recycle bin"]["Show"] = {}
-        data["Tables"]["Sort"] = {}
-
-        # 3D viewers settings
-        point_selection_id = self.preferences_store.settings.value('3D viewers/Point selection')
-        if point_selection_id == 0:
-            data['3D viewers']['Point selection'] = "3D points"
-        elif point_selection_id == 1:
-            data['3D viewers']['Point selection'] = "Projected points"
-        elif point_selection_id == 2:
-            data['3D viewers']['Point selection'] = "Off"
-
-        link_secondary_viewers = self.preferences_store.value('3D viewers/Secondary viewers/Link')
-        data['3D viewers']['Secondary viewers']['Link'] = link_secondary_viewers
-
-        # Table settings
-        columns = ['Index', 'Tag', 'Name', 'Voltage', 'LAT']
-
-        # Table settings: Mapping points
-        for column in columns:
-            show = self.preferences_store.value(f'Tables/Mapping points/Show/{column}')
-            data['Tables']['Mapping points']['Show'][column] = show
-
-        # Table settings: Recycle bin
-        for column in columns:
-            show = self.preferences_store.value(f'Tables/Recycle bin/Show/{column}')
-            data['Tables']['Recycle bin']['Show'][column] = show
-
-        # Table settings: Sorting
-        sort_by = self.preferences_store.value('Tables/Sort by')
-        sort_order_text = self.preferences_store.value('Tables/Sort order')
-        sort_order = Qt.AscendingOrder if sort_order_text == "Ascending" else Qt.DescendingOrder
-        data['Tables']['Sort by'] = sort_by
-        data['Tables']['Sort order'] = sort_order
-
-        # Table settings: Interpolate
-        interpolate = self.preferences_store.value('Tables/Interpolate')
-        data['Tables']['Interpolate'] = interpolate
-
-        self.preferences = data
 
     def update_preferences(self):
         """Update settings used by widgets in the GUI from the settings store."""
 
-        data = self.preferences
-
-        # 3D viewers settings
-        point_selection_id = self.preferences_store.settings.value('3D viewers/Point selection')
-        if point_selection_id == 0:
-            data['3D viewers']['Point selection'] = "3D points"
-        elif point_selection_id == 1:
-            data['3D viewers']['Point selection'] = "Projected points"
-        elif point_selection_id == 2:
-            data['3D viewers']['Point selection'] = "Off"
-
-        link_secondary_viewers = self.preferences_store.value('3D viewers/Secondary viewers/Link')
-        data['3D viewers']['Secondary viewers']['Link'] = link_secondary_viewers
-
-        # Table settings
-        # Table settings: Mapping points
-        for column in data['Tables']['Mapping points']['Show']:
-            show = self.preferences_store.value(f'Tables/Mapping points/Show/{column}')
-            data['Tables']['Mapping points']['Show'][column] = show
-
-        # Table settings: Recycle bin
-        for column in data['Tables']['Recycle bin']['Show']:
-            show = self.preferences_store.value(f'Tables/Recycle bin/Show/{column}')
-            data['Tables']['Recycle bin']['Show'][column] = show
-
-        interpolate = self.preferences_store.value('Tables/Interpolate')
-        data['Tables']['Interpolate'] = interpolate
-
-        self.preferences = data
+        self.preferences = self.preferences_store.extract_preferences()
 
     def _create_annotate_dock(self):
         """

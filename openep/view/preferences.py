@@ -75,3 +75,58 @@ class PreferencesManager(QtCore.QSettings):
 
         # Notify watcher of changed settings.
         self.settings_changed.emit()
+
+    def extract_preferences(self):
+        """Create dictionary of preferences."""
+
+        data = {}
+
+        data["3D viewers"] = {}
+        data['3D viewers']['Secondary viewers'] = {}
+        
+        data["Tables"] = {}
+        data["Tables"]["Mapping points"] = {}
+        data["Tables"]["Mapping points"]["Show"] = {}
+        data["Tables"]["Recycle bin"] = {}
+        data["Tables"]["Recycle bin"]["Show"] = {}
+        data["Tables"]["Sort"] = {}
+
+        # 3D viewers settings
+        # 3D viewers settings: Point selection
+        point_selection_id = self.settings.value('3D viewers/Point selection')
+        if point_selection_id == 0:
+            data['3D viewers']['Point selection'] = "3D points"
+        elif point_selection_id == 1:
+            data['3D viewers']['Point selection'] = "Projected points"
+        elif point_selection_id == 2:
+            data['3D viewers']['Point selection'] = "Off"
+
+        # 3D viewers settings: Secondary viewers
+        link_secondary_viewers = self.settings.value('3D viewers/Secondary viewers/Link')
+        data['3D viewers']['Secondary viewers']['Link'] = link_secondary_viewers
+
+        # Table settings
+        columns = ['Index', 'Tag', 'Name', 'Voltage', 'LAT']
+
+        # Table settings: Mapping points
+        for column in columns:
+            show = self.settings.value(f'Tables/Mapping points/Show/{column}')
+            data['Tables']['Mapping points']['Show'][column] = show
+
+        # Table settings: Recycle bin
+        for column in columns:
+            show = self.settings.value(f'Tables/Recycle bin/Show/{column}')
+            data['Tables']['Recycle bin']['Show'][column] = show
+
+        # Table settings: Sorting
+        sort_by = self.settings.value('Tables/Sort by')
+        sort_order_text = self.settings.value('Tables/Sort order')
+        sort_order = QtCore.Qt.AscendingOrder if sort_order_text == "Ascending" else QtCore.Qt.DescendingOrder
+        data['Tables']['Sort by'] = sort_by
+        data['Tables']['Sort order'] = sort_order
+
+        # Table settings: Interpolate
+        interpolate = self.settings.value('Tables/Interpolate')
+        data['Tables']['Interpolate'] = interpolate
+
+        return data
