@@ -84,11 +84,17 @@ class PreferencesManager(QtCore.QSettings):
 
         # 3D viewers settings
         # 3D viewers settings: Point selection
+        data['3DViewers/PointSelection'] = self.settings.value('3DViewers/PointSelection')
+        data['3DViewers/PointSelection/3D'] = self.settings.value('3DViewers/PointSelection/3D')
+        data['3DViewers/PointSelection/Surface'] = self.settings.value('3DViewers/PointSelection/Surface')
+        data['3DViewers/PointSelection/Off'] = self.settings.value('3DViewers/PointSelection/Off')
+
         point_selection_id = self.settings.value('3DViewers/PointSelection')
+        print(point_selection_id)
         if point_selection_id == 0:
-            data['3DViewers/PointSelection'] = "3D points"
+            data['3DViewers/PointSelection'] = "3DPoints"
         elif point_selection_id == 1:
-            data['3DViewers/PointSelection'] = "Projected points"
+            data['3DViewers/PointSelection'] = "ProjectedPoints"
         elif point_selection_id == 2:
             data['3DViewers/PointSelection'] = "Off"
 
