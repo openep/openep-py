@@ -132,18 +132,20 @@ class PreferencesManager(QtCore.QSettings):
         data['Annotate/Lines/Annotations/Linewidth'] = self.settings.value('Annotate/Lines/Annotations/Linewidth')
         data['Annotate/Lines/Annotations/Markersize'] = self.settings.value('Annotate/Lines/Annotations/Markersize')
 
-        data['Annotate/Gain/Min'] = self.settings.value('Annotate/Gain/Min')
-        data['Annotate/Gain/Max'] = self.settings.value('Annotate/Gain/Max')
-        data['Annotate/Gain/Prefactor'] = self.settings.value('Annotate/Gain/Prefactor')
+        data['Annotate/Gain/Min'] = float(self.settings.value('Annotate/Gain/Min'))
+        data['Annotate/Gain/Max'] = float(self.settings.value('Annotate/Gain/Max'))
+        data['Annotate/Gain/Prefactor'] = float(self.settings.value('Annotate/Gain/Prefactor'))
 
         data['Annotate/Interpolate'] = self.settings.value('Annotate/Interpolate')
 
         # Interpolation settings
         data['Interpolation/Method'] = self.settings.value('Interpolation/Method')
-        data['Interpolation/RBFParameters/Neighbours'] = self.settings.value('Interpolation/RBFParameters/Neighbours')
-        data['Interpolation/RBFParameters/Smoothing'] = self.settings.value('Interpolation/RBFParameters/Smoothing')
+        data['Interpolation/RBFParameters/Neighbours'] = int(self.settings.value('Interpolation/RBFParameters/Neighbours'))
+        if data['Interpolation/RBFParameters/Neighbours'] == 0:
+            data['Interpolation/RBFParameters/Neighbours'] = None
+        data['Interpolation/RBFParameters/Smoothing'] = float(self.settings.value('Interpolation/RBFParameters/Smoothing'))
         data['Interpolation/RBFParameters/Kernel'] = self.settings.value('Interpolation/RBFParameters/Kernel')
-        data['Interpolation/RBFParameters/Epsilon'] = self.settings.value('Interpolation/RBFParameters/Epsilon')
-        data['Interpolation/RBFParameters/Degree'] = self.settings.value('Interpolation/RBFParameters/Degree')
+        data['Interpolation/RBFParameters/Epsilon'] = float(self.settings.value('Interpolation/RBFParameters/Epsilon'))
+        data['Interpolation/RBFParameters/Degree'] = int(self.settings.value('Interpolation/RBFParameters/Degree'))
 
         return data
