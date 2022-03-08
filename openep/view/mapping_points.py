@@ -20,7 +20,7 @@
 Class and functions for handling and displaying list of mapping points.
 """
 
-from typing import Optional
+from typing import Optional, List
 
 from PySide2 import QtCore, QtWidgets, QtGui
 from PySide2.QtCore import Qt
@@ -148,10 +148,26 @@ class SortProxyModel(QtCore.QSortFilterProxyModel):
 class MappingPointsDock(CustomDockWidget):
     """A dockable widget for handling and displaying the mapping points data."""
 
-    def __init__(self, title: str, system: Optional[System] = None, model=None, proxy_model=None):
-
+    def __init__(
+        self,
+        title: str,
+        system: Optional[System] = None,
+        model: Optional[MappingPointsModel] = None,
+        proxy_model: Optional[QtCore.QSortFilterProxyModel] = None,
+        hide_columns: Optional[List[str]] = None,
+        ):
+        """
+        Args:
+            title (str): Title of the dock widget
+            system (System, optional): OpenEP-GUI system whose data will be displayed in the table
+            model (MappingPointsModel, optional): Model to use to the table view. If None, a model will be created.
+            proxy_model (QSortFilterProxyModel, optional): Proxy model to use for filtering and sorting.
+                If None, a proxy model for sorting will be created.
+            hide_columns (List of str, optional): Names of columns to hide. If None, no columns will be hidden.
+        """
         super().__init__(title)
-        
+        hide_columns = [] if hide_columns is None else hide_columns
+
         self.model = model if model is not None else MappingPointsModel(system=system)
         self.proxy_model = proxy_model if proxy_model is not None else SortProxyModel()
         self.proxy_model.setSourceModel(self.model)
@@ -174,7 +190,12 @@ class MappingPointsDock(CustomDockWidget):
         self.main = QtWidgets.QMainWindow()
         self.main.setCentralWidget(self.table)
         self.setWidget(self.main)
-        
+
+        # Hide columns if necessary
+        for column_index, column_name in enumerate(self.model.headers):
+            hide = True if column_name in hide_columns else False
+            self.table.setColumnHidden(column_index, hide)
+
         self._init_header_context_menu()
         self._init_table_context_menu()
 
@@ -188,14 +209,17 @@ class MappingPointsDock(CustomDockWidget):
         self.header_menu = QtWidgets.QMenu()
         show_menu = QtWidgets.QMenu("Show/hide")
         self.header_menu.addMenu(show_menu)
-        
-        for column_name in self.model.headers:
-            action = QtWidgets.QAction(column_name, self.main, checkable=True, checked=True)
+
+        self.header_menu_actions = {}
+        for column_index, column_name in enumerate(self.model.headers):
+            checked = not self.table.isColumnHidden(column_index)
+            action = QtWidgets.QAction(column_name, self.main, checkable=True, checked=checked)
             show_menu.addAction(action)
             action.toggled.connect(
                 lambda checked, name=column_name: self.column_visibility(checked, self.model._column_indices[name])
             )
-        
+            self.header_menu_actions[column_name] = action
+
     def _launch_header_context_menu(self, pos):
         self.header_menu.exec_(QtGui.QCursor.pos())
 
@@ -219,9 +243,25 @@ class MappingPointsDock(CustomDockWidget):
 class RecycleBinDock(MappingPointsDock):
     """A dockable widget for handling and displaying deleted mapping points."""
 
-    def __init__(self, title: str, system: Optional[System] = None, model=None, proxy_model=None):
+    def __init__(
+        self,
+        title: str,
+        system: Optional[System] = None,
+        model: Optional[MappingPointsModel] = None,
+        proxy_model: Optional[QtCore.QSortFilterProxyModel] = None,
+        hide_columns: Optional[List[str]] = None,
+        ):
+        """
+        Args:
+            title (str): Title of the dock widget
+            system (System, optional): OpenEP-GUI system whose data will be displayed in the table
+            model (MappingPointsModel, optional): Model to use to the table view. If None, a model will be created.
+            proxy_model (QSortFilterProxyModel, optional): Proxy model to use for filtering and sorting.
+                If None, a proxy model for sorting will be created.
+            hide_columns (List of str, optional): Names of columns to hide. If None, no columns will be hidden.
+        """
 
-        super().__init__(title, system, model, proxy_model)
+        super().__init__(title, system, model, proxy_model, hide_columns)
 
     def _init_table_context_menu(self):
         """Create a menu for hiding selected rows. These """

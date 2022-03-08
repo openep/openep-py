@@ -155,10 +155,14 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.preferences = new_preferences
 
         print(f"{changed_preferences=}")
-        if not changed_preferences or self.system_manager.active_system is None:
+        if not changed_preferences:
             return
-        # TODO: If necessary, update GUI to take into account changed preferences.
-        #       e.g. Min/max gain, linewidth and markersize in the annotation viewer.
+
+        # TODO: Will this still work if there is an active system but it does not
+        #       have electrograms loaded into the annotation viewer?
+        if self.system_manager.active_system is None:
+            self._update_tables_preferences(changed_preferences)
+            return
 
         if self.system_manager.active_system.plotters:
             self._update_3D_viewer_preferences(changed_preferences)
@@ -244,6 +248,24 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         self.annotate_dock.blit_artists()
 
+    def _update_tables_preferences(self, changed_preferences):
+        """Hide/show columns if the default visibility has been changed before a system has been loaded."""
+
+        if not any('Hide' in key for key in changed_preferences):
+            return
+
+        hide_mapping_points_columns = self.preferences['Tables/MappingPoints/Hide']
+        hide_recycle_bin_columns = self.preferences['Tables/RecycleBin/Hide']
+        for column_index, column_name in enumerate(self.mapping_points.model.headers):
+
+            hide = True if column_name in hide_mapping_points_columns else False
+            self.mapping_points.table.setColumnHidden(column_index, hide)
+            self.mapping_points.header_menu_actions[column_name].setChecked(not hide)
+
+            hide = True if column_name in hide_recycle_bin_columns else False
+            self.recycle_bin.table.setColumnHidden(column_index, hide)
+            self.recycle_bin.header_menu_actions[column_name].setChecked(not hide)
+
     def _create_annotate_dock(self):
         """
         Create a dockable widget for annotating electrograms with matplotlib.
@@ -291,6 +313,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.mapping_points = openep.view.mapping_points.MappingPointsDock(
             title="Mapping points",
             system=None,
+            hide_columns=self.preferences['Tables/MappingPoints/Hide'],
         )
         self.mapping_points.delete_points.triggered.connect(
             lambda: self.delete_mapping_points(table=self.mapping_points.table, restore=False)
@@ -309,6 +332,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             system=None,
             model=self.mapping_points.model,
             proxy_model=self.mapping_points.proxy_model,
+            hide_columns=self.preferences['Tables/RecycleBin/Hide'],
         )
         self.recycle_bin.restore_points.triggered.connect(
             lambda: self.delete_mapping_points(table=self.recycle_bin.table, restore=True)
@@ -673,7 +697,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                     plotter, actor_name=actor_name,
                 )
             )
-        
+
         # Connect slots for controlling colourbar limits, mesh opacity, and linking of plotters
         plotter.lower_limit.returnPressed.connect(lambda: self.update_colourbar_limits(system, index=index))
         plotter.upper_limit.returnPressed.connect(lambda: self.update_colourbar_limits(system, index=index))
@@ -790,7 +814,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         # If this is the first 3d viewer for the first system loaded, we need to update the egms etc.
         if (system.name == self.system_manager.active_system.name) and (len(system.plotters) == 1):
-            self.change_active_system(system)
+            self.change_active_system(system, hide_table_columns=True)
             self.addDockWidget(Qt.LeftDockWidgetArea, dock)
         else:
             active_parent = self.system_manager.active_system.docks[0]
@@ -885,13 +909,18 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         plotter.link_view_with_primary.setToolTip("3D viewer is independent of the primary 3D viewer")
         plotter.link_view_with_primary.setIcon(QtGui.QIcon(openep.view.static.UNLINK_ICON))
 
-    def change_active_system(self, system):
+    def change_active_system(self, system, hide_table_columns=False):
         """
         Update selected active system.
 
         Make the menubars blue for all 3d viewers of the active system.
         If the active system has electrograms, plot these in the annotation viewer.
         Update the mapping points and recycle bin tables with the electrical data.
+
+        Args:
+            system (System): System to make active
+            hide_table_columns (bool, optional): If True, hide columns in the mapping points and
+                recycle bin tables based on user preferences
         """
 
         self.system_manager_ui._active_system_button_group.blockSignals(True)
@@ -916,7 +945,18 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             self.annotate_dock.deactivate_figure()
 
         self.mapping_points.model.system = system  # the recycle bin shares the same model
-        
+        if hide_table_columns:
+            
+            hide_mapping_points_columns = self.preferences['Tables/MappingPoints/Hide']
+            hide_recycle_bin_columns = self.preferences['Tables/RecycleBin/Hide']
+            for column_index, column_name in enumerate(self.mapping_points.model.headers):
+
+                hide = True if column_name in hide_mapping_points_columns else False
+                self.mapping_points.table.setColumnHidden(column_index, hide)
+
+                hide = True if column_name in hide_recycle_bin_columns else False
+                self.recycle_bin.table.setColumnHidden(column_index, hide)
+
         # move points to the recycle bin if necessary
         self._hide_mapping_points()
         
