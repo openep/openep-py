@@ -119,8 +119,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         # Load the previously-stored settings if it exists.
         # Otherwise write one
-        home = pathlib.Path.home()
-        config = home / ".config/OpenEP-GUI/settings.conf"
+        config = pathlib.Path(self.preferences_store.settings.fileName())
         if config.is_file():
             self.preferences_store.update_widgets_from_settings(map=self.preferences_ui.map)
         else:
