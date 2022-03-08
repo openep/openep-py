@@ -132,4 +132,12 @@ class PreferencesManager(QtCore.QSettings):
 
         data['Annotate/Interpolate'] = self.settings.value('Annotate/Interpolate')
 
+        # Interpolation settings
+        data['Interpolation/Method'] = self.settings.value('Interpolation/Method')
+        data['Interpolation/RBFParameters/Neighbours'] = self.settings.value('Interpolation/RBFParameters/Neighbours')
+        data['Interpolation/RBFParameters/Smoothing'] = self.settings.value('Interpolation/RBFParameters/Smoothing')
+        data['Interpolation/RBFParameters/Kernel'] = self.settings.value('Interpolation/RBFParameters/Kernel')
+        data['Interpolation/RBFParameters/Epsilon'] = self.settings.value('Interpolation/RBFParameters/Epsilon')
+        data['Interpolation/RBFParameters/Degree'] = self.settings.value('Interpolation/RBFParameters/Degree')
+
         return data

@@ -546,6 +546,14 @@ class PreferencesWidget(CustomDockWidget):
         interpolation.setLayout(layout)
         self.tabs.addTab(interpolation, "Interpolation")
 
+        # Add widgets to map
+        self.map["Interpolation/Method"] = select_method
+        self.map["Interpolation/RBFParameters/Neighbours"] = neighbours
+        self.map["Interpolation/RBFParameters/Smoothing"] = smoothing
+        self.map["Interpolation/RBFParameters/Kernel"] = kernel
+        self.map["Interpolation/RBFParameters/Epsilon"] = epsilon
+        self.map["Interpolation/RBFParameters/Degree"] = degree
+
     def create_accept_discard_buttons(self):
         """Buttons for applying or discarding the changes made to the settings."""
 
