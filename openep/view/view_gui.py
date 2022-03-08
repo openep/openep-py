@@ -139,7 +139,7 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.preferences_store.sync()
 
         self.blockSignals(False)
-      
+
     def reject_preferences(self):
         """ Reload the settings from the settings store."""
 
@@ -226,7 +226,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.recycle_bin.table.selectionModel().currentChanged.connect(
             lambda: self.update_selected_mapping_point(table=self.recycle_bin.table)
         )
-        
 
     def _add_dock_widgets(self):
         """
