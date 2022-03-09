@@ -959,14 +959,17 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                 hide = True if column_name in hide_recycle_bin_columns else False
                 self.recycle_bin.table.setColumnHidden(column_index, hide)
 
+            # This also sort the recycle bin table
+            sort_by_text = self.preferences['Tables/SortBy']
+            sort_by_index = self.mapping_points.model.headers.index(sort_by_text)
+            self.mapping_points.table.horizontalHeader().setSortIndicator(
+                sort_by_index,
+                self.preferences['Tables/SortOrder'],
+            )
+
         # move points to the recycle bin if necessary
         self._hide_mapping_points()
         
-        # Sort by the index of the mapping points (this will also sort the recycle bin)
-        self.mapping_points.table.horizontalHeader().setSortIndicator(
-            0, Qt.AscendingOrder,
-        )
-
         if len(system.plotters):
             plotter = system.plotters[0]
             system._highlight_actor.SetVisibility(True)
