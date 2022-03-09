@@ -38,7 +38,7 @@ class PreferencesManager(QtCore.QSettings):
         'QComboBox': ('currentText', 'setCurrentText', str),
         'QSpinBox': ('value', 'setValue', int),
         'QDoubleSpinBox': ('value', 'setValue', float),
-        'QButtonGroup': ('checkedId', 'setId', int),
+        'QButtonGroup': ('checkedId', 'button', int),  # 'button' is not used to set anything
     }
 
     settings_changed = QtCore.Signal()
