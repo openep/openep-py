@@ -85,12 +85,11 @@ class PreferencesManager(QtCore.QSettings):
 
         # 3D viewers settings
         # 3D viewers settings: Point selection
-        data['3DViewers/PointSelection'] = self.settings.value('3DViewers/PointSelection')
-        data['3DViewers/PointSelection/3D'] = self.settings.value('3DViewers/PointSelection/3D')
-        data['3DViewers/PointSelection/Surface'] = self.settings.value('3DViewers/PointSelection/Surface')
-        data['3DViewers/PointSelection/Off'] = self.settings.value('3DViewers/PointSelection/Off')
+        data['3DViewers/PointSelection/3D'] = bool(self.settings.value('3DViewers/PointSelection/3D'))
+        data['3DViewers/PointSelection/Surface'] = bool(self.settings.value('3DViewers/PointSelection/Surface'))
+        data['3DViewers/PointSelection/Off'] = bool(self.settings.value('3DViewers/PointSelection/Off'))
 
-        point_selection_id = self.settings.value('3DViewers/PointSelection')
+        point_selection_id = int(self.settings.value('3DViewers/PointSelection'))
         if point_selection_id == 0:
             data['3DViewers/PointSelection'] = "3DPoints"
         elif point_selection_id == 1:
@@ -99,7 +98,7 @@ class PreferencesManager(QtCore.QSettings):
             data['3DViewers/PointSelection'] = "Off"
 
         # 3D viewers settings: Secondary viewers
-        link_secondary_viewers = self.settings.value('3DViewers/SecondaryViewers/Link')
+        link_secondary_viewers = bool(self.settings.value('3DViewers/SecondaryViewers/Link'))
         data['3DViewers/SecondaryViewers/Link'] = link_secondary_viewers
 
         # Table settings
@@ -127,7 +126,7 @@ class PreferencesManager(QtCore.QSettings):
         data['Tables/SortOrder'] = sort_order
 
         # Table settings: Interpolate
-        interpolate = self.settings.value('Tables/Interpolate')
+        interpolate = bool(self.settings.value('Tables/Interpolate'))
         data['Tables/Interpolate'] = interpolate
 
         # Annotation settings
@@ -140,7 +139,7 @@ class PreferencesManager(QtCore.QSettings):
         data['Annotate/Gain/Max'] = float(self.settings.value('Annotate/Gain/Max'))
         data['Annotate/Gain/Prefactor'] = float(self.settings.value('Annotate/Gain/Prefactor'))
 
-        data['Annotate/Interpolate'] = self.settings.value('Annotate/Interpolate')
+        data['Annotate/Interpolate'] = bool(self.settings.value('Annotate/Interpolate'))
 
         # Interpolation settings
         data['Interpolation/Method'] = self.settings.value('Interpolation/Method')
