@@ -126,10 +126,14 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         else:
             self.preferences_store.update_settings_from_widgets(
                 map=self.preferences_ui.map,
-                emit_change=False,  # Don't emit - otherwise self.update_preferences is called
+                emit_change=False,  # Don't emit - otherwise self.update_preferences is called but it doesn't exist
             )
 
         self.preferences = self.preferences_store.extract_preferences()
+
+        # We need to do this to ensure the correct the store has the correct types.
+        # If the preferences were loaded from disk, then all types are currently str.
+        self.preferences_store.update_settings_from_widgets(map=self.preferences_ui.map)
 
     def accept_preferences(self):
         """Copy widget state to the settings manager."""
