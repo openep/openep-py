@@ -1017,7 +1017,6 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         We use a buffer of zero as the window of interest if determined by the user,
         via self.slider (mpl.widgets.RangeSlider) and self.set_woi_button (mpl.widgets.Button).
         """
-
         system = self.system_manager.active_system if system is None else system
         case = system.case
 
@@ -1026,12 +1025,16 @@ class OpenEPGUI(QtWidgets.QMainWindow):
                 case,
                 max_distance=None,
                 buffer=0,
+                method=self.preferences['Interpolation/Method'],
+                method_kws=self.preferences['Interpolation/Parameters'],
             )
             unipolar_voltage = openep.case.interpolate_voltage_onto_surface(
                 case,
                 max_distance=None,
                 buffer=0,
                 bipolar=False,
+                method=self.preferences['Interpolation/Method'],
+                method_kws=self.preferences['Interpolation/Parameters'],
             )
         except ValueError as e:
 
