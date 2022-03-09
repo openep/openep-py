@@ -62,7 +62,7 @@ class PreferencesManager(QtCore.QSettings):
                 except Exception as e:
                     print(e)  # handle type error
 
-    def update_settings_from_widgets(self, map):
+    def update_settings_from_widgets(self, map, emit_change=True):
         for name, widget in map.items():
             cls = widget.__class__.__name__
             getter, setter, dtype = self.widget_mappers.get(cls, (None, None))
@@ -75,7 +75,8 @@ class PreferencesManager(QtCore.QSettings):
                     self.settings.setValue(name, value)  # Set the settings.
 
         # Notify watcher of changed settings.
-        self.settings_changed.emit()
+        if emit_change:
+            self.settings_changed.emit()
 
     def extract_preferences(self):
         """Create dictionary of preferences."""
