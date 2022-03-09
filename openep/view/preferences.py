@@ -52,10 +52,10 @@ class PreferencesManager(QtCore.QSettings):
     def update_widgets_from_settings(self, map):
         for name, widget in map.items():
             cls = widget.__class__.__name__
-            print(self.widget_mappers.get(cls, (None, None)), cls)
+            #print(self.widget_mappers.get(cls, (None, None)), cls)
             getter, setter, dtype = self.widget_mappers.get(cls, (None, None))
             value = self.settings.value(name, type=dtype)
-            print("load:", getter, setter, value, type(value), dtype)
+            #print("load:", getter, setter, value, type(value), dtype)
             if setter and value is not None:
                 fn = getattr(widget, setter)
                 try:
@@ -67,11 +67,11 @@ class PreferencesManager(QtCore.QSettings):
         for name, widget in map.items():
             cls = widget.__class__.__name__
             getter, setter, dtype = self.widget_mappers.get(cls, (None, None))
-            print("save:", getter, setter)
+            #print("save:", getter, setter)
             if getter:
                 fn = getattr(widget, getter)
                 value = fn()
-                print("-- value:", value, type(value), dtype)
+                #print("-- value:", value, type(value), dtype)
                 if value is not None:
                     self.settings.setValue(name, value)  # Set the settings.
 
