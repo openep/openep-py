@@ -51,12 +51,6 @@ class PreferencesWidget(CustomDockWidget):
         self.create_annotation_settings()
         self.create_interpolation_settings()
 
-        # TODO:
-        # Add tab for the mapping points tables.
-        # Default columns visible
-        # Default sorting (column name, ascending or descinding)
-        # Interpolate on deleting/restoring mapping points
-
         # Add widget for accepting/rejecting changes to the settings
         self.create_accept_discard_buttons()
 
@@ -203,7 +197,6 @@ class PreferencesWidget(CustomDockWidget):
             "LAT",
         ])
         sort_by.setMinimumWidth(120)
-        # TODO: can use sort_by.setCurrentText('TEXT') to set the default selection
 
         sort_order_text = QtWidgets.QLabel("Order")
         sort_order = QtWidgets.QComboBox()
@@ -256,10 +249,6 @@ class PreferencesWidget(CustomDockWidget):
         """Settings for using the annotation viewer."""
 
         layout = QtWidgets.QVBoxLayout()
-
-        # TODO: set validators for QLineEdit
-        # See: https://zetcode.com/pyqt/qlineedit/
-        # or https://stackoverflow.com/a/13423244/17623640
 
         # TODO: Add legend section
         #       Fontsize
