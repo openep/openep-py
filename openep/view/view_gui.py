@@ -123,17 +123,8 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         config = pathlib.Path(self.preferences_store.settings.fileName())
         if config.is_file():
             self.preferences_store.update_widgets_from_settings(map=self.preferences_ui.map)
-        else:
-            self.preferences_store.update_settings_from_widgets(
-                map=self.preferences_ui.map,
-                emit_change=False,  # Don't emit - otherwise self.update_preferences is called but it doesn't exist
-            )
 
-        self.preferences = self.preferences_store.extract_preferences()
-
-        # We need to do this to ensure the correct the store has the correct types.
-        # If the preferences were loaded from disk, then all types are currently str.
-        self.preferences_store.update_settings_from_widgets(map=self.preferences_ui.map)
+        self.preferences = self.preferences_ui.extract_preferences()
 
     def accept_preferences(self):
         """Copy widget state to the settings manager."""
@@ -154,9 +145,9 @@ class OpenEPGUI(QtWidgets.QMainWindow):
         self.preferences_store.update_widgets_from_settings(map=self.preferences_ui.map)
 
     def update_preferences(self):
-        """Update settings used by widgets in the GUI from the settings store."""
+        """Update settings used by widgets in the GUI based on values set in the preferences dock."""
 
-        new_preferences = self.preferences_store.extract_preferences()
+        new_preferences = self.preferences_ui.extract_preferences()
         changed_preferences = {key: value for key, value in new_preferences.items() if value != self.preferences[key]}
         self.preferences = new_preferences
 
@@ -262,14 +253,12 @@ class OpenEPGUI(QtWidgets.QMainWindow):
 
         hide_mapping_points_columns = self.preferences['Tables/MappingPoints/Hide']
         hide_recycle_bin_columns = self.preferences['Tables/RecycleBin/Hide']
-        for column_index, column_name in enumerate(self.mapping_points.model.headers):
+        for column_name in self.mapping_points.model.headers:
 
             hide = True if column_name in hide_mapping_points_columns else False
-            self.mapping_points.table.setColumnHidden(column_index, hide)
             self.mapping_points.header_menu_actions[column_name].setChecked(not hide)
 
             hide = True if column_name in hide_recycle_bin_columns else False
-            self.recycle_bin.table.setColumnHidden(column_index, hide)
             self.recycle_bin.header_menu_actions[column_name].setChecked(not hide)
 
     def _create_annotate_dock(self):
@@ -955,13 +944,13 @@ class OpenEPGUI(QtWidgets.QMainWindow):
             
             hide_mapping_points_columns = self.preferences['Tables/MappingPoints/Hide']
             hide_recycle_bin_columns = self.preferences['Tables/RecycleBin/Hide']
-            for column_index, column_name in enumerate(self.mapping_points.model.headers):
+            for column_name in self.mapping_points.model.headers:
 
                 hide = True if column_name in hide_mapping_points_columns else False
-                self.mapping_points.table.setColumnHidden(column_index, hide)
+                self.mapping_points.header_menu_actions[column_name].setChecked(not hide)
 
                 hide = True if column_name in hide_recycle_bin_columns else False
-                self.recycle_bin.table.setColumnHidden(column_index, hide)
+                self.recycle_bin.header_menu_actions[column_name].setChecked(not hide)
 
             # This also sort the recycle bin table
             sort_by_text = self.preferences['Tables/SortBy']

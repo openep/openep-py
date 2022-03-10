@@ -22,7 +22,6 @@ Create a preferences manager.
 """
 
 from PySide2 import QtCore
-from scipy.interpolate import RBFInterpolator
 
 __all__ = ["PreferencesManager"]
 
@@ -63,7 +62,7 @@ class PreferencesManager(QtCore.QSettings):
                 except Exception as e:
                     print(e)  # handle type error
 
-    def update_settings_from_widgets(self, map, emit_change=True):
+    def update_settings_from_widgets(self, map):
         for name, widget in map.items():
             cls = widget.__class__.__name__
             getter, setter, dtype = self.widget_mappers.get(cls, (None, None))
@@ -76,89 +75,4 @@ class PreferencesManager(QtCore.QSettings):
                     self.settings.setValue(name, value)  # Set the settings.
 
         # Notify watcher of changed settings.
-        if emit_change:
-            self.settings_changed.emit()
-
-    def extract_preferences(self):
-        """Create dictionary of preferences."""
-
-        data = {}
-
-        # 3D viewers settings
-        # 3D viewers settings: Point selection
-        data['3DViewers/PointSelection/3D'] = bool(self.settings.value('3DViewers/PointSelection/3D'))
-        data['3DViewers/PointSelection/Surface'] = bool(self.settings.value('3DViewers/PointSelection/Surface'))
-        data['3DViewers/PointSelection/Off'] = bool(self.settings.value('3DViewers/PointSelection/Off'))
-
-        point_selection_id = int(self.settings.value('3DViewers/PointSelection'))
-        if point_selection_id == 0:
-            data['3DViewers/PointSelection'] = "3DPoints"
-        elif point_selection_id == 1:
-            data['3DViewers/PointSelection'] = "ProjectedPoints"
-        elif point_selection_id == 2:
-            data['3DViewers/PointSelection'] = "Off"
-
-        # 3D viewers settings: Secondary viewers
-        link_secondary_viewers = bool(self.settings.value('3DViewers/SecondaryViewers/Link'))
-        data['3DViewers/SecondaryViewers/Link'] = link_secondary_viewers
-
-        # Table settings
-        columns = ['Index', 'Tag', 'Name', 'Voltage', 'LAT']
-
-        # Table settings: Mapping points
-        data[f'Tables/MappingPoints/Hide'] = []
-        for column in columns:
-            show = self.settings.value(f'Tables/MappingPoints/Show/{column}')
-            if not show:
-                data[f'Tables/MappingPoints/Hide'].append(column)
-
-        # Table settings: Recycle bin
-        data[f'Tables/RecycleBin/Hide'] = []
-        for column in columns:
-            show = self.settings.value(f'Tables/RecycleBin/Show/{column}')
-            if not show:
-                data[f'Tables/RecycleBin/Hide'].append(column)
-
-        # Table settings: Sorting
-        sort_by = self.settings.value('Tables/SortBy')
-        sort_order_text = self.settings.value('Tables/SortOrder')
-        sort_order = QtCore.Qt.AscendingOrder if sort_order_text == "Ascending" else QtCore.Qt.DescendingOrder
-        data['Tables/SortBy'] = sort_by
-        data['Tables/SortOrder'] = sort_order
-
-        # Table settings: Interpolate
-        interpolate = bool(self.settings.value('Tables/Interpolate'))
-        data['Tables/Interpolate'] = interpolate
-
-        # Annotation settings
-        data['Annotate/Lines/Signals/Linewidth/Active'] = self.settings.value('Annotate/Lines/Signals/Linewidth/Active')
-        data['Annotate/Lines/Signals/Linewidth/Other'] = self.settings.value('Annotate/Lines/Signals/Linewidth/Other')
-        data['Annotate/Lines/Annotations/Linewidth'] = self.settings.value('Annotate/Lines/Annotations/Linewidth')
-        data['Annotate/Lines/Annotations/Markersize'] = self.settings.value('Annotate/Lines/Annotations/Markersize')
-
-        data['Annotate/Gain/Min'] = float(self.settings.value('Annotate/Gain/Min'))
-        data['Annotate/Gain/Max'] = float(self.settings.value('Annotate/Gain/Max'))
-        data['Annotate/Gain/Prefactor'] = float(self.settings.value('Annotate/Gain/Prefactor'))
-
-        data['Annotate/Interpolate'] = bool(self.settings.value('Annotate/Interpolate'))
-
-        # Interpolation settings
-        method_text = self.settings.value('Interpolation/Method')
-
-        if method_text == "RBF":
-
-            method = RBFInterpolator
-            neighbours = int(self.settings.value('Interpolation/RBFParameters/Neighbours'))
-            neighbours = None if neighbours == 0 else neighbours
-            parameters = {
-                "neighbors": neighbours,
-                "smoothing": float(self.settings.value('Interpolation/RBFParameters/Smoothing')),
-                "kernel": self.settings.value('Interpolation/RBFParameters/Kernel'),
-                "epsilon": float(self.settings.value('Interpolation/RBFParameters/Epsilon')),
-                "degree": int(self.settings.value('Interpolation/RBFParameters/Degree')),
-            }
-
-        data['Interpolation/Method'] = method
-        data['Interpolation/Parameters'] = parameters
-
-        return data
+        self.settings_changed.emit()
