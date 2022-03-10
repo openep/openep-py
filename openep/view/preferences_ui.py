@@ -21,11 +21,13 @@
 Create a dock widget for the setting preferences.
 """
 
-from PySide2 import QtWidgets, QtGui
+from PySide2 import QtWidgets, QtGui, QtCore
 from PySide2.QtCore import Qt
+from scipy.interpolate import RBFInterpolator
 
 from openep.view.custom_widgets import CustomDockWidget
 
+__all__ = ['PreferencesWidget']
 
 class PreferencesWidget(CustomDockWidget):
 
@@ -587,3 +589,88 @@ class PreferencesWidget(CustomDockWidget):
 
     def enable_apply_or_discard(self):
         self.apply_or_discard.setEnabled(True)
+
+    def extract_preferences(self):
+        """Create dictionary of preferences."""
+
+        data = {}
+
+        # 3D viewers settings
+        # 3D viewers settings: Point selection
+        data['3DViewers/PointSelection/3D'] = self.map['3DViewers/PointSelection/3D'].isChecked()
+        data['3DViewers/PointSelection/Surface'] = self.map['3DViewers/PointSelection/Surface'].isChecked()
+        data['3DViewers/PointSelection/Off'] = self.map['3DViewers/PointSelection/Off'].isChecked()
+
+        point_selection_id = self.map['3DViewers/PointSelection'].checkedId()
+        if point_selection_id == 0:
+            data['3DViewers/PointSelection'] = "3DPoints"
+        elif point_selection_id == 1:
+            data['3DViewers/PointSelection'] = "ProjectedPoints"
+        elif point_selection_id == 2:
+            data['3DViewers/PointSelection'] = "Off"
+
+        # 3D viewers settings: Secondary viewers
+        link_secondary_viewers = self.map['3DViewers/SecondaryViewers/Link'].isChecked()
+        data['3DViewers/SecondaryViewers/Link'] = link_secondary_viewers
+
+        # Table settings
+        columns = ['Index', 'Tag', 'Name', 'Voltage', 'LAT']
+
+        # Table settings: Mapping points
+        data[f'Tables/MappingPoints/Hide'] = []
+        for column in columns:
+            show = self.map[f'Tables/MappingPoints/Show/{column}'].isChecked()
+            if not show:
+                data[f'Tables/MappingPoints/Hide'].append(column)
+
+        # Table settings: Recycle bin
+        data[f'Tables/RecycleBin/Hide'] = []
+        for column in columns:
+            show = self.map[f'Tables/RecycleBin/Show/{column}'].isChecked()
+            if not show:
+                data[f'Tables/RecycleBin/Hide'].append(column)
+
+        # Table settings: Sorting
+        sort_by = self.map['Tables/SortBy'].currentText()
+        sort_order_text = self.map['Tables/SortOrder'].currentText()
+        sort_order = QtCore.Qt.AscendingOrder if sort_order_text == "Ascending" else QtCore.Qt.DescendingOrder
+        data['Tables/SortBy'] = sort_by
+        data['Tables/SortOrder'] = sort_order
+
+        # Table settings: Interpolate
+        interpolate =self.map['Tables/Interpolate'].isChecked()
+        data['Tables/Interpolate'] = interpolate
+
+        # Annotation settings
+        data['Annotate/Lines/Signals/Linewidth/Active'] = self.map['Annotate/Lines/Signals/Linewidth/Active'].value()
+        data['Annotate/Lines/Signals/Linewidth/Other'] = self.map['Annotate/Lines/Signals/Linewidth/Other'].value()
+        data['Annotate/Lines/Annotations/Linewidth'] = self.map['Annotate/Lines/Annotations/Linewidth'].value()
+        data['Annotate/Lines/Annotations/Markersize'] = self.map['Annotate/Lines/Annotations/Markersize'].value()
+
+        data['Annotate/Gain/Min'] = float(self.map['Annotate/Gain/Min'].text())
+        data['Annotate/Gain/Max'] = float(self.map['Annotate/Gain/Max'].text())
+        data['Annotate/Gain/Prefactor'] = float(self.map['Annotate/Gain/Prefactor'].text())
+
+        self.map['Annotate/Interpolate'].isChecked()
+
+        # Interpolation settings
+        method_text = self.map['Interpolation/Method'].currentText()
+
+        if method_text == "RBF":
+
+            method = RBFInterpolator
+            neighbours = int(self.map['Interpolation/RBFParameters/Neighbours'].text())
+            neighbours = None if neighbours == 0 else neighbours
+            parameters = {
+                "neighbors": neighbours,
+                "smoothing": self.map['Interpolation/RBFParameters/Smoothing'].value(),
+                "kernel": self.map['Interpolation/RBFParameters/Kernel'].currentText(),
+                "epsilon": self.map['Interpolation/RBFParameters/Epsilon'].value(),
+                "degree": self.map['Interpolation/RBFParameters/Degree'].value(),
+            }
+
+        data['Interpolation/Method'] = method
+        data['Interpolation/Parameters'] = parameters
+
+        return data
+
