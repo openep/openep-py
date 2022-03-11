@@ -8,10 +8,6 @@ pandas
 scikit-learn
 matplotlib>3.5
 pyvista>=0.33
-pyvistaqt>=0.6
-PySide2
-qdarkstyle
-mplcyberpunk
 pymeshfix
 trimesh
 shapely
