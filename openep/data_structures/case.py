@@ -234,7 +234,10 @@ class Case:
                 " but the number of points in the mesh is ", len(self.points), " . "
             )
 
-        names = np.arange(len(unipolar)).astype(str)
+        self.electric.internal_names = np.full(len(unipolar), fill_value="", dtype=str)
+        names = np.asarray([f'P{index}' for index in range(len(unipolar))], dtype=str)
+        self.electric.names = names
+
         bipolar, pair_indices = bipolar_from_unipolar_surface_points(
             unipolar=unipolar,
             indices=self.indices,
