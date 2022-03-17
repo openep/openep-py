@@ -589,7 +589,7 @@ def bipolar_from_unipolar_surface_points(unipolar, indices):
             neighbours=unipolar[connected_vertices],
         )
         bipolar[index] = index_bipolar
-        pair_indices[index] = [index, pair_index]
+        pair_indices[index] = [index, connected_vertices[pair_index]]
 
     return bipolar, pair_indices
 
