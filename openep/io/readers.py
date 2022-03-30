@@ -26,8 +26,7 @@ Note
 ----
 
 `openep-py` is currently only able to load:
-    * data exported from the MATLAB implementation of OpenEP. Further, the
-     `rfindex` data is not yet loaded.
+    * data exported from the MATLAB implementation of OpenEP. Further, the `rfindex` data is not yet loaded.
     * data from an openCARP simulation
 
 
