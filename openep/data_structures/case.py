@@ -81,7 +81,7 @@ import numpy as np
 import pyvista
 
 from .surface import Fields
-from .electric import Electric, Electrogram, Annotations
+from .electric import Electric, Electrogram, Annotations, ECG
 from .ablation import Ablation
 from ..case.case_routines import bipolar_from_unipolar_surface_points
 
@@ -206,6 +206,8 @@ class Case:
         self,
         unipolar,
         add_bipolar=True,
+        add_reference=True,
+        add_ecg=True,
         add_annotations=True,
     ):
         """Add unipolar electrograms into the Case object.
@@ -221,6 +223,10 @@ class Case:
             add_bipolar (bool): If True, bipolar electrograms and associated data
                 (voltages, names, points) will be determined from the unipolar
                 electrograms and returned.
+            add_reference (bool): If True, reference electrograms will be created. All signals will
+                have values of 0 at every time point.
+            add_ecg (bool): If True, ecgs will be created. All signals will have values of 0 at every
+                time point.
             add_annotations (bool): If True, default annotations of the electrograms will
                 be created and returned. The window of interest will be set to
                 cover the entire period of the electrogram traces, and the reference
@@ -266,13 +272,31 @@ class Case:
 
         if add_bipolar:
 
+            voltage = np.ptp(bipolar, axis=1)
             bipolar_egm = Electrogram(
                 egm=bipolar,
                 points=self.points.copy(),
-                voltage=np.ptp(bipolar, axis=1),
+                voltage=voltage,
+                gain=np.ones_like(voltage, dtype=float),
                 names=names,
             )
             self.electric.bipolar_egm = bipolar_egm
+
+        if add_reference:
+
+            reference_egm = Electrogram(
+                egm=np.zeros_like(bipolar),
+                gain=np.ones(len(unipolar), dtype=float),
+            )
+            self.electric.reference_egm = reference_egm
+
+        if add_ecg:
+
+            ecg = ECG(
+                ecg=np.zeros_like(bipolar),
+                gain=np.ones(len(unipolar), dtype=float),
+            )
+            self.electric.ecg = ecg
 
         if add_annotations:
 
@@ -281,11 +305,11 @@ class Case:
 
             annotations = Annotations(
                 window_of_interest=woi,
-                local_activation_time=None,  # TODO: calculate local activation times
+                local_activation_time=np.zeros_like(woi[:, 0], dtype=int),  # TODO: calculate local activation times
                 reference_activation_time=np.zeros_like(woi[:, 0], dtype=int)
             )
             self.electric.annotations = annotations
 
         # whether the mapping points have been rejected (include==False)
-        include = np.full_like(names, fill_value=True, dtype=bool)
+        include = np.ones_like(names, dtype=bool)
         self.electric.include = include
