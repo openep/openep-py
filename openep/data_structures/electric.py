@@ -193,6 +193,16 @@ def extract_electric_data(electric_data):
             dtype=bool,
         )
 
+    # Older versions of OpenEP datasets did not have unipolar data or electrode names. Add deafult ones here.
+    if 'electrodeNames_bip' not in electric_data:
+        electric_data['electrodeNames_bip'] = np.full_like(internal_names, fill_value="", dtype=str)
+    if 'egmUni' not in electric_data:
+        num_points, num_samples = electric_data['egm'].shape
+        electric_data['egmUni'] = np.full((num_points, num_samples, 2), fill_value=np.NaN, dtype=float)
+        electric_data['egmUniX'] = np.full((num_points, 3, 2), fill_value=np.NaN, dtype=float)
+        electric_data['voltages']['unipolar'] = np.full(num_points, fill_value=np.NaN, dtype=float)
+        electric_data['electrodeNames_uni'] = np.full_like(internal_names, fill_value="", dtype=str)
+
     # TODO: check if gain values are stored in electric_data before creating the default values
     bipolar_egm = Electrogram(
         egm=electric_data['egm'].astype(float),
