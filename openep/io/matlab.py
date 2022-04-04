@@ -190,10 +190,14 @@ def _load_mat_v73(filename):
     return data
 
 
-def _decode_empty_strings_array(arr):
-    """"""
-    return np.asarray([item.tobytes().decode('utf-16') for item in arr])
+def _decode_tags(arr):
+    """
+    Convert empty arrays into empty strings. Leave strings unchanged.
 
+    An empty array corresponds to there being no tag for that point.
+    """
+
+    return np.asarray([item if isinstance(item, str) else item.tobytes().decode('utf-16') for item in arr])
 
 def _cast_to_float(arr):
     """Cast a numpy array to float"""
@@ -218,7 +222,7 @@ def _load_mat_below_v73(filename):
         simplify_cells=True,
     )['userdata']
 
-    data['electric']['tags'] = _decode_empty_strings_array(data['electric']['tags'])
+    data['electric']['tags'] = _decode_tags(data['electric']['tags'])
 
     data['electric']['impedances']['time'] = _cast_to_float(data['electric']['impedances']['time'])
     data['electric']['impedances']['value'] = _cast_to_float(data['electric']['impedances']['value'])
