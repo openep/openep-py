@@ -114,9 +114,9 @@ def load_openep_mat(filename, name=None):
     electric = extract_electric_data(data['electric'])
     ablation = extract_ablation_data(data['rf']) if 'rf' in data else None
 
-    try:
-        notes = np.asarray(data['notes']).reshape(-1, 1)
-    except KeyError:
+    if 'notes' in data:
+        notes = np.asarray([data['notes']])[:, np.newaxis] if isinstance(data['notes'], str) else np.asarray(data['notes']).reshape(-1, 1)
+    else:
         notes = np.asarray([""], dtype=str)[:, np.newaxis]
 
     return Case(name, points, indices, fields, electric, ablation, notes)
