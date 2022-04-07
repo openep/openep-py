@@ -112,11 +112,7 @@ def load_openep_mat(filename, name=None):
 
     points, indices, fields = extract_surface_data(data['surface'])
     electric = extract_electric_data(data['electric'])
-
-    try:
-        ablation = extract_ablation_data(data['rf'])
-    except KeyError:
-        ablation = None
+    ablation = extract_ablation_data(data['rf']) if 'rf' in data else None
 
     try:
         notes = np.asarray(data['notes']).reshape(-1, 1)
