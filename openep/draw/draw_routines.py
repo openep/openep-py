@@ -62,6 +62,7 @@ def draw_free_boundaries(
     colour: Union[str, List] = "black",
     width: int = 5,
     plotter: pyvista.Plotter = None,
+    names: List[str] = None,
 ):
     """
     Draw the freeboundaries of a mesh.
@@ -73,6 +74,8 @@ def draw_free_boundaries(
         width (int): width of the free boundary lines.
         plotter (pyvista.Plotter): The free boundaries will be added to this plotting object.
             If None, a new plotting object will be created.
+        names (List(str)): List of names to associated with the actors. Default is None, in which
+            case actors will be called 'free_boundary_n', where n is the index of the boundary.
 
     Returns:
         plotter (pyvista.Plotter): Plotting object with the free boundaries added.
@@ -81,6 +84,7 @@ def draw_free_boundaries(
 
     plotter = pyvista.Plotter() if plotter is None else plotter
     colours = [colour] * free_boundaries.n_boundaries if isinstance(colour, str) else colour
+    names = [f"free_boundary_{boundary_index:d}" for boundary_index in range(free_boundaries.n_boundaries)]
 
     for boundary_index, boundary in enumerate(free_boundaries.separate_boundaries()):
 
@@ -90,7 +94,7 @@ def draw_free_boundaries(
             points,
             color=colours[boundary_index],
             width=width,
-            name=f"free_boundary_{boundary_index:d}",
+            name=names[boundary_index],
         )
 
     return plotter
