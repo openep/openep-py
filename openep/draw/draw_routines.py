@@ -84,7 +84,8 @@ def draw_free_boundaries(
 
     plotter = pyvista.Plotter() if plotter is None else plotter
     colours = [colour] * free_boundaries.n_boundaries if isinstance(colour, str) else colour
-    names = [f"free_boundary_{boundary_index:d}" for boundary_index in range(free_boundaries.n_boundaries)]
+    if names is None:
+        names = [f"free_boundary_{boundary_index:d}" for boundary_index in range(free_boundaries.n_boundaries)]
 
     for boundary_index, boundary in enumerate(free_boundaries.separate_boundaries()):
 
