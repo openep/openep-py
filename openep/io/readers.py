@@ -126,6 +126,7 @@ def load_opencarp(
     points,
     indices,
     name=None,
+    fill_fields=False,
 ):
     """
     Load data from an OpenCARP simulation.
@@ -136,6 +137,8 @@ def load_opencarp(
             supported.
         name (str, optional): Name of the dataset. If None, the basename of the points file
             will be used as the name.
+        fill_fields (bool, optional): If True, will create scalar fields filled with NaN values
+            (one value per point).
 
     Returns:
         case (Case): an OpenEP Case object that contains the points and indices.
@@ -151,7 +154,8 @@ def load_opencarp(
     points_data = np.loadtxt(points, skiprows=1)
     indices_data = np.loadtxt(indices, skiprows=1, usecols=[1, 2, 3], dtype=int)  # ignore the tag for now
 
-    fields = empty_fields()
+    size = size=points_data.size // 3 if fill_fields else None
+    fields = empty_fields(size)
     electric = empty_electric()
     ablation = empty_ablation()
     notes = []
