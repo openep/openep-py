@@ -127,6 +127,7 @@ def load_opencarp(
     indices,
     name=None,
     fill_fields=False,
+    scale_points=1,
 ):
     """
     Load data from an OpenCARP simulation.
@@ -139,6 +140,8 @@ def load_opencarp(
             will be used as the name.
         fill_fields (bool, optional): If True, will create scalar fields filled with NaN values
             (one value per point).
+        scale_points (float, optional): Scale the point positions by this number. Useful to scaling
+            the units to be in mm rather than micrometre.
 
     Returns:
         case (Case): an OpenEP Case object that contains the points and indices.
@@ -152,6 +155,7 @@ def load_opencarp(
     name = os.path.basename(points) if name is None else name
 
     points_data = np.loadtxt(points, skiprows=1)
+    points_data *= scale_points
     indices_data = np.loadtxt(indices, skiprows=1, usecols=[1, 2, 3], dtype=int)  # ignore the tag for now
 
     size = size=points_data.size // 3 if fill_fields else None
