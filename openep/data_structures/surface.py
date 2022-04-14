@@ -87,7 +87,7 @@ def extract_surface_data(surface_data):
     return points, indices, fields
 
 
-def empty_fields():
+def empty_fields(size=None):
     """Create an empty Fields object with empty numpy arrays.
 
     Returns:
@@ -95,11 +95,18 @@ def empty_fields():
             scalar fields
     """
 
-    local_activation_time = None
-    bipolar_voltage = None
-    unipolar_voltage = None
-    impedance = None
-    force = None
+    if size is not None:    
+        local_activation_time = np.full(size, fill_value=np.NaN, dtype=float)
+        bipolar_voltage = np.full(size, fill_value=np.NaN, dtype=float)
+        unipolar_voltage = np.full(size, fill_value=np.NaN, dtype=float)
+        impedance = np.full(size, fill_value=np.NaN, dtype=float)
+        force = np.full(size, fill_value=np.NaN, dtype=float)
+    else:
+        local_activation_time = None
+        bipolar_voltage = None
+        unipolar_voltage = None
+        impedance = None
+        force = None
 
     fields = Fields(
         bipolar_voltage,
