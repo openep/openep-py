@@ -80,14 +80,6 @@ def test_mesh_creation_back_faces(mesh, case):
     assert mesh.n_faces == mesh_from_case.n_faces / 2
 
 
-def test_mesh_creation_not_centered(mesh, case):
-
-    mesh_from_case = case.create_mesh(recenter=False)
-
-    assert_allclose(0, mesh.center)
-    not assert_allclose(mesh.center, mesh_from_case.center)
-
-
 def test_get_surface_data(case):
 
     points, indices = case.get_surface_data()
