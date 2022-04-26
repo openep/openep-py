@@ -141,7 +141,7 @@ class Case:
         if self.electric.bipolar_egm.points is not None:
             self.electric.bipolar_egm.points += translate_by
         if self.electric.unipolar_egm.points is not None:
-            self.electric.unipolar_egm.points += translate_by
+            self.electric.unipolar_egm.points += translate_by[:, np.newaxis]
         if self.electric.surface.nearest_point is not None:
             self.electric.surface.nearest_point += translate_by
 
