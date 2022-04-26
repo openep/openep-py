@@ -115,17 +115,38 @@ class Case:
     ablation: Optional[Ablation] = None
     notes: Optional[List] = None
 
-    def __attrs_post_init__(self):
-
-        tmp_mesh = self.create_mesh(recenter=False)
-        self._mesh_center = np.asarray(tmp_mesh.center)
-
     def __repr__(self):
         return f"{self.name}( nodes: {self.points.shape} indices: {self.indices.shape} {self.fields} )"
 
+    def center(self):
+        """Translate all 3D coordinates so that the center of geometry of `case.points` is at the origin."""
+
+        center = np.nanmean(self.points, axis=0)
+        self.translate(-center)
+
+    def translate(self, translate_by):
+        """Translate points in 3D space.
+
+        This will modify the 3D coordinates of:
+        * case.points
+        * case.electric.bipolar_egm.points
+        * case.electric.unipolar_egm.points
+        * case.electric.surface.nearest_point
+
+        Args:
+            translate_by (np.ndarray): 3D coordinates by which to translate the case
+        """
+
+        self.points += translate_by
+        if self.electric.bipolar_egm.points is not None:
+            self.electric.bipolar_egm.points += translate_by
+        if self.electric.unipolar_egm.points is not None:
+            self.electric.unipolar_egm.points += translate_by
+        if self.electric.surface.nearest_point is not None:
+            self.electric.surface.nearest_point += translate_by
+
     def create_mesh(
         self,
-        recenter: bool = True,
         back_faces: bool = False,
     ):
         """
@@ -151,12 +172,6 @@ class Case:
             )  # include each face twice for both surfaces
 
         mesh = pyvista.PolyData(self.points.copy(), faces.ravel())
-
-        if recenter:
-            mesh.translate(
-                -np.asarray(mesh.center),
-                inplace=True,
-            )  # recenter mesh to origin, helps with lighting in default scene
 
         return mesh
 
