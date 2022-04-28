@@ -211,7 +211,7 @@ def _extract_electric_data(electric: Electric):
     electric_data['electrodeNames_uni'] = electric.unipolar_egm.names.astype(object)
     electric_data['egmUniX'] = electric.unipolar_egm.points
     electric_data['egmUni'] = electric.unipolar_egm.egm
-    electric['egmUniGain'] = electric.unipolar_egm.gain
+    electric_data['egmUniGain'] = electric.unipolar_egm.gain
 
     electric_data['egmRef'] = electric.reference_egm.egm
     electric_data['egmRefGain'] = electric.reference_egm.gain
