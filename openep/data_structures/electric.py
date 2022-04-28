@@ -45,7 +45,7 @@ class Electrogram:
 
     def __attrs_post_init__(self):
         if self.egm is not None and self.gain is None:
-            self.gain = np.zeros(self.egm.shape[0])
+            self.gain = np.ones(self.egm.shape[0])
 
     def __repr__(self):
         n_points = len(self.egm) if self.egm is not None else 0
@@ -67,7 +67,7 @@ class ECG:
 
     def __attrs_post_init__(self):
         if self.ecg is not None and self.gain is None:
-            self.gain = np.zeros(self.ecg.shape[0])
+            self.gain = np.ones(self.egm.shape[0])
 
     def __repr__(self):
         n_points = len(self.ecg) if self.ecg is not None else 0
@@ -184,6 +184,8 @@ def extract_electric_data(electric_data):
 
     names = electric_data['tags'].astype(str)
     internal_names = electric_data['names'].astype(str)
+
+    # electric.include is a later addition to the openep format
     if 'include' in electric_data:
         include = electric_data['include'].astype(bool)
     else:
@@ -191,7 +193,7 @@ def extract_electric_data(electric_data):
             names,
             fill_value=True,
             dtype=bool,
-        )
+        )        
 
     # Older versions of OpenEP datasets did not have unipolar data or electrode names. Add deafult ones here.
     if 'electrodeNames_bip' not in electric_data:
@@ -203,29 +205,38 @@ def extract_electric_data(electric_data):
         electric_data['voltages']['unipolar'] = np.full(num_points, fill_value=np.NaN, dtype=float)
         electric_data['electrodeNames_uni'] = np.full_like(internal_names, fill_value="", dtype=str)
 
-    # TODO: check if gain values are stored in electric_data before creating the default values
+    # Not all datasets have gain values
+    if 'egmGain' not in electric_data:
+        electric_data['egmGain'] = np.full(electric_data['egmRef'].shape[0], fill_value=1.0, dtype=float)
+    if 'egmUniGain' not in electric_data:
+        electric_data['egmUniGain'] = np.full(electric_data['egmRef'].shape[0], fill_value=1.0, dtype=float)
+    if 'egmRefGain' not in electric_data:
+        electric_data['egmRefGain'] = np.full(electric_data['egmRef'].shape[0], fill_value=-4.0, dtype=float)
+    if 'ecgGain' not in electric_data:
+        electric_data['ecgGain'] = np.full(electric_data['egmRef'].shape[0], fill_value=1.0, dtype=float)
+
     bipolar_egm = Electrogram(
         egm=electric_data['egm'].astype(float),
         points=electric_data['egmX'].astype(float),
         voltage=electric_data['voltages']['bipolar'].astype(float),
-        gain=np.full_like(electric_data['voltages']['bipolar'], fill_value=1.0, dtype=float),
+        gain=electric_data['egmGain'].astype(float),
         names=electric_data['electrodeNames_bip'].astype(str),
     )
     unipolar_egm = Electrogram(
         egm=electric_data['egmUni'].astype(float),
         points=electric_data['egmUniX'].astype(float),
         voltage=electric_data['voltages']['unipolar'].astype(float),
-        gain=None,
+        gain=electric_data['egmUniGain'].astype(float),
         names=electric_data['electrodeNames_uni'].astype(str),
     )
     reference_egm = Electrogram(
         egm=electric_data['egmRef'].astype(float),
-        gain=np.full(electric_data['egmRef'].shape[0], fill_value=-4.0, dtype=float),
+        gain=electric_data['egmRefGain'].astype(float),
     )
 
     ecg = ECG(
         ecg=electric_data['ecg'].astype(float),
-        gain=np.full(electric_data['ecg'].shape[0], fill_value=1.0, dtype=float),
+        gain=electric_data['egmGain'].astype(float),
     )
 
     impedance = Impedance(
