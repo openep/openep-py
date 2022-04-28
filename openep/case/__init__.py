@@ -8,6 +8,7 @@ from .case_routines import (
     calculate_distance,
     calculate_points_within_distance,
     Interpolator,
+    interpolate_activation_time_onto_surface,
     interpolate_voltage_onto_surface,
     bipolar_from_unipolar_surface_points,
 )

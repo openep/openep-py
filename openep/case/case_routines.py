@@ -76,6 +76,7 @@ __all__ = [
     'calculate_distance',
     'calculate_points_within_distance',
     'Interpolator',
+    'interpolate_activation_time_onto_surface',
     'interpolate_voltage_onto_surface',
     'bipolar_from_unipolar_surface_points',
 ]
@@ -487,6 +488,62 @@ class Interpolator:
 
     def __repr__(self):
         return f"Interpolator: method={self.method}, kws={self.method_kws}"
+
+
+def interpolate_activation_time_onto_surface(
+        case,
+        buffer=50,
+        method=scipy.interpolate.RBFInterpolator,
+        method_kws=None,
+        max_distance=None,
+):
+    """Interpolate local activation times onto the points of a mesh.
+
+    Only mapping points within the window of interest, plus the buffer time,
+    are used for the interpolation.
+
+    Args:
+        case (openep.case.Case): case from which the activation time will be interpolated
+        buffer (float, optional): extend the window of interest by this time.
+            The default is 50 ms.
+        method (callable): method to use for interpolation. The default is
+            scipy.interpolate.RBFInterpolator.
+        method_kws (dict): dictionary of keyword arguments to pass to `method`
+            when creating the interpolator.
+        max_distance (float, optional): If provided, any points on the surface of the mesh
+            further than this distance to all mapping coordinates will have their
+            interpolated activation times set NaN. The default it None, in which case
+            the distance from surface points to mapping points is not considered.
+
+    Returns:
+        interpolated_lat (ndarray): local activation times interpolated onto the surface of the mesh,
+            one value per point on the mesh.
+    """
+
+    surface_points = case.points.copy()
+
+    points = case.electric.bipolar_egm.points.copy()
+    local_activation_times = case.electric.annotations.local_activation_time - case.electric.annotations.reference_activation_time
+
+    within_woi = get_mapping_points_within_woi(case, buffer=buffer)
+    points = points[within_woi]
+    local_activation_times = local_activation_times[within_woi]
+
+    interpolator = Interpolator(
+        points,
+        local_activation_times,
+        method=method,
+        method_kws=method_kws,
+    )
+
+    interpolated_lat = interpolator(surface_points, max_distance=max_distance)
+
+    # Any points that are not part of the mesh faces should have bipolar voltage set to NaN
+    n_surface_points = surface_points.shape[0]
+    not_on_surface = ~np.in1d(np.arange(n_surface_points), case.indices)
+    interpolated_lat[not_on_surface] = np.NaN
+
+    return interpolated_lat
 
 
 def interpolate_voltage_onto_surface(
