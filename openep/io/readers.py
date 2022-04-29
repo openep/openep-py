@@ -158,7 +158,7 @@ def load_opencarp(
     points_data *= scale_points
     indices_data = np.loadtxt(indices, skiprows=1, usecols=[1, 2, 3], dtype=int)  # ignore the tag for now
 
-    size = size=points_data.size // 3 if fill_fields else None
+    size = size=points_data.size // 3 if fill_fields else 0
     fields = empty_fields(size)
     electric = empty_electric()
     ablation = empty_ablation()
