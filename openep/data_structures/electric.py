@@ -182,6 +182,9 @@ def extract_electric_data(electric_data):
             taken at various mapping points.
     """
 
+    if electric_data['egm'].size == 0:
+        return empty_electric()
+
     names = electric_data['tags'].astype(str)
     internal_names = electric_data['names'].astype(str)
 
@@ -279,45 +282,48 @@ def empty_electric():
             taken at each mapping point.
     """
 
-    names = None
-    internal_names = None
-    include = None
+    names = np.array([], dtype=str)
+    internal_names = np.array([], dtype=str)
+    include = np.array([], dtype=bool)
 
     bipolar_egm = Electrogram(
-        egm=None,
-        points=None,
-        voltage=None,
-        gain=None,
-        names=None,
+        egm=np.array([], dtype=float),
+        points=np.array([], dtype=float),
+        voltage=np.array([], dtype=float),
+        gain=np.array([], dtype=float),
+        names=np.array([], dtype=str),
     )
     unipolar_egm = Electrogram(
-        egm=None,
-        points=None,
-        voltage=None,
-        gain=None,
-        names=None,
+        egm=np.array([], dtype=float),
+        points=np.array([], dtype=float),
+        voltage=np.array([], dtype=float),
+        gain=np.array([], dtype=float),
+        names=np.array([], dtype=str),
     )
     reference_egm = Electrogram(
-        egm=None,
-        gain=None,
+        egm=np.array([], dtype=float),
+        gain=np.array([], dtype=float),
     )
 
-    ecg = None
+    ecg = ECG(
+        ecg=np.array([], dtype=float),
+        gain=np.array([], dtype=float),
+    )
 
     impedance = Impedance(
-        times=None,
-        values=None,
+        times=np.array([], dtype=float),
+        values=np.array([], dtype=float),
     )
 
     surface = ElectricSurface(
-        nearest_point=None,
-        normals=None,
+        nearest_point=np.array([], dtype=float),
+        normals=np.array([], dtype=float),
     )
 
     annotations = Annotations(
-        window_of_interest=None,
-        local_activation_time=None,
-        reference_activation_time=None,
+        window_of_interest=np.array([], dtype=float),
+        local_activation_time=np.array([], dtype=float),
+        reference_activation_time=np.array([], dtype=float),
     )
 
     electric = Electric(
