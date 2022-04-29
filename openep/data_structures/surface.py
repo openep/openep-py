@@ -73,6 +73,11 @@ def extract_surface_data(surface_data):
     points = surface_data['triRep']['X'].astype(float)
     indices = surface_data['triRep']['Triangulation'].astype(int)
 
+    if surface_data['act_bip'].size == 0:
+        size = points.size // 3
+        fields = empty_fields(size=size)
+        return points, indices, fields
+
     local_activation_time, bipolar_voltage = surface_data['act_bip'].T.astype(float)
     unipolar_voltage, impedance, force = surface_data['uni_imp_frc'].T.astype(float)
 

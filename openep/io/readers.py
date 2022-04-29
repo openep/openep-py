@@ -111,7 +111,9 @@ def load_openep_mat(filename, name=None):
         name = os.path.basename(filename)
 
     points, indices, fields = extract_surface_data(data['surface'])
-    electric = extract_electric_data(data['electric'])
+    try:
+        electric = extract_electric_data(data['electric'])
+    except:
     ablation = extract_ablation_data(data['rf']) if 'rf' in data else None
 
     if 'notes' in data:
