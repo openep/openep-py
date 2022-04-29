@@ -196,7 +196,7 @@ def extract_electric_data(electric_data):
             names,
             fill_value=True,
             dtype=bool,
-        )        
+        )
 
     # Older versions of OpenEP datasets did not have unipolar data or electrode names. Add deafult ones here.
     if 'electrodeNames_bip' not in electric_data:
