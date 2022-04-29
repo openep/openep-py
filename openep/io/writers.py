@@ -173,6 +173,8 @@ def _extract_surface_data(
         ],
         axis=1,
     )
+    if surface_data['act_bip'].size == 0:  # if there is no data, use a 1d array rather than 2D, same as openep-core
+        surface_data['act_bips'] = np.array([], dtype=float)
 
     surface_data['uni_imp_frc'] = np.concatenate(
         [
@@ -182,6 +184,8 @@ def _extract_surface_data(
         ],
         axis=1,
     )
+    if surface_data['uni_imp_frc'].size == 0:
+        surface_data['uni_imp_frc'] = np.array([], dtype=float)
 
     return surface_data
 
