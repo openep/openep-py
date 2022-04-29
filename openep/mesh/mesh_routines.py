@@ -173,7 +173,7 @@ class FreeBoundary:
 
         """
 
-        if self.n_boundaries:
+        if self.n_boundaries == 0:
             return np.array([])
 
         lengths = [
