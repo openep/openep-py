@@ -162,6 +162,6 @@ def load_opencarp(
     fields = empty_fields(size)
     electric = empty_electric()
     ablation = empty_ablation()
-    notes = []
+    notes = np.asarray([])
 
     return Case(name, points_data, indices_data, fields, electric, ablation, notes)

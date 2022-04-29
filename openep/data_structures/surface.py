@@ -70,6 +70,9 @@ def extract_surface_data(surface_data):
             scalar fields
     """
 
+    if surface_data['triRep']['X'].size == 0:
+        return np.array([]), np.array([]), empty_fields(size=0)
+
     points = surface_data['triRep']['X'].astype(float)
     indices = surface_data['triRep']['Triangulation'].astype(int)
 
@@ -92,7 +95,7 @@ def extract_surface_data(surface_data):
     return points, indices, fields
 
 
-def empty_fields(size=None):
+def empty_fields(size=0):
     """Create an empty Fields object with empty numpy arrays.
 
     Returns:
@@ -100,18 +103,11 @@ def empty_fields(size=None):
             scalar fields
     """
 
-    if size is not None:    
-        local_activation_time = np.full(size, fill_value=np.NaN, dtype=float)
-        bipolar_voltage = np.full(size, fill_value=np.NaN, dtype=float)
-        unipolar_voltage = np.full(size, fill_value=np.NaN, dtype=float)
-        impedance = np.full(size, fill_value=np.NaN, dtype=float)
-        force = np.full(size, fill_value=np.NaN, dtype=float)
-    else:
-        local_activation_time = None
-        bipolar_voltage = None
-        unipolar_voltage = None
-        impedance = None
-        force = None
+    local_activation_time = np.full(size, fill_value=np.NaN, dtype=float)
+    bipolar_voltage = np.full(size, fill_value=np.NaN, dtype=float)
+    unipolar_voltage = np.full(size, fill_value=np.NaN, dtype=float)
+    impedance = np.full(size, fill_value=np.NaN, dtype=float)
+    force = np.full(size, fill_value=np.NaN, dtype=float)
 
     fields = Fields(
         bipolar_voltage,

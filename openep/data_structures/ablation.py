@@ -84,6 +84,9 @@ def extract_ablation_data(ablation_data):
             as well as the force applied.
     """
 
+    if isinstance(ablation_data, np.ndarray) or ablation_data['originaldata']['ablparams']['time'].size == 0:
+        return empty_ablation()
+
     times = ablation_data['originaldata']['ablparams']['time'].astype(float)
     power = ablation_data['originaldata']['ablparams']['power'].astype(float)
     impedance = ablation_data['originaldata']['ablparams']['impedance'].astype(float)
@@ -117,18 +120,18 @@ def empty_ablation():
     """
 
     force = AblationForce(
-        times=None,
-        force=None,
-        axial_angle=None,
-        lateral_angle=None,
-        points=None,
+        times=np.array([], dtype=float),
+        force=np.array([], dtype=float),
+        axial_angle=np.array([], dtype=float),
+        lateral_angle=np.array([], dtype=float),
+        points=np.array([], dtype=float),
     )
 
     ablation = Ablation(
-        times=None,
-        power=None,
-        impedance=None,
-        temperature=None,
+        times=np.array([], dtype=float),
+        power=np.array([], dtype=float),
+        impedance=np.array([], dtype=float),
+        temperature=np.array([], dtype=float),
         force=force,
     )
 
