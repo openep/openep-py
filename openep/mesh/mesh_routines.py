@@ -117,6 +117,12 @@ class FreeBoundary:
 
     def __attrs_post_init__(self):
 
+        if self.n_boundaries == 0:
+            self._start_indices = None
+            self._stop_indices = None
+            self._boundary_meshes = None
+            return None
+
         # We'll use the start and stop indices for separating the (N,2) ndarray
         # of indices into separate arrays for each boundary
         start_indices = list(np.cumsum(self.n_points_per_boundary[:-1] - 1))
@@ -147,6 +153,9 @@ class FreeBoundary:
 
         """
 
+        if self.n_boundaries == 0:
+            return np.array([])
+
         lines = self.original_lines if original_lines else self.lines
 
         separate_boundaries = [
@@ -163,6 +172,9 @@ class FreeBoundary:
             lengths (np.ndarray): the perimeter of each free boundary
 
         """
+
+        if self.n_boundaries:
+            return np.array([])
 
         lengths = [
             self._line_length(self.points[self.lines[start:stop]]) for
@@ -195,6 +207,9 @@ class FreeBoundary:
             areas (np.ndarray): the area of each free boundary
 
         """
+
+        if self.n_boundaries == 0:
+            return np.array([])
 
         if self._boundary_meshes is None:
             self._create_boundary_meshes()
@@ -250,6 +265,15 @@ def get_free_boundaries(mesh):
 
     tm_mesh = _create_trimesh(mesh)
     boundaries = tm_mesh.outline().entities
+
+    if boundaries.size == 0:
+        return FreeBoundary(
+            points=np.array([]),
+            lines=np.array([]),
+            n_boundaries=0,
+            n_points_per_boundary=np.array([]),
+            original_lines=np.array([]),
+        )
 
     # determine information about each boundary
     original_indices = np.concatenate([line.points for line in boundaries])
