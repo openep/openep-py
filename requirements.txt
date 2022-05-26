@@ -4,6 +4,8 @@ typing_extensions
 h5py
 numpy
 scipy<1.8
+scikit-image
+pydicom
 pandas
 scikit-learn
 matplotlib>3.5
@@ -11,3 +13,6 @@ pyvista>=0.33
 pymeshfix
 trimesh
 shapely
+meshio
+pynrrd
+
