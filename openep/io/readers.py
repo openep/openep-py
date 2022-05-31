@@ -169,18 +169,21 @@ def load_opencarp(
     return Case(name, points_data, indices_data, fields, electric, ablation, notes)
 
 
-def load_circle_cvi(filename, dicoms_directory, extract_epi=True, extract_endo=True):
-    """Create an OpenEP dataset from a Circle CVI workspace and stack of dicoms.
+def load_circle_cvi(filename, dicoms_directory, extract_epi=True, extract_endo=True, return_dicoms_data=False):
+    """Create a pyvista.PolyData dataset from a Circle CVI workspace and stack of dicoms.
 
     Args:
         filename (str or pathlib.Path): Circle CVI workspace filename (.cvi42wsx).
         dicoms_directory (str or pathlib.Path): Directory containing dicoms associated with the workspace.
         extract_epi (bool, optional): Create a mesh of the epicardial surface. Default is True.
         extract_endo (bool, optional): Create a mesh of the endocardial surface. Default is True.
+        return_dicoms_data (bool, optional): Whether to return a pd.DataFrame of data associated with each
+            dicom. Default is False.
 
     Returns:
-        case (Case): an OpenEP Case object that contains the points and indices associated with
-            a mesh generated from the workspace.
+        epi_mesh (pyvista.PolyData): A mesh of the epicardium generated from the workspace file and dicoms.
+        endo_mesh (pyvista.PolyData): A mesh of the endocardium generated from the workspace file and dicoms.
+        dicoms (pd.DataFrame): DataFrame containing information about each dicom used to construct the mesh.
     """
 
     dicoms = _circle_cvi.load_dicoms(dicoms_directory=dicoms_directory)
@@ -218,6 +221,15 @@ def load_circle_cvi(filename, dicoms_directory, extract_epi=True, extract_endo=T
             align_contours=True,
             n_apex_slices=1,
         )
+
+    if return_dicoms_data:
+
+        if extract_epi and extract_endo:
+            return epi_mesh, endo_mesh, dicoms_data
+        elif extract_epi:
+            return epi_mesh, dicoms_data
+        elif extract_endo:
+            return endo_mesh, dicoms_data
 
     if extract_epi and extract_endo:
         return epi_mesh, endo_mesh
