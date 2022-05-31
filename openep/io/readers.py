@@ -28,6 +28,7 @@ Note
 `openep-py` is currently only able to load:
     * data exported from the MATLAB implementation of OpenEP. Further, the `rfindex` data is not yet loaded.
     * data from an openCARP simulation
+    * data from a Circle CVI workspace and associated dicoms
 
 
 Example of loading a dataset
@@ -56,13 +57,14 @@ import scipy.io
 
 import numpy as np
 
+from . import _circle_cvi
 from .matlab import _load_mat_v73, _load_mat_below_v73
 from ..data_structures.surface import extract_surface_data, empty_fields
 from ..data_structures.electric import extract_electric_data, empty_electric
 from ..data_structures.ablation import extract_ablation_data, empty_ablation
 from ..data_structures.case import Case
 
-__all__ = ["load_openep_mat", "_load_mat", "load_opencarp"]
+__all__ = ["load_openep_mat", "_load_mat", "load_opencarp", "load_circle_cvi"]
 
 
 def _check_mat_version_73(filename):
@@ -165,3 +167,61 @@ def load_opencarp(
     notes = np.asarray([])
 
     return Case(name, points_data, indices_data, fields, electric, ablation, notes)
+
+
+def load_circle_cvi(filename, dicoms_directory, extract_epi=True, extract_endo=True):
+    """Create an OpenEP dataset from a Circle CVI workspace and stack of dicoms.
+
+    Args:
+        filename (str or pathlib.Path): Circle CVI workspace filename (.cvi42wsx).
+        dicoms_directory (str or pathlib.Path): Directory containing dicoms associated with the workspace.
+        extract_epi (bool, optional): Create a mesh of the epicardial surface. Default is True.
+        extract_endo (bool, optional): Create a mesh of the endocardial surface. Default is True.
+
+    Returns:
+        case (Case): an OpenEP Case object that contains the points and indices associated with
+            a mesh generated from the workspace.
+    """
+
+    dicoms = _circle_cvi.load_dicoms(dicoms_directory=dicoms_directory)
+    contour_nodes = _circle_cvi.get_contour_nodes(filename=filename)
+
+    contour_data, dicoms_data = _circle_cvi.get_contours(
+        contour_nodes,
+        dicoms,
+        extract_epi=extract_epi,
+        extract_endo=extract_endo,
+    )
+
+    if extract_epi:
+
+        epi_contours = [contour[key].astype(float) for contour in contour_data for key in contour if 'epi' in key ]
+        for contour_index, (xy_resolution, upsample_factor) in enumerate(zip(dicoms_data.pixel_spacing_x, dicoms_data.upsample_factor)):
+            epi_contours[contour_index] *= xy_resolution / upsample_factor
+
+        epi_mesh = _circle_cvi.create_mesh(
+            dicoms=dicoms_data,
+            contours_xy=epi_contours,
+            align_contours=True,
+            n_apex_slices=2,
+        )
+
+    if extract_endo:
+
+        endo_contours = [contour[key].astype(float) for contour in contour_data for key in contour if 'endo' in key ]
+        for contour_index, (xy_resolution, upsample_factor) in enumerate(zip(dicoms_data.pixel_spacing_x, dicoms_data.upsample_factor)):
+            endo_contours[contour_index] *= xy_resolution / upsample_factor
+
+        endo_mesh = _circle_cvi.create_mesh(
+            dicoms=dicoms_data,
+            contours_xy=endo_contours,
+            align_contours=True,
+            n_apex_slices=1,
+        )
+
+    if extract_epi and extract_endo:
+        return epi_mesh, endo_mesh
+    elif extract_epi:
+        return epi_mesh
+    elif extract_endo:
+        return endo_mesh
