@@ -148,7 +148,7 @@ class Case:
     def create_mesh(
         self,
         back_faces: bool = False,
-    ):
+    ) -> pyvista.PolyData:
         """
         Create a new mesh object from the stored nodes and indices
 

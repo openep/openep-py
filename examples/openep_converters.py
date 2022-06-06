@@ -16,9 +16,15 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-__all__ = ['case', 'mesh', 'draw']
+import openep
 
-from .io.readers import load_openep_mat, load_opencarp, load_circle_cvi
-from .io.writers import export_openCARP, export_openep_mat
-from .converters.pyvista_converters import from_pyvista, to_pyvista
-from . import case, mesh, draw
+
+case = openep.load_openep_mat("/Users/paul/Downloads/harefield case.mat")
+mesh = case.create_mesh()
+new_case = openep.from_pyvista(
+    mesh=mesh,
+    name=case.name,
+    fill_fields=True,
+    scale_points=1,
+)
+
