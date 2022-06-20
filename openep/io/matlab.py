@@ -33,11 +33,14 @@ def _decode_string(ints):
     return ints.tobytes().decode('utf-16').strip('\x00')
 
 
-def _dereference_nans(file_pointer, references):
-    """Resolve an array of references that point to nans/infs."""
+def _dereference_impedances(file_pointer, references):
+    """Resolve an array of references that impedance times and values."""
 
-    return np.asarray([file_pointer.get(ref)[:] for ref in references]).ravel()
-
+    # Use a list of arrays rather than a single 2D numpy array, because
+    # each array (row) may be of different length
+    elements = [file_pointer.get(ref)[:].ravel() for ref in references]
+    elements = [element.astype(float) if element.size > 1 else float(element) for element in elements]
+    return elements
 
 def _visit_mat_v73_(file_pointer):
     """Extract all arrays from a HDF5 matlab file."""
@@ -55,7 +58,7 @@ def _visit_mat_v73_(file_pointer):
         'userdata/rfindex/tag/index/name',
     }
 
-    nans_to_dereference = {
+    impedances_to_dereference = {
         'userdata/electric/impedances/time',
         'userdata/electric/impedances/value',
     }
@@ -80,8 +83,8 @@ def _visit_mat_v73_(file_pointer):
             elif key in strings_to_decode:
                 values = _decode_string(values.ravel())
 
-            elif key in nans_to_dereference:
-                values = _dereference_nans(
+            elif key in impedances_to_dereference:
+                values = _dereference_impedances(
                     file_pointer=file_pointer,
                     references=values.ravel(),
                 )
@@ -200,9 +203,13 @@ def _decode_tags(arr):
     return np.asarray([item if isinstance(item, str) else item.tobytes().decode('utf-16') for item in arr])
 
 def _cast_to_float(arr):
-    """Cast a numpy array to float"""
+    """
+    Cast a numpy array to float.
+    
+    If `arr` is instead a list of arrays and NaNs, each 1-D array is of type float.
+    """
 
-    return arr.astype(float)
+    return [a.astype(float) if isinstance(a, np.ndarray) else a for a in arr]
 
 
 def _load_mat_below_v73(filename):
