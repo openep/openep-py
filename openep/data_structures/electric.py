@@ -242,9 +242,17 @@ def extract_electric_data(electric_data):
         gain=electric_data['egmGain'].astype(float),
     )
 
+    try:
+        impedance_times = electric_data['impedances']['time'].astype(float)
+        impedance_values = electric_data['impedances']['value'].astype(float)
+    except AttributeError as e:
+        # We have a list of arrays, rather than a single array
+        impedance_times = electric_data['impedances']['time']
+        impedance_values = electric_data['impedances']['value']
+
     impedance = Impedance(
-        times=electric_data['impedances']['time'].astype(float),
-        values=electric_data['impedances']['value'].astype(float),
+        times=impedance_times,
+        values=impedance_values,
     )
 
     surface = ElectricSurface(
