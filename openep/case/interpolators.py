@@ -26,6 +26,7 @@ This module provides classes for performing interpolation.
 from attr import attrs
 
 import numpy as np
+import numba
 from .case_routines import calculate_distance
 
 __all__ = [
@@ -70,20 +71,33 @@ class LocalSMoothingInterpolator:
             destination=self.points,
         )
 
-        within_cutoff = distances < self.smoothing_length
-        include = np.any(within_cutoff, axis=1)
-
-        for index, (point, distance) in enumerate(zip(new_points, distances)):
-              
-            if not include[index]:
-                continue
-
-            # Calculate field at new points
-            exponent = distance[distance < self.smoothing_length] / self.smoothing_length
-            weights = np.exp(-exponent**2)
-            normalised_weights = weights / weights.sum()
-
-            field_value = sum(self.field[distance < self.smoothing_length] * normalised_weights)
-            new_field[index] = field_value
+        new_field = _local_smoothing(
+            field=self.field,
+            smoothing_length=self.smoothing_length,
+            distances=distances,
+            out=new_field,
+        )
 
         return new_field
+
+
+@numba.jit(nopython=True, cache=True, fastmath=True)
+def _local_smoothing(field, smoothing_length, distances, out):
+
+    within_cutoff = distances < smoothing_length
+
+    for index in range(out.shape[0]):
+
+        if not np.any(within_cutoff[index]):
+            continue
+
+        # Calculate field at new points
+        distance = distances[index]
+        exponent = distance[distance < smoothing_length] / smoothing_length
+        weights = np.exp(-exponent**2)
+        normalised_weights = weights / weights.sum()
+
+        field_value = sum(field[distance < smoothing_length] * normalised_weights)
+        out[index] = field_value
+
+    return out
