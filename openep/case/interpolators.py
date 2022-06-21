@@ -64,7 +64,6 @@ class LocalSMoothingInterpolator:
 
         n_points = len(new_points)
         new_field = np.full(n_points, fill_value=self.fill_value, dtype=float)
-        new_field_gradient = np.full((n_points, 3), fill_value=self.fill_value, dtype=float)
 
         distances = calculate_distance(
             origin=new_points,
@@ -80,25 +79,11 @@ class LocalSMoothingInterpolator:
                 continue
 
             # Calculate field at new points
-            dx = self.points[distance < self.smoothing_length] - point
             exponent = distance[distance < self.smoothing_length] / self.smoothing_length
             weights = np.exp(-exponent**2)
             normalised_weights = weights / weights.sum()
 
             field_value = sum(self.field[distance < self.smoothing_length] * normalised_weights)
             new_field[index] = field_value
-
-            # Calculate gradient of field at new points
-            mat = np.zeros((3, 3), dtype=float)
-            for weight, d in zip(normalised_weights, dx):
-                mat += np.dot(
-                    weight * d[np.newaxis, :].T,
-                    d[np.newaxis, :],
-                )
-            mat_inverse = np.linalg.pinv(mat)
-
-            diff = (self.field[distance < self.smoothing_length] - field_value)[np.newaxis, :].T
-            field_gradient =  diff * np.dot(dx, mat_inverse) * normalised_weights[np.newaxis, :].T
-            new_field_gradient[index] = np.sum(field_gradient, axis=0)
 
         return new_field
