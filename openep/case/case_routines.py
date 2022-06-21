@@ -423,7 +423,8 @@ class Interpolator:
         points (np.ndarray): (N,3) array of coordinates for which we know values
             of the scalar field
         field (np.ndarray): array of size N of scalar values
-        method (callable): method to use for interpolation. The default is
+        method (callable): method to use for interpolation. Must be a callable class
+            that performs interpolation when called. The default is
             scipy.interpolate.RBFInterpolator.
         method_kws (dict): dictionary of keyword arguments to pass to `method`
             when creating the interpolator
