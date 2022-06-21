@@ -22,3 +22,4 @@ from .io.readers import load_openep_mat, load_opencarp, load_circle_cvi
 from .io.writers import export_openCARP, export_openep_mat
 from .converters.pyvista_converters import from_pyvista, to_pyvista
 from . import case, mesh, draw
+from .case import interpolators
