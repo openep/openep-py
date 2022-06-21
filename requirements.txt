@@ -3,6 +3,7 @@ attrs
 typing_extensions
 h5py
 numpy
+numba
 scipy<1.8
 scikit-image
 pydicom
