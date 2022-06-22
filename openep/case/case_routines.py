@@ -537,9 +537,9 @@ def interpolate_activation_time_onto_surface(
     points = case.electric.bipolar_egm.points
     local_activation_times = case.electric.annotations.local_activation_time - case.electric.annotations.reference_activation_time
 
-    within_woi = get_mapping_points_within_woi(case, buffer=buffer)
-    points = points[within_woi]
-    local_activation_times = local_activation_times[within_woi]
+    include = case.electric.include
+    points = points[include]
+    local_activation_times = local_activation_times[include]
 
     interpolator = Interpolator(
         points,
