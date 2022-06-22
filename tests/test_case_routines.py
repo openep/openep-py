@@ -260,7 +260,7 @@ def test_calculate_voltage_from_electrograms_unipolar(real_case):
 
     n_electrograms = 800
     amplitudes = calculate_voltage_from_electrograms(real_case, bipolar=False)
-    assert_allclose((n_electrograms, 2),  amplitudes.shape)
+    assert_allclose((n_electrograms),  amplitudes.shape)
 
 
 def test_calculate_distance(mock_case):
