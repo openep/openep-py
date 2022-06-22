@@ -116,8 +116,8 @@ def _get_window_of_interest(case, indices=None):
             of the window of interest.
     """
 
-    woi = case.electric.annotations.window_of_interest
-    woi = woi[indices] if indices is not None else woi.copy()
+    woi = case.electric.annotations.window_of_interest.copy()
+    woi = woi[indices] if indices is not None else woi
 
     return woi
 
@@ -294,12 +294,11 @@ def get_woi_times(case, buffer=50, relative=False):
     return times[keep_times]
 
 
-def get_sample_indices_within_woi(case, buffer=50):
+def get_sample_indices_within_woi(case, buffer=50, indices=None):
     """
     Determine which samples are within the window of interest for each electrogram.
 
-    can be used to
-    obtain a two-dimensional boolean array in which value of True indicate
+    Can be used to obtain a two-dimensional boolean array in which value of True indicate
     that the specific sample is within the specific electrogram's window of
     interest.
 
@@ -307,19 +306,27 @@ def get_sample_indices_within_woi(case, buffer=50):
         case (Case): openep case object
         buffer (float): times within the window of interest plus/minus this buffer
             time will be considered to be within the woi.
+        indices (np.ndarray, optional)
 
     Returns:
         within_woi (ndarray): 2D boolean array of shape (N_electrograms, N_samples).
             Values of True indicate that the sample if within the electrogram's
             window of interest.
     """
-    
-    egm = case.electric.bipolar_egm.egm
-    sample_indices = np.full_like(egm, fill_value=np.arange(egm.shape[1]), dtype=int)
-    
-    woi = case.electric.annotations.window_of_interest
-    ref_annotations = case.electric.annotations.reference_activation_time[:, np.newaxis]
 
+    # if we have a single index we need to ensure it is an array
+    indices = np.asarray([indices], dtype=int) if isinstance(indices, int) else indices
+
+    if indices is None:
+        egm = case.electric.bipolar_egm.egm
+        woi = case.electric.annotations.window_of_interest
+        ref_annotations = case.electric.annotations.reference_activation_time[:, np.newaxis]
+    else:
+        egm = case.electric.bipolar_egm.egm[indices]
+        woi = case.electric.annotations.window_of_interest[indices]
+        ref_annotations = case.electric.annotations.reference_activation_time[indices, np.newaxis]
+
+    sample_indices = np.full_like(egm, fill_value=np.arange(egm.shape[1]), dtype=int)
     start_time, stop_time = (woi + ref_annotations + [-buffer, buffer]).T
 
     within_woi = np.logical_and(
@@ -330,7 +337,7 @@ def get_sample_indices_within_woi(case, buffer=50):
     return within_woi  # This is now a 2D array that can be used to index into electrograms and calculate voltages.
 
 
-def calculate_voltage_from_electrograms(case, buffer=50, bipolar=True):
+def calculate_voltage_from_electrograms(case, buffer=50, bipolar=True, indices=None):
     """
     Calculates the peak-to-peak voltage from electrograms.
 
@@ -348,12 +355,16 @@ def calculate_voltage_from_electrograms(case, buffer=50, bipolar=True):
         voltages (ndarray): Bipolar voltages
     """
 
-    if bipolar:
-        electrograms = case.electric.bipolar_egm.egm.copy()
-    else:
-        electrograms = case.electric.unipolar_egm.egm.copy()
+    # if we have a single index we need to ensure it is an array
+    indices = np.asarray([indices], dtype=int) if isinstance(indices, int) else indices
 
-    sample_within_woi = get_sample_indices_within_woi(case, buffer=buffer)
+    if bipolar:
+        electrograms = case.electric.bipolar_egm.egm.copy() if indices is None else case.electric.bipolar_egm.egm[indices].copy()
+    else:
+        # Use only the proximal unipolar data
+        electrograms = case.electric.unipolar_egm.egm[:, :, 0].copy() if indices is None else case.electric.unipolar_egm.egm[indices, :, 0].copy()
+
+    sample_within_woi = get_sample_indices_within_woi(case, buffer=buffer, indices=indices)
     electrograms[~sample_within_woi] = np.NaN
 
     amplitudes = np.nanmax(electrograms, axis=1) - np.nanmin(electrograms, axis=1)
@@ -521,9 +532,9 @@ def interpolate_activation_time_onto_surface(
             one value per point on the mesh.
     """
 
-    surface_points = case.points.copy()
+    surface_points = case.points
 
-    points = case.electric.bipolar_egm.points.copy()
+    points = case.electric.bipolar_egm.points
     local_activation_times = case.electric.annotations.local_activation_time - case.electric.annotations.reference_activation_time
 
     within_woi = get_mapping_points_within_woi(case, buffer=buffer)
@@ -549,7 +560,6 @@ def interpolate_activation_time_onto_surface(
 
 def interpolate_voltage_onto_surface(
         case,
-        buffer=50,
         method=scipy.interpolate.RBFInterpolator,
         method_kws=None,
         max_distance=None,
@@ -563,8 +573,6 @@ def interpolate_voltage_onto_surface(
 
     Args:
         case (openep.case.Case): case from which the voltage will be calculated
-        buffer (float, optional): extend the window of interest by this time.
-            The default is 50 ms.
         method (callable): method to use for interpolation. The default is
             scipy.interpolate.RBFInterpolator.
         method_kws (dict): dictionary of keyword arguments to pass to `method`
@@ -581,22 +589,15 @@ def interpolate_voltage_onto_surface(
         electrograms, interpolated onto the surface of the mesh.
     """
 
-    surface_points = case.points.copy()
+    surface_points = case.points
+    include = case.electric.include
 
     if bipolar:
-        points = case.electric.bipolar_egm.points.copy()
-        voltages = calculate_voltage_from_electrograms(case, buffer=buffer)
+        points = case.electric.bipolar_egm.points[include]
+        voltages = case.electric.bipolar_egm.voltage[include]
     else:
-        points = case.electric.unipolar_egm.points.copy()
-        voltages = calculate_voltage_from_electrograms(case, buffer=buffer, bipolar=False)
-
-    within_woi = get_mapping_points_within_woi(case, buffer=buffer)
-    if bipolar:
-        points = points[within_woi]
-        voltages = voltages[within_woi]
-    else:
-        points = np.concatenate(points[within_woi], axis=1).T
-        voltages = voltages[within_woi].flatten()
+        points = case.electric.unipolar_egm.points[include, :, 0]  # Use only the proximal unipolar data
+        voltages = case.electric.unipolar_egm.voltage[include]
 
     interpolator = Interpolator(
         points,
