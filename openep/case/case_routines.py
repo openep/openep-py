@@ -537,7 +537,7 @@ def interpolate_activation_time_onto_surface(
     points = case.electric.bipolar_egm.points
     local_activation_times = case.electric.annotations.local_activation_time - case.electric.annotations.reference_activation_time
 
-    include = case.electric.include
+    include = case.electric.include.astype(bool)
     points = points[include]
     local_activation_times = local_activation_times[include]
 
@@ -590,7 +590,7 @@ def interpolate_voltage_onto_surface(
     """
 
     surface_points = case.points
-    include = case.electric.include
+    include = case.electric.include.astype(bool)
 
     if bipolar:
         points = case.electric.bipolar_egm.points[include]
