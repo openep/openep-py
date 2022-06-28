@@ -190,12 +190,12 @@ def extract_electric_data(electric_data):
 
     # electric.include is a later addition to the openep format
     if 'include' in electric_data:
-        include = electric_data['include'].astype(bool)
+        include = electric_data['include'].astype(int)
     else:
         include = np.full_like(
             names,
             fill_value=True,
-            dtype=bool,
+            dtype=int,
         )
 
     # Older versions of OpenEP datasets did not have unipolar data or electrode names. Add deafult ones here.
