@@ -59,8 +59,10 @@ Identifying and analysing the free boundaries of a mesh
 """
 
 from attr import attrs
+from typing import Union
 
 import numpy as np
+import scipy.stats
 
 import pyvista
 import pymeshfix
@@ -74,6 +76,7 @@ __all__ = [
     "calculate_field_area",
     "calculate_vertex_distance",
     "calculate_vertex_path",
+    "voxelise",
 ]
 
 
@@ -463,3 +466,123 @@ def calculate_vertex_path(
         path = np.array([])
 
     return path
+
+
+def _determine_voxel_bins(mesh, edge_length, border=10):
+    """Determine the bins to voxelise a mesh.
+    
+    Args:
+        mesh (pyvista.PolyData): Mesh to be voxelised.
+        edge_length (float): Edge length of each voxel, in mm.
+        border (float): Minimum border around the mesh, in mm. 
+
+    Returns:
+        (np.ndarray): Bins that can be used to construct arrays of voxels.
+
+    """
+
+    def _round_up(value, nearest):
+        return np.ceil(value / nearest) * nearest
+
+    def _round_down(value, nearest):
+        return np.floor(value / nearest) * nearest
+
+    low_values = np.asarray(mesh.bounds[::2])
+    high_values = np.asarray(mesh.bounds[1::2])
+
+    low_values = _round_down(low_values, nearest=border) - border / 2
+    high_values = _round_up(high_values, nearest=border) + border / 2
+
+    x_low, y_low, z_low = low_values
+    x_high, y_high, z_high = high_values
+
+    x_bins = np.arange(x_low, x_high + edge_length, edge_length)
+    y_bins = np.arange(y_low, y_high + edge_length, edge_length)
+    z_bins = np.arange(z_low, z_high + edge_length, edge_length)
+
+    bin_edges = [x_bins, y_bins, z_bins]
+    bin_centres = [
+        x_bins[:-1] + edge_length / 2,
+        y_bins[:-1] + edge_length / 2,
+        z_bins[:-1] + edge_length / 2,
+    ]
+
+    return bin_edges, bin_centres
+
+
+def voxelise(
+    mesh: pyvista.PolyData,
+    thickness: Union[float, np.ndarray] = 2,
+    n_surfaces: int = 11,
+    edge_length: float = 1,
+    extract_myocardium: bool = False,
+) -> pyvista.PolyData:
+    """Voxelise a surface mesh.
+
+    Args:
+        mesh (PolyData): Surface mesh to be voxelised.
+        thickness (float or np.ndarray): If a float, this defines to thickness of the myocardium.
+            An array of thicknesses - one per point in the mesh - can be passed to create a voxelised
+            mesh with heterogenous thickness.
+        edge_length (float): Length of the voxel edges, in mm.
+        n_surfaces (int): A series of surface meshes are created by interpolating points between the
+            endocardium and epicardium. Points from this series of meshes are used to determine which voxels
+            should be filled. The smaller the voxel edge length, the larger :attr:`n_surfaces`
+            should be.
+        extract_myocardium (bool, optional): If True the voxelised myocardium will be extracted and
+            returned. If False, the voxels in a StructuredGrid will be labelled as filled (1) or empty (0),
+            and this data stored as point data in the returned mesh.
+
+    Returns:
+        StructuredGrid: The voxelised mesh.
+    """
+
+    # Compute normals and set thicknesses
+    mesh.compute_normals(inplace=True, auto_orient_normals=True, cell_normals=False, point_normals=True)
+    thickness = np.full(mesh.n_points, fill_value=thickness, dtype=float) if isinstance(thickness, float) else thickness
+    mesh.point_data['Thickness'] = thickness
+
+    # Calculate voxel bins and create output mesh
+    bin_edges, bin_centres = _determine_voxel_bins(mesh, edge_length=edge_length)
+    bin_centres_x, bin_centres_y, bin_centres_z = bin_centres
+
+    XX, YY, ZZ = np.meshgrid(bin_centres_x, bin_centres_y, bin_centres_z, indexing='xy')  # must use bin centres, must use Cartesian indexing
+    voxels = pyvista.StructuredGrid(XX, YY, ZZ)
+
+    voxel_filled = np.zeros(voxels.n_points, dtype=int)  # keep track of which voxels are filled. 0: empty, 1: filled
+
+    # Determine how much to 
+    n_voxels_x = np.ptp(bin_centres_x)
+    n_voxels_y = np.ptp(bin_centres_y)
+    n_voxels_z = np.ptp(bin_centres_z)
+
+    # Create a series - of open meshes and voxelise each mesh
+    for shell_distance in np.linspace(0, 1, n_surfaces):
+
+        shell = mesh.copy(deep=True)
+        shell.points += mesh.point_data['Normals'] * mesh.point_data['Thickness'][:, np.newaxis] * shell_distance
+        shell.subdivide_adaptive(max_edge_len=edge_length, inplace=True)
+
+        mesh_binned = scipy.stats.binned_statistic_dd(
+            sample=np.asarray(shell.points),
+            values=np.zeros(shell.n_points),
+            statistic='count',
+            bins=bin_edges,
+            expand_binnumbers=True,
+        )
+
+        x_indices, y_indices, z_indices = mesh_binned.binnumber - 1
+        bin_indices = np.ravel_multi_index(
+            [y_indices, x_indices, z_indices],  # we're using Cartesian indexing (as does PyVista)
+            dims=np.asarray([n_voxels_y+1, n_voxels_x+1, n_voxels_z+1], dtype=int),
+            order='F',
+        )
+
+        voxel_filled[bin_indices] = 1
+
+    voxels.point_data['Filled'] = voxel_filled
+
+    if extract_myocardium:
+        voxels = voxels.extract_points(voxel_filled.astype(bool))
+
+    return voxels
