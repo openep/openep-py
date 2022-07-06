@@ -8,4 +8,5 @@ from .mesh_routines import (
     calculate_vertex_path,
     get_free_boundaries,
     repair_mesh,
+    voxelise
 )
