@@ -468,6 +468,16 @@ def calculate_vertex_path(
     return path
 
 
+def _get_unreferenced_points(mesh):
+    """Determine indices of points not referenced in the triangulation"""
+
+    indices = np.arange(mesh.n_points)
+    referenced_indices = np.unique(mesh.faces.reshape(mesh.n_faces, 4)[:, 1:].ravel())
+    unreferenced_indices = np.isin(indices, referenced_indices, assume_unique=True, invert=True)
+
+    return unreferenced_indices
+
+
 def _determine_voxel_bins(mesh, edge_length, border=10):
     """Determine the bins to voxelise a mesh.
     
@@ -536,6 +546,13 @@ def voxelise(
     Returns:
         StructuredGrid: The voxelised mesh.
     """
+
+    # Don't make any changes to the mesh
+    mesh = mesh.copy(deep=True)
+
+    # Remove points not referenced by the triangulation
+    not_referenced = _get_unreferenced_points(mesh)
+    mesh.remove_points(not_referenced, inplace=True)
 
     # Compute normals and set thicknesses
     mesh.compute_normals(inplace=True, auto_orient_normals=True, cell_normals=False, point_normals=True)
