@@ -187,6 +187,8 @@ def _extract_surface_data(
     if surface_data['uni_imp_frc'].size == 0:
         surface_data['uni_imp_frc'] = np.array([], dtype=float)
 
+    surface_data['thickness'] = fields.thickness
+
     return surface_data
 
 
