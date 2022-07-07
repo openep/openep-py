@@ -42,6 +42,11 @@ class Fields:
     local_activation_time: np.ndarray
     impedance: np.ndarray
     force: np.ndarray
+    thickness: np.ndarray = None
+
+    def __attrs_post_init__(self):
+        if self.bipolar_voltage is not None and self.thickness is None:
+            self.thickness = np.full_like(self.bipolar_voltage, fill_value=np.NaN, dtype=float)
 
     def __repr__(self):
         return f"fields: {tuple(self.__dict__.keys())}"
@@ -84,12 +89,18 @@ def extract_surface_data(surface_data):
     local_activation_time, bipolar_voltage = surface_data['act_bip'].T.astype(float)
     unipolar_voltage, impedance, force = surface_data['uni_imp_frc'].T.astype(float)
 
+    try:
+        thickness = surface_data['thickness'].astype(float)
+    except KeyError as e:
+        thickness = np.full_like(local_activation_time, fill_value=np.NaN, dtype=float)
+
     fields = Fields(
         bipolar_voltage,
         unipolar_voltage,
         local_activation_time,
         impedance,
         force,
+        thickness
     )
 
     return points, indices, fields
@@ -108,6 +119,7 @@ def empty_fields(size=0):
     unipolar_voltage = np.full(size, fill_value=np.NaN, dtype=float)
     impedance = np.full(size, fill_value=np.NaN, dtype=float)
     force = np.full(size, fill_value=np.NaN, dtype=float)
+    thickness = np.full(size, fill_value=np.NaN, dtype=float)
 
     fields = Fields(
         bipolar_voltage,
@@ -115,6 +127,7 @@ def empty_fields(size=0):
         local_activation_time,
         impedance,
         force,
+        thickness
     )
 
     return fields
