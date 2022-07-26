@@ -209,6 +209,8 @@ def _extract_electric_data(electric: Electric):
     electric_data['names'] = electric.internal_names.astype(object)
     electric_data['include'] = electric.include
 
+    electric_data['sampleFrequencu'] = float(electric.frequency)
+
     electric_data['electrodeNames_bip'] = electric.bipolar_egm.names.astype(object)
     electric_data['egmX'] = electric.bipolar_egm.points
     electric_data['egm'] = electric.bipolar_egm.egm
@@ -224,6 +226,7 @@ def _extract_electric_data(electric: Electric):
 
     electric_data['ecg'] = electric.ecg.ecg
     electric_data['ecgGain'] = electric.ecg.gain
+    electric_data['ecgNames'] = electric.ecg.channel_names.astype(object)
 
     electric_data['egmSurfX'] = electric.surface.nearest_point
     electric_data['barDirection'] = electric.surface.normals
