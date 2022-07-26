@@ -59,15 +59,18 @@ class ECG:
 
     Args:
         egm (np.ndarray): ECGs
+        channel_names (np.ndarray): ECG channel names
         gain (np.ndarray): gain to apply to each signal
     """
 
     ecg: np.ndarray
+    channel_names: np.ndarray
     gain: np.ndarray = None
 
     def __attrs_post_init__(self):
         if self.ecg is not None and self.gain is None:
-            self.gain = np.ones(self.egm.shape[0])
+            n_points, n_samples, n_channels = self.ecg.shape
+            self.gain = np.ones((n_points, n_channels))
 
     def __repr__(self):
         n_points = len(self.ecg) if self.ecg is not None else 0
@@ -152,6 +155,7 @@ class Electric:
             point on the 3D surface, as well as the normal to the surface at that point.
         annotations (Annotations): The window of interest, local activation time, and reference
             activation time for each mapping point.
+        frequency (float): The sample frequency of electric signals, in Hz. Defaults to 1000 Hz.
     """
 
     names: np.ndarray
@@ -164,6 +168,7 @@ class Electric:
     impedance: Impedance
     surface: ElectricSurface
     annotations: Annotations
+    frequency: float = 1000
 
     def __repr__(self):
         n_points = len(self.unipolar_egm) if self.unipolar_egm is not None else 0
@@ -208,15 +213,33 @@ def extract_electric_data(electric_data):
         electric_data['voltages']['unipolar'] = np.full(num_points, fill_value=np.NaN, dtype=float)
         electric_data['electrodeNames_uni'] = np.full_like(internal_names, fill_value="", dtype=str)
 
+    # Not all datasets have ecgNames
+    electric_data['ecgNames'] = electric_data.get('ecgNames', np.array(['ECG']))
+
+    # Make ecgs correct shape
+    ecg_dims = electric_data['ecg'].ndim
+    if ecg_dims == 0:
+        n_ecg_channels = 0
+    elif ecg_dims == 2:
+        n_ecg_channels = 1
+        n_points, n_samples = electric_data['ecg'].shape
+        electric_data['ecg'] = electric_data['ecg'].reshape(n_points, n_samples, 1)
+    elif ecg_dims == 3:
+        n_ecg_channels = electric_data['ecg'].shape[2]
+
     # Not all datasets have gain values
     if 'egmGain' not in electric_data:
-        electric_data['egmGain'] = np.full(electric_data['egmRef'].shape[0], fill_value=1.0, dtype=float)
+        electric_data['egmGain'] = np.full(electric_data['egm'].shape[0], fill_value=1.0, dtype=float)
     if 'egmUniGain' not in electric_data:
-        electric_data['egmUniGain'] = np.full(electric_data['egmRef'].shape[0], fill_value=1.0, dtype=float)
+        electric_data['egmUniGain'] = np.full((electric_data['egm'].shape[0], 2), fill_value=1.0, dtype=float)
     if 'egmRefGain' not in electric_data:
-        electric_data['egmRefGain'] = np.full(electric_data['egmRef'].shape[0], fill_value=-4.0, dtype=float)
+        electric_data['egmRefGain'] = np.full(electric_data['egm'].shape[0], fill_value=-4.0, dtype=float)
     if 'ecgGain' not in electric_data:
-        electric_data['ecgGain'] = np.full(electric_data['egmRef'].shape[0], fill_value=1.0, dtype=float)
+        if n_ecg_channels == 0:
+            electric_data['ecgGain'] = np.array([])
+        else:
+            n_points, n_samples, n_ecg_channels = electric_data['ecg'].shape
+            electric_data['ecgGain'] = np.full((n_points, n_ecg_channels), fill_value=1.0, dtype=float)
 
     bipolar_egm = Electrogram(
         egm=electric_data['egm'].astype(float),
@@ -239,7 +262,8 @@ def extract_electric_data(electric_data):
 
     ecg = ECG(
         ecg=electric_data['ecg'].astype(float),
-        gain=electric_data['egmGain'].astype(float),
+        channel_names=electric_data['ecgNames'].astype(str),
+        gain=electric_data['ecgGain'].astype(float),
     )
 
     try:
@@ -266,6 +290,9 @@ def extract_electric_data(electric_data):
         reference_activation_time=electric_data['annotations']['referenceAnnot'].astype(float),
     )
 
+    # If no sample frequency is specified, assume it's 1000 Hz
+    frequency = electric_data.get('sampleFrequency', 1000)
+
     electric = Electric(
         names=names,
         internal_names=internal_names,
@@ -276,7 +303,8 @@ def extract_electric_data(electric_data):
         ecg=ecg,
         impedance=impedance,
         surface=surface,
-        annotations=annotations
+        annotations=annotations,
+        frequency=frequency,
     )
 
     return electric
@@ -315,6 +343,7 @@ def empty_electric():
 
     ecg = ECG(
         ecg=np.array([], dtype=float),
+        channel_names=np.array([], dtype=str),
         gain=np.array([], dtype=float),
     )
 
@@ -334,6 +363,8 @@ def empty_electric():
         reference_activation_time=np.array([], dtype=float),
     )
 
+    frequency = np.NaN
+
     electric = Electric(
         names=names,
         internal_names=internal_names,
@@ -344,7 +375,8 @@ def empty_electric():
         ecg=ecg,
         impedance=impedance,
         surface=surface,
-        annotations=annotations
+        annotations=annotations,
+        frequency=frequency,
     )
 
     return electric
