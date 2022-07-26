@@ -213,9 +213,6 @@ def extract_electric_data(electric_data):
         electric_data['voltages']['unipolar'] = np.full(num_points, fill_value=np.NaN, dtype=float)
         electric_data['electrodeNames_uni'] = np.full_like(internal_names, fill_value="", dtype=str)
 
-    # Not all datasets have ecgNames
-    electric_data['ecgNames'] = electric_data.get('ecgNames', np.array(['ECG']))
-
     # Make ecgs correct shape
     ecg_dims = electric_data['ecg'].ndim
     if ecg_dims == 0:
@@ -226,6 +223,9 @@ def extract_electric_data(electric_data):
         electric_data['ecg'] = electric_data['ecg'].reshape(n_points, n_samples, 1)
     elif ecg_dims == 3:
         n_ecg_channels = electric_data['ecg'].shape[2]
+
+    # Not all datasets have ecgNames
+    electric_data['ecgNames'] = electric_data.get('ecgNames', np.array(['ECG' for _ in range(n_ecg_channels)]))
 
     # Not all datasets have gain values
     if 'egmGain' not in electric_data:
