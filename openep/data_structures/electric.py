@@ -226,6 +226,8 @@ def extract_electric_data(electric_data):
 
     # Not all datasets have ecgNames
     electric_data['ecgNames'] = electric_data.get('ecgNames', np.array(['ECG' for _ in range(n_ecg_channels)]))
+    if isinstance(electric_data['ecgNames'], str):
+        electric_data['ecgNames'] = np.array([electric_data['ecgNames']])
 
     # Not all datasets have gain values
     if 'egmGain' not in electric_data:
