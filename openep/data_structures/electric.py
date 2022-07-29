@@ -18,7 +18,7 @@
 
 """Module containing classes for storing electrogram data."""
 
-from attr import attrs
+from attr import attrs, field
 import numpy as np
 
 __all__ = []
@@ -114,7 +114,6 @@ class ElectricSurface:
         return f"ElectricSurface with {n_points} mapping points."
 
 
-@attrs(auto_attribs=True, auto_detect=True)
 class Annotations:
     """
     Class for storing information about activation times for electrograms.
@@ -125,9 +124,30 @@ class Annotations:
         reference_activation_time (np.ndarray): The reference activation time for each mapping point
     """
 
-    window_of_interest: np.ndarray
-    local_activation_time: np.ndarray
-    reference_activation_time: np.ndarray
+    def __init__(
+        self,
+        window_of_interest,
+        local_activation_time,
+        reference_activation_time,
+        frequency,
+    ):
+
+        self._window_of_interest_indices = window_of_interest
+        self._local_activation_time_indices = local_activation_time
+        self._reference_activation_time_indices = reference_activation_time
+        self._frequency = frequency
+
+    @property
+    def window_of_interest(self):
+        return self._window_of_interest_indices * 1000.0 / self._frequency
+
+    @property
+    def local_activation_time(self):
+        return self._local_activation_time_indices * 1000.0 / self._frequency
+
+    @property
+    def reference_activation_time(self):
+        return self._reference_activation_time_indices * 1000.0 / self._frequency
 
     def __repr__(self):
         n_points = len(self.window_of_interest) if self.window_of_interest is not None else 0
@@ -169,6 +189,20 @@ class Electric:
     surface: ElectricSurface
     annotations: Annotations
     frequency: float = 1000
+
+    def __attrs_post_init__(self):
+
+        n_samples = self.bipolar_egm.egm.shape[1]
+
+        if n_samples == 0:
+            self.times = np.array([], dtype=float)
+            return
+
+        self._time_indices = np.arange(n_samples)
+
+    @property
+    def times(self):
+        return self._time_indices * 1000 / self.frequency  # time in ms
 
     def __repr__(self):
         n_points = len(self.unipolar_egm) if self.unipolar_egm is not None else 0
@@ -286,14 +320,15 @@ def extract_electric_data(electric_data):
         normals=electric_data['barDirection'].astype(float),
     )
 
-    annotations = Annotations(
-        window_of_interest=electric_data['annotations']['woi'].astype(float),
-        local_activation_time=electric_data['annotations']['mapAnnot'].astype(float),
-        reference_activation_time=electric_data['annotations']['referenceAnnot'].astype(float),
-    )
-
     # If no sample frequency is specified, assume it's 1000 Hz
-    frequency = electric_data.get('sampleFrequency', 1000)
+    frequency = electric_data.get('sampleFrequency', 1000.0)
+
+    annotations = Annotations(
+        window_of_interest=electric_data['annotations']['woi'].astype(int),
+        local_activation_time=electric_data['annotations']['mapAnnot'].astype(int),
+        reference_activation_time=electric_data['annotations']['referenceAnnot'].astype(int),
+        frequency=float(frequency),
+    )
 
     electric = Electric(
         names=names,
@@ -359,13 +394,14 @@ def empty_electric():
         normals=np.array([], dtype=float),
     )
 
+    frequency = np.NaN
+
     annotations = Annotations(
         window_of_interest=np.array([], dtype=float),
         local_activation_time=np.array([], dtype=float),
         reference_activation_time=np.array([], dtype=float),
+        frequency=frequency,
     )
-
-    frequency = np.NaN
 
     electric = Electric(
         names=names,
