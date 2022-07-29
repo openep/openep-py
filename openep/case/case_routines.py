@@ -246,54 +246,6 @@ def get_electrograms_at_points(
     return electrograms
 
 
-def get_woi_times(case, buffer=50, relative=False):
-    """
-    Extracts the times within the window of interest.
-
-    Args:
-        case (Case): openep case object
-        buffer (float): times within the window of interest plus/minus this buffer
-            time will be considered to be within the woi.
-        relative (bool): if True, the time of the reference annotation will be
-            subtracted from the returned times.
-
-    Returns:
-        times (ndarray): times within the window of interest
-        
-    Warning
-    -------
-    This returns the sample indices that cover the window of interest for the
-    **first** electrogram only. get_sample_indices_within_woi can be used to
-    obtain a two-dimensional boolean array in which value of True indicate
-    that the specific sample is within the specific electrogram's window of
-    interest.
-    """
-    
-    # TODO: remove this function as it does not take into account the fact
-    #       that different electrograms may have different windows of interest
-    #       and different reference annotations
-
-    # TODO: This is sample rather than time
-    #       Should take into account sample frequency to get actual time
-    times = np.arange(case.electric.bipolar_egm.egm.shape[1])
-
-    # TODO: woi and reference times might be different for each mapping point
-    woi = case.electric.annotations.window_of_interest[0]
-    ref_annotation = case.electric.annotations.reference_activation_time[0]
-
-    start_time, stop_time = woi + ref_annotation + [-buffer, buffer]
-
-    keep_times = np.logical_and(
-        times >= start_time,
-        times <= stop_time,
-    )
-
-    if relative:
-        times -= ref_annotation
-
-    return times[keep_times]
-
-
 def get_sample_indices_within_woi(case, buffer=50, indices=None):
     """
     Determine which samples are within the window of interest for each electrogram.
