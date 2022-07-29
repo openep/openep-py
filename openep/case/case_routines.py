@@ -33,8 +33,6 @@ Extracting data from a Case
 
 .. autofunction:: get_electrograms_at_points
 
-.. autofunction:: get_woi_times
-
 .. _analysing:
 
 Analyses
@@ -71,7 +69,6 @@ import scipy.interpolate
 __all__ = [
     'get_mapping_points_within_woi',
     'get_electrograms_at_points',
-    'get_woi_times',
     'calculate_voltage_from_electrograms',
     'calculate_distance',
     'calculate_points_within_distance',

@@ -28,7 +28,6 @@ from openep.case.case_routines import (
     _get_window_of_interest,
     get_mapping_points_within_woi,
     get_electrograms_at_points,
-    get_woi_times,
     calculate_voltage_from_electrograms,
     calculate_distance,
     calculate_points_within_distance,
@@ -224,25 +223,6 @@ def test_get_electrograms_at_points_invalid_type(mock_case):
             mock_case,
             egm_type="other",
         )
-
-
-def test_get_woi_times(mock_case):
-
-    times = get_woi_times(mock_case)
-    assert_allclose(np.arange(20), times)
-
-
-def test_get_woi_times_no_buffer(mock_case):
-
-    times = get_woi_times(mock_case, buffer=0)
-    assert_allclose(np.arange(10, 20), times)
-
-
-def test_get_woi_times_no_buffer_relative(mock_case):
-
-    times = get_woi_times(mock_case, buffer=0, relative=True)
-    assert_allclose(np.arange(5, 15), times)
-
 
 def test_calculate_voltage_from_electrograms(mock_case):
 
