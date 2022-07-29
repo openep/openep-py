@@ -22,6 +22,7 @@ import openep
 from openep._datasets.openep_datasets import DATASET_2
 
 case = openep.load_openep_mat(DATASET_2)
+openep.case.get_woi_times(case)
 mesh = case.create_mesh()
 
 # determine the window of interest for each point
