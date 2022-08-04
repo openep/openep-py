@@ -20,7 +20,7 @@
 Create meshes from Circle CVI workspaces --- :mod:`openep.io.readers._circle_cvi`
 =================================================================================
 
-This module contains functions for creating an OpenEP dataset (mesh only)
+This module contains functions for creating a PyVista PolyData mesh
 from a Circle CVI workspace and a stack of dicoms.
 
 """
