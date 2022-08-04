@@ -68,9 +68,14 @@ class ECG:
     gain: np.ndarray = None
 
     def __attrs_post_init__(self):
+
+        # Ensure gain is present is necessary, and that is has the correct shape
         if self.ecg is not None and self.gain is None:
             n_points, n_samples, n_channels = self.ecg.shape
             self.gain = np.ones((n_points, n_channels))
+        elif self.gain is not None:
+            n_points, n_samples, n_channels = self.ecg.shape
+            self.gain = self.gain.reshape((n_points, n_channels))
 
     def __repr__(self):
         n_points = len(self.ecg) if self.ecg is not None else 0
@@ -87,7 +92,7 @@ class Impedance:
         values (np.ndarray): Impedance measurements.
     """
 
-    times: np.ndarray
+    times: np.ndarray = None
     values: np.ndarray = None
 
     def __repr__(self):
@@ -106,7 +111,7 @@ class ElectricSurface:
         normals (np.ndarray): Normal to the surface at each of the nearest points.
     """
 
-    nearest_point: np.ndarray
+    nearest_point: np.ndarray = None
     normals: np.ndarray = None
 
     def __repr__(self):
@@ -126,10 +131,10 @@ class Annotations:
 
     def __init__(
         self,
-        window_of_interest,
-        local_activation_time,
-        reference_activation_time,
-        frequency,
+        window_of_interest: np.ndarray = None,
+        local_activation_time: np.ndarray = None,
+        reference_activation_time: np.ndarray = None,
+        frequency: float = 1000,
     ):
 
         self._window_of_interest_indices = window_of_interest
@@ -139,15 +144,24 @@ class Annotations:
 
     @property
     def window_of_interest(self):
-        return self._window_of_interest_indices * 1000.0 / self._frequency
+        try:
+            return self._window_of_interest_indices * 1000.0 / self._frequency
+        except TypeError as e:
+            return None
 
     @property
     def local_activation_time(self):
-        return self._local_activation_time_indices * 1000.0 / self._frequency
+        try:
+            return self._local_activation_time_indices * 1000.0 / self._frequency
+        except TypeError as e:
+            return None
 
     @property
     def reference_activation_time(self):
-        return self._reference_activation_time_indices * 1000.0 / self._frequency
+        try:
+            return self._reference_activation_time_indices * 1000.0 / self._frequency
+        except TypeError as e:
+            return None
 
     def __repr__(self):
         n_points = len(self.window_of_interest) if self.window_of_interest is not None else 0
@@ -178,34 +192,57 @@ class Electric:
         frequency (float): The sample frequency of electric signals, in Hz. Defaults to 1000 Hz.
     """
 
-    names: np.ndarray
-    internal_names: np.ndarray
-    include: np.ndarray
-    bipolar_egm: Electrogram
-    unipolar_egm: Electrogram
-    reference_egm: Electrogram
-    ecg: np.ndarray
-    impedance: Impedance
-    surface: ElectricSurface
-    annotations: Annotations
+    names: np.ndarray = None
+    internal_names: np.ndarray = None
+    include: np.ndarray = None
+    bipolar_egm: Electrogram = None
+    unipolar_egm: Electrogram = None
+    reference_egm: Electrogram = None
+    ecg: np.ndarray = None
+    impedance: Impedance = None
+    surface: ElectricSurface = None
+    annotations: Annotations = None
     frequency: float = 1000
 
     def __attrs_post_init__(self):
 
+        if self.bipolar_egm is None:
+            self.bipolar_egm = Electrogram()
+
+        if self.unipolar_egm is None:
+            self.unipolar_egm = Electrogram()
+
+        if self.reference_egm is None:
+            self.reference_egm = Electrogram()
+
+        if self.ecg is None:
+            self.ecg = ECG()
+
+        if self.impedance is None:
+            self.impedance = Impedance()
+
+        if self.surface is None:
+            self.surface = ElectricSurface()
+
+        if self.annotations is None:
+            self.annotations = Annotations()
+
+        if self.bipolar_egm.egm is None or self.bipolar_egm.egm.shape[1] == 0:
+            self._time_indices = np.array([], dtype=float)
+
         n_samples = self.bipolar_egm.egm.shape[1]
-
-        if n_samples == 0:
-            self.times = np.array([], dtype=float)
-            return
-
         self._time_indices = np.arange(n_samples)
 
     @property
     def times(self):
         return self._time_indices * 1000 / self.frequency  # time in ms
 
+    @property
+    def n_points(self):
+        return len(self.bipolar_egm.egm) if self.bipolar_egm.egm is not None else 0
+
     def __repr__(self):
-        n_points = len(self.unipolar_egm) if self.unipolar_egm is not None else 0
+        n_points = len(self.unipolar_egm.egm) if self.unipolar_egm.egm is not None else 0
         return f"Electric data for {n_points} mapping points."
 
 
@@ -221,7 +258,7 @@ def extract_electric_data(electric_data):
             taken at various mapping points.
     """
 
-    if electric_data['egm'].size == 0:
+    if electric_data['egm'].size == 0 and electric_data['egmUni'].size == 0:
         return empty_electric()
 
     names = electric_data['tags'].astype(str)
@@ -241,15 +278,20 @@ def extract_electric_data(electric_data):
     if 'electrodeNames_bip' not in electric_data:
         electric_data['electrodeNames_bip'] = np.full_like(internal_names, fill_value="", dtype=str)
     if 'egmUni' not in electric_data:
-        num_points, num_samples = electric_data['egm'].shape
-        electric_data['egmUni'] = np.full((num_points, num_samples, 2), fill_value=0.0, dtype=float)
-        electric_data['egmUniX'] = np.full((num_points, 3, 2), fill_value=np.NaN, dtype=float)
-        electric_data['voltages']['unipolar'] = np.full(num_points, fill_value=np.NaN, dtype=float)
-        electric_data['electrodeNames_uni'] = np.full_like(internal_names, fill_value="", dtype=str)
+        electric_data['egmUni'] = None
+        electric_data['egmUniX'] = None
+        electric_data['voltages']['unipolar'] = None
+        electric_data['electrodeNames_uni'] = None
+    else:
+        electric_data['egmUni'] = electric_data['egmUni'].astype(float)
+        electric_data['egmUniX'] = electric_data['egmUniX'].astype(float)
+        electric_data['voltages']['unipolar'] = electric_data['voltages']['unipolar'].astype(float)
+        electric_data['electrodeNames_uni'] = electric_data['electrodeNames_uni'].astype(str)
+        
 
     # Make ecgs correct shape
     ecg_dims = electric_data['ecg'].ndim
-    if ecg_dims == 0:
+    if ecg_dims == 1:
         n_ecg_channels = 0
     elif ecg_dims == 2:
         n_ecg_channels = 1
@@ -261,45 +303,54 @@ def extract_electric_data(electric_data):
     # Not all datasets have ecgNames
     electric_data['ecgNames'] = electric_data.get('ecgNames', np.array(['ECG' for _ in range(n_ecg_channels)]))
     if isinstance(electric_data['ecgNames'], str):
-        electric_data['ecgNames'] = np.array([electric_data['ecgNames']])
+        electric_data['ecgNames'] = np.array([electric_data['ecgNames']]).astype(str)
+    if electric_data['ecgNames'].size == 0:
+        electric_data['ecg'] = None
+        electric_data['ecgNames'] = None
+    else:
+        electric_data['ecg'] = electric_data['ecg'].astype(float)
 
     # Not all datasets have gain values
-    if 'egmGain' not in electric_data:
-        electric_data['egmGain'] = np.full(electric_data['egm'].shape[0], fill_value=1.0, dtype=float)
-    if 'egmUniGain' not in electric_data:
-        electric_data['egmUniGain'] = np.full((electric_data['egm'].shape[0], 2), fill_value=1.0, dtype=float)
-    if 'egmRefGain' not in electric_data:
-        electric_data['egmRefGain'] = np.full(electric_data['egm'].shape[0], fill_value=-4.0, dtype=float)
-    if 'ecgGain' not in electric_data:
-        if n_ecg_channels == 0:
-            electric_data['ecgGain'] = np.array([])
-        else:
-            n_points, n_samples, n_ecg_channels = electric_data['ecg'].shape
-            electric_data['ecgGain'] = np.full((n_points, n_ecg_channels), fill_value=1.0, dtype=float)
+    if 'egmGain' not in electric_data or electric_data['egmGain'].size == 0:
+        electric_data['egmGain'] = None
+    else:
+        electric_data['egmGain'] = electric_data['egmGain'].astype(float)
+    if 'egmUniGain' not in electric_data or electric_data['egmUniGain'].size == 0:
+        electric_data['egmUniGain'] = None
+    else:
+        electric_data['egmUniGain'] = electric_data['egmUniGain'].astype(float)
+    if 'egmRefGain' not in electric_data or electric_data['egmRefGain'].size == 0:
+        electric_data['egmRefGain'] = None
+    else:
+        electric_data['egmRefGain'] = electric_data['egmRefGain'].astype(float)
+    if 'ecgGain' not in electric_data or electric_data['ecgGain'].size == 0:
+        electric_data['ecgGain'] = None
+    else:
+        electric_data['ecgGain'] = electric_data['ecgGain'].astype(float)
 
     bipolar_egm = Electrogram(
         egm=electric_data['egm'].astype(float),
         points=electric_data['egmX'].astype(float),
         voltage=electric_data['voltages']['bipolar'].astype(float),
-        gain=electric_data['egmGain'].astype(float),
-        names=electric_data['electrodeNames_bip'].astype(str),
+        gain=electric_data['egmGain'],
+        names=electric_data['electrodeNames_bip'].astype(str) if electric_data['electrodeNames_bip'].size > 0 else None,
     )
     unipolar_egm = Electrogram(
-        egm=electric_data['egmUni'].astype(float),
-        points=electric_data['egmUniX'].astype(float),
-        voltage=electric_data['voltages']['unipolar'].astype(float),
-        gain=electric_data['egmUniGain'].astype(float),
-        names=electric_data['electrodeNames_uni'].astype(str),
+        egm=electric_data['egmUni'] if electric_data['egmUni'].size > 0 else None,
+        points=electric_data['egmUniX'] if electric_data['egmUniX'].size > 0 else None,
+        voltage=electric_data['voltages']['unipolar'] if electric_data['voltages']['unipolar'].size > 0 else None,
+        gain=electric_data['egmUniGain'],
+        names=electric_data['electrodeNames_uni'] if electric_data['electrodeNames_uni'].size > 0 else None,
     )
     reference_egm = Electrogram(
-        egm=electric_data['egmRef'].astype(float),
-        gain=electric_data['egmRefGain'].astype(float),
+        egm=electric_data['egmRef'].astype(float) if electric_data['egmRef'].size > 0 else None,
+        gain=electric_data['egmRefGain'],
     )
 
     ecg = ECG(
-        ecg=electric_data['ecg'].astype(float),
-        channel_names=electric_data['ecgNames'].astype(str),
-        gain=electric_data['ecgGain'].astype(float),
+        ecg=electric_data['ecg'],
+        channel_names=electric_data['ecgNames'],
+        gain=electric_data['ecgGain'],
     )
 
     try:
@@ -311,23 +362,27 @@ def extract_electric_data(electric_data):
         impedance_values = electric_data['impedances']['value']
 
     impedance = Impedance(
-        times=impedance_times,
-        values=impedance_values,
+        times=impedance_times if len(impedance_times) > 0 else None,
+        values=impedance_values if len(impedance_values) > 0 else None,
     )
 
     surface = ElectricSurface(
-        nearest_point=electric_data['egmSurfX'].astype(float),
-        normals=electric_data['barDirection'].astype(float),
+        nearest_point=electric_data['egmSurfX'].astype(float) if electric_data['egmSurfX'].astype(float).size > 0 else None,
+        normals=electric_data['barDirection'].astype(float) if electric_data['barDirection'].astype(float).size > 0 else None,
     )
 
     # If no sample frequency is specified, assume it's 1000 Hz
     frequency = electric_data.get('sampleFrequency', 1000.0)
+    try:
+        frequency = float(frequency)
+    except TypeError as e:
+        frequency = 1000.0
 
     annotations = Annotations(
         window_of_interest=electric_data['annotations']['woi'].astype(int),
         local_activation_time=electric_data['annotations']['mapAnnot'].astype(int),
         reference_activation_time=electric_data['annotations']['referenceAnnot'].astype(int),
-        frequency=float(frequency),
+        frequency=frequency,
     )
 
     electric = Electric(

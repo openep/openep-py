@@ -123,7 +123,7 @@ def export_openep_mat(
     """
 
     userdata = {}
-    userdata['notes'] = case.notes.astype(object)
+    userdata['notes'] = case.notes.astype(object) if case.notes is not None else np.array([], dtype=object)
 
     userdata['surface'] = _extract_surface_data(
         points=case.points,
@@ -160,34 +160,43 @@ def _extract_surface_data(
             surface of a mesh as well as scalar values (fields)
     """
 
+    # Make sure none of the attributes are equal to None - scipy can't handle this
+    empty_float_array = np.array([], dtype=float)
+    empty_int_array = np.array([], dtype=int)
+
     surface_data = {}
 
     surface_data['triRep'] = {}
-    surface_data['triRep']['X'] = points
-    surface_data['triRep']['Triangulation'] = indices.astype(float) + 1  # TriRep requires doubles not ints, and MATLAB uses 1-based indexing
+    surface_data['triRep']['X'] = points if points is not None else empty_float_array
 
-    surface_data['act_bip'] = np.concatenate(
-        [
-            fields.local_activation_time[:, np.newaxis],
-            fields.bipolar_voltage[:, np.newaxis],
-        ],
-        axis=1,
-    )
-    if surface_data['act_bip'].size == 0:  # if there is no data, use a 1d array rather than 2D, same as openep-core
-        surface_data['act_bips'] = np.array([], dtype=float)
+    # TriRep requires doubles not ints, and MATLAB uses 1-based indexing
+    triangulation = indices.astype(float) + 1 if indices is not None else empty_int_array
+    surface_data['triRep']['Triangulation'] = triangulation
 
-    surface_data['uni_imp_frc'] = np.concatenate(
-        [
-            fields.unipolar_voltage[:, np.newaxis],
-            fields.impedance[:, np.newaxis],
-            fields.force[:, np.newaxis],
-        ],
-        axis=1,
-    )
-    if surface_data['uni_imp_frc'].size == 0:
-        surface_data['uni_imp_frc'] = np.array([], dtype=float)
+    try:
+        surface_data['act_bip'] = np.concatenate(
+            [
+                fields.local_activation_time[:, np.newaxis],
+                fields.bipolar_voltage[:, np.newaxis],
+            ],
+            axis=1,
+        )
+    except TypeError as e:
+        surface_data['act_bip'] = empty_float_array
 
-    surface_data['thickness'] = fields.thickness
+    try:
+        surface_data['uni_imp_frc'] = np.concatenate(
+            [
+                fields.unipolar_voltage[:, np.newaxis],
+                fields.impedance[:, np.newaxis],
+                fields.force[:, np.newaxis],
+            ],
+            axis=1,
+        )
+    except TypeError as e:
+        surface_data['uni_imp_frc'] = empty_float_array
+
+    surface_data['thickness'] = fields.thickness if fields.thickness is not None else empty_float_array
 
     return surface_data
 
@@ -204,32 +213,37 @@ def _extract_electric_data(electric: Electric):
             electric data associated with electrograms taken at various mapping points.
     """
 
+    # Make sure none of the attributes are equal to None - scipy can't handle this
+    empty_object_array = np.array([], dtype=object)  # for empty string arrays
+    empty_float_array = np.array([], dtype=float)
+    empty_int_array = np.array([], dtype=int)
+
     electric_data = {}
-    electric_data['tags'] = electric.names.astype(object)
-    electric_data['names'] = electric.internal_names.astype(object)
-    electric_data['include'] = electric.include
+    electric_data['tags'] = electric.names.astype(object) if electric.names is not None else empty_object_array
+    electric_data['names'] = electric.internal_names.astype(object) if electric.internal_names is not None else empty_object_array
+    electric_data['include'] = electric.include if electric.include is not None else empty_int_array
 
     electric_data['sampleFrequencu'] = float(electric.frequency)
 
-    electric_data['electrodeNames_bip'] = electric.bipolar_egm.names.astype(object)
-    electric_data['egmX'] = electric.bipolar_egm.points
-    electric_data['egm'] = electric.bipolar_egm.egm
-    electric_data['egmGain'] = electric.bipolar_egm.gain
+    electric_data['electrodeNames_bip'] = electric.bipolar_egm.names.astype(object) if electric.bipolar_egm.names is not None else empty_object_array
+    electric_data['egmX'] = electric.bipolar_egm.points if electric.bipolar_egm.points is not None else empty_float_array
+    electric_data['egm'] = electric.bipolar_egm.egm if electric.bipolar_egm.egm is not None else empty_float_array
+    electric_data['egmGain'] = electric.bipolar_egm.gain if electric.bipolar_egm.gain is not None else empty_float_array
 
-    electric_data['electrodeNames_uni'] = electric.unipolar_egm.names.astype(object)
-    electric_data['egmUniX'] = electric.unipolar_egm.points
-    electric_data['egmUni'] = electric.unipolar_egm.egm
-    electric_data['egmUniGain'] = electric.unipolar_egm.gain
+    electric_data['electrodeNames_uni'] = electric.unipolar_egm.names.astype(object) if electric.unipolar_egm.names is not None else empty_object_array
+    electric_data['egmUniX'] = electric.unipolar_egm.points if electric.unipolar_egm.points is not None else empty_float_array
+    electric_data['egmUni'] = electric.unipolar_egm.egm if electric.unipolar_egm.egm is not None else empty_float_array
+    electric_data['egmUniGain'] = electric.unipolar_egm.gain if electric.unipolar_egm.gain is not None else empty_float_array
 
-    electric_data['egmRef'] = electric.reference_egm.egm
-    electric_data['egmRefGain'] = electric.reference_egm.gain
+    electric_data['egmRef'] = electric.reference_egm.egm if electric.reference_egm.egm is not None else empty_float_array
+    electric_data['egmRefGain'] = electric.reference_egm.gain if electric.reference_egm.gain is not None else empty_float_array
 
-    electric_data['ecg'] = electric.ecg.ecg
-    electric_data['ecgGain'] = electric.ecg.gain
-    electric_data['ecgNames'] = electric.ecg.channel_names.astype(object)
+    electric_data['ecg'] = electric.ecg.ecg if electric.ecg.ecg is not None else empty_float_array
+    electric_data['ecgGain'] = electric.ecg.gain if electric.ecg.gain is not None else empty_float_array
+    electric_data['ecgNames'] = electric.ecg.channel_names.astype(object) if electric.ecg.channel_names is not None else empty_object_array
 
-    electric_data['egmSurfX'] = electric.surface.nearest_point
-    electric_data['barDirection'] = electric.surface.normals
+    electric_data['egmSurfX'] = electric.surface.nearest_point if electric.surface.nearest_point is not None else empty_float_array
+    electric_data['barDirection'] = electric.surface.normals if electric.surface.normals is not None else empty_float_array
 
     electric_data['annotations'] = {}
     electric_data['annotations']['woi'] = electric.annotations.window_of_interest
@@ -237,12 +251,12 @@ def _extract_electric_data(electric: Electric):
     electric_data['annotations']['mapAnnot'] = electric.annotations.local_activation_time
 
     electric_data['voltages'] = {}
-    electric_data['voltages']['bipolar'] = electric.bipolar_egm.voltage
-    electric_data['voltages']['unipolar'] = electric.unipolar_egm.voltage
+    electric_data['voltages']['bipolar'] = electric.bipolar_egm.voltage if electric.bipolar_egm.voltage is not None else empty_float_array
+    electric_data['voltages']['unipolar'] = electric.unipolar_egm.voltage if electric.unipolar_egm.voltage is not None else empty_float_array
 
     electric_data['impedances'] = {}
-    electric_data['impedances']['time'] = electric.impedance.times
-    electric_data['impedances']['value'] = electric.impedance.values
+    electric_data['impedances']['time'] = electric.impedance.times if electric.impedance.times is not None else empty_float_array
+    electric_data['impedances']['value'] = electric.impedance.values if electric.impedance.values is not None else empty_float_array
 
     return electric_data
 
@@ -259,20 +273,23 @@ def _export_ablation_data(ablation: Ablation):
             ablation sites.
     """
 
+    # Make sure none of the attributes are equal to None - scipy can't handle this
+    empty_float_array = np.array([], dtype=float)
+
     ablation_data = {}
     ablation_data['originaldata'] = {}
 
     ablation_data['originaldata']['ablparams'] = {}
-    ablation_data['originaldata']['ablparams']['time'] = ablation.times
-    ablation_data['originaldata']['ablparams']['power'] = ablation.power
-    ablation_data['originaldata']['ablparams']['impedance'] = ablation.impedance
-    ablation_data['originaldata']['ablparams']['distaltemp'] = ablation.temperature
+    ablation_data['originaldata']['ablparams']['time'] = ablation.times if ablation.times is not None else empty_float_array
+    ablation_data['originaldata']['ablparams']['power'] = ablation.power if ablation.power is not None else empty_float_array
+    ablation_data['originaldata']['ablparams']['impedance'] = ablation.impedance if ablation.impedance is not None else empty_float_array
+    ablation_data['originaldata']['ablparams']['distaltemp'] = ablation.temperature if ablation.temperature is not None else empty_float_array
 
     ablation_data['originaldata']['force'] = {}
-    ablation_data['originaldata']['force']['time'] = ablation.force.times
-    ablation_data['originaldata']['force']['force'] = ablation.force.force
-    ablation_data['originaldata']['force']['axialangle'] = ablation.force.axial_angle
-    ablation_data['originaldata']['force']['lateralangle'] = ablation.force.lateral_angle
-    ablation_data['originaldata']['force']['position'] = ablation.force.points
+    ablation_data['originaldata']['force']['time'] = ablation.force.times if ablation.force.times is not None else empty_float_array
+    ablation_data['originaldata']['force']['force'] = ablation.force.force if ablation.force.force is not None else empty_float_array
+    ablation_data['originaldata']['force']['axialangle'] = ablation.force.axial_angle if ablation.force.axial_angle is not None else empty_float_array
+    ablation_data['originaldata']['force']['lateralangle'] = ablation.force.lateral_angle if ablation.force.lateral_angle is not None else empty_float_array
+    ablation_data['originaldata']['force']['position'] = ablation.force.points if ablation.force.points is not None else empty_float_array
 
     return ablation_data
