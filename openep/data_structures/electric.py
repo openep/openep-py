@@ -37,7 +37,7 @@ class Electrogram:
         names (np.ndarray): Names of the associated electrodes.
     """
 
-    egm: np.ndarray
+    egm: np.ndarray = None
     points: np.ndarray = None
     voltage: np.ndarray = None
     gain: np.ndarray = None
@@ -63,8 +63,8 @@ class ECG:
         gain (np.ndarray): gain to apply to each signal
     """
 
-    ecg: np.ndarray
-    channel_names: np.ndarray
+    ecg: np.ndarray = None
+    channel_names: np.ndarray = None
     gain: np.ndarray = None
 
     def __attrs_post_init__(self):
@@ -229,9 +229,9 @@ class Electric:
 
         if self.bipolar_egm.egm is None or self.bipolar_egm.egm.shape[1] == 0:
             self._time_indices = np.array([], dtype=float)
-
-        n_samples = self.bipolar_egm.egm.shape[1]
-        self._time_indices = np.arange(n_samples)
+        else:
+            n_samples = self.bipolar_egm.egm.shape[1]
+            self._time_indices = np.arange(n_samples)
 
     @property
     def times(self):
