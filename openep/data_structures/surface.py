@@ -18,6 +18,7 @@
 
 """Module containing classes for storing surface data of a mesh."""
 
+from threading import local
 from attr import attrs
 import numpy as np
 
@@ -83,12 +84,24 @@ def extract_surface_data(surface_data):
     else:
         local_activation_time, bipolar_voltage = surface_data['act_bip'].T.astype(float)
 
+    if all(np.isnan(local_activation_time)):
+        local_activation_time = None
+    if all(np.isnan(bipolar_voltage)):
+        bipolar_voltage = None
+
     if surface_data['uni_imp_frc'].size == 0:
         unipolar_voltage = None
         impedance = None
         force = None
     else:
         unipolar_voltage, impedance, force = surface_data['uni_imp_frc'].T.astype(float)
+
+    if all(np.isnan(unipolar_voltage)):
+        unipolar_voltage = None
+    if all(np.isnan(impedance)):
+        impedance = None
+    if all(np.isnan(force)):
+        force = None
 
     try:
         thickness = surface_data['thickness'].astype(float)
