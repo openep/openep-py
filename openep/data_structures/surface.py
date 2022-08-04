@@ -95,6 +95,9 @@ def extract_surface_data(surface_data):
     except KeyError as e:
         thickness = None
 
+    if isinstance(thickness, np.ndarray) and thickness.size == 0:
+        thickness = None
+
     fields = Fields(
         bipolar_voltage,
         unipolar_voltage,

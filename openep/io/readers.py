@@ -128,7 +128,6 @@ def load_opencarp(
     points,
     indices,
     name=None,
-    fill_fields=False,
     scale_points=1,
 ):
     """
@@ -140,8 +139,6 @@ def load_opencarp(
             supported.
         name (str, optional): Name of the dataset. If None, the basename of the points file
             will be used as the name.
-        fill_fields (bool, optional): If True, will create scalar fields filled with NaN values
-            (one value per point).
         scale_points (float, optional): Scale the point positions by this number. Useful to scaling
             the units to be in mm rather than micrometre.
 
@@ -150,7 +147,7 @@ def load_opencarp(
 
     Note
     ----
-    All other attributes of the Case object will be empty numpy arrays.
+    All other attributes of the Case object will be set to None.
 
     """
 
