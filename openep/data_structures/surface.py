@@ -37,16 +37,12 @@ class Fields:
         force (np.ndarray): array of shape N
     """
 
-    bipolar_voltage: np.ndarray
-    unipolar_voltage: np.ndarray
-    local_activation_time: np.ndarray
-    impedance: np.ndarray
-    force: np.ndarray
+    bipolar_voltage: np.ndarray = None
+    unipolar_voltage: np.ndarray = None
+    local_activation_time: np.ndarray = None
+    impedance: np.ndarray = None
+    force: np.ndarray = None
     thickness: np.ndarray = None
-
-    def __attrs_post_init__(self):
-        if self.bipolar_voltage is not None and self.thickness is None:
-            self.thickness = np.full_like(self.bipolar_voltage, fill_value=np.NaN, dtype=float)
 
     def __repr__(self):
         return f"fields: {tuple(self.__dict__.keys())}"
@@ -76,23 +72,28 @@ def extract_surface_data(surface_data):
     """
 
     if surface_data['triRep']['X'].size == 0:
-        return np.array([]), np.array([]), empty_fields(size=0)
+        return None, None, Fields()
 
     points = surface_data['triRep']['X'].astype(float)
     indices = surface_data['triRep']['Triangulation'].astype(int)
 
     if surface_data['act_bip'].size == 0:
-        size = points.size // 3
-        fields = empty_fields(size=size)
-        return points, indices, fields
+        local_activation_time = None
+        bipolar_voltage = None
+    else:
+        local_activation_time, bipolar_voltage = surface_data['act_bip'].T.astype(float)
 
-    local_activation_time, bipolar_voltage = surface_data['act_bip'].T.astype(float)
-    unipolar_voltage, impedance, force = surface_data['uni_imp_frc'].T.astype(float)
+    if surface_data['uni_imp_frc'].size == 0:
+        unipolar_voltage = None
+        impedance = None
+        force = None
+    else:
+        unipolar_voltage, impedance, force = surface_data['uni_imp_frc'].T.astype(float)
 
     try:
         thickness = surface_data['thickness'].astype(float)
     except KeyError as e:
-        thickness = np.full_like(local_activation_time, fill_value=np.NaN, dtype=float)
+        thickness = None
 
     fields = Fields(
         bipolar_voltage,
