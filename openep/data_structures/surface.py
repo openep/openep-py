@@ -95,13 +95,12 @@ def extract_surface_data(surface_data):
         force = None
     else:
         unipolar_voltage, impedance, force = surface_data['uni_imp_frc'].T.astype(float)
-
-    if all(np.isnan(unipolar_voltage)):
-        unipolar_voltage = None
-    if all(np.isnan(impedance)):
-        impedance = None
-    if all(np.isnan(force)):
-        force = None
+        if all(np.isnan(unipolar_voltage)):
+            unipolar_voltage = None
+        if all(np.isnan(impedance)):
+            impedance = None
+        if all(np.isnan(force)):
+            force = None
 
     try:
         thickness = surface_data['thickness'].astype(float)
