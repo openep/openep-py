@@ -36,11 +36,11 @@ class AblationForce:
         points (np.ndarray): array of shape Nx3
 
     """
-    times: np.ndarray
-    force: np.ndarray
-    axial_angle: np.ndarray
-    lateral_angle: np.ndarray
-    points: np.ndarray
+    times: np.ndarray = None
+    force: np.ndarray = None
+    axial_angle: np.ndarray = None
+    lateral_angle: np.ndarray = None
+    points: np.ndarray = None
 
     def __repr__(self):
         return f"Ablation forces with {len(self.times)} sites."
@@ -61,11 +61,16 @@ class Ablation:
             and the 3D coordinates of the ablation site.
     """
 
-    times: np.ndarray
-    power: np.ndarray
-    impedance: np.ndarray
-    temperature: np.ndarray
-    force: AblationForce
+    times: np.ndarray = None
+    power: np.ndarray = None
+    impedance: np.ndarray = None
+    temperature: np.ndarray = None
+    force: AblationForce = None
+
+    def __attrs_post_init__(self):
+
+        if self.force is None:
+            self.force = AblationForce()
 
     def __repr__(self):
         n_sites = {len(self.times)} if self.times is not None else 0
@@ -85,7 +90,7 @@ def extract_ablation_data(ablation_data):
     """
 
     if isinstance(ablation_data, np.ndarray) or ablation_data['originaldata']['ablparams']['time'].size == 0:
-        return empty_ablation()
+        return Ablation()
 
     times = ablation_data['originaldata']['ablparams']['time'].astype(float)
     power = ablation_data['originaldata']['ablparams']['power'].astype(float)
