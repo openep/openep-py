@@ -173,7 +173,14 @@ def _extract_surface_data(
     triangulation = indices.astype(float) + 1 if indices is not None else empty_int_array
     surface_data['triRep']['Triangulation'] = triangulation
 
-    try:
+    if fields.local_activation_time is None and fields.bipolar_voltage is None:
+        surface_data['act_bip'] = empty_float_array
+    elif fields.local_activation_time is None:
+        fields.local_activation_time = np.full_like(fields.bipolar_voltage, fill_value=np.NaN)
+    elif fields.bipolar_voltage is None:
+        fields.bipolar_voltage = np.full_like(fields.local_activation_time, fill_value=np.NaN)
+
+    if 'act_bip' not in surface_data:
         surface_data['act_bip'] = np.concatenate(
             [
                 fields.local_activation_time[:, np.newaxis],
@@ -181,10 +188,18 @@ def _extract_surface_data(
             ],
             axis=1,
         )
-    except TypeError as e:
-        surface_data['act_bip'] = empty_float_array
 
-    try:
+    if fields.unipolar_voltage is None and fields.impedance is None and fields.force is None:
+        surface_data['uni_imp_frc'] = empty_float_array
+    else:
+        if fields.unipolar_voltage is None:
+            fields.unipolar_voltage = np.full(points.size // 3, fill_value=np.NaN)
+        if fields.impedance is None:
+            fields.impedance = np.full(points.size // 3, fill_value=np.NaN)
+        if fields.force is None:
+            fields.force = np.full(points.size // 3, fill_value=np.NaN)
+
+    if 'uni_imp_frc' not in surface_data:
         surface_data['uni_imp_frc'] = np.concatenate(
             [
                 fields.unipolar_voltage[:, np.newaxis],
@@ -193,8 +208,6 @@ def _extract_surface_data(
             ],
             axis=1,
         )
-    except TypeError as e:
-        surface_data['uni_imp_frc'] = empty_float_array
 
     surface_data['thickness'] = fields.thickness if fields.thickness is not None else empty_float_array
 

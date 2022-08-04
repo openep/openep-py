@@ -50,11 +50,13 @@ def test_openep_mat_export(case, exported_case):
     assert_allclose(case.fields.bipolar_voltage, exported_case.fields.bipolar_voltage, equal_nan=True)
     assert_allclose(case.fields.unipolar_voltage, exported_case.fields.unipolar_voltage, equal_nan=True)
     assert_allclose(case.fields.local_activation_time, exported_case.fields.local_activation_time, equal_nan=True)
-    assert_allclose(case.fields.force, exported_case.fields.force, equal_nan=True)
-    assert_allclose(case.fields.impedance, exported_case.fields.impedance, equal_nan=True)
+    assert exported_case.fields.force is None
+    assert exported_case.fields.impedance is None
+    assert exported_case.fields.thickness is None
 
     assert np.all(case.electric.names == exported_case.electric.names)
     assert np.all(case.electric.internal_names == exported_case.electric.internal_names)
+    assert_allclose(case.electric.include, exported_case.electric.include)
 
     assert_allclose(case.electric.bipolar_egm.egm, exported_case.electric.bipolar_egm.egm)
     assert_allclose(case.electric.bipolar_egm.points, exported_case.electric.bipolar_egm.points)
