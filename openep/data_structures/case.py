@@ -222,7 +222,6 @@ class Case:
         unipolar,
         add_bipolar=True,
         add_reference=True,
-        add_ecg=True,
         add_annotations=True,
     ):
         """Add unipolar electrograms into the Case object.
@@ -240,8 +239,6 @@ class Case:
                 electrograms and returned.
             add_reference (bool): If True, reference electrograms will be created. All signals will
                 have values of 0 at every time point.
-            add_ecg (bool): If True, ecgs will be created. All signals will have values of 0 at every
-                time point.
             add_annotations (bool): If True, default annotations of the electrograms will
                 be created and returned. The window of interest will be set to
                 cover the entire period of the electrogram traces, and the reference
@@ -304,14 +301,6 @@ class Case:
                 gain=np.ones(len(unipolar), dtype=float),
             )
             self.electric.reference_egm = reference_egm
-
-        if add_ecg:
-
-            ecg = ECG(
-                ecg=np.zeros_like(bipolar),
-                gain=np.ones(len(unipolar), dtype=float),
-            )
-            self.electric.ecg = ecg
 
         if add_annotations:
 
