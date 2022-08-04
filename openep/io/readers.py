@@ -59,9 +59,9 @@ import numpy as np
 
 from . import _circle_cvi
 from .matlab import _load_mat_v73, _load_mat_below_v73
-from ..data_structures.surface import extract_surface_data, empty_fields
-from ..data_structures.electric import extract_electric_data, empty_electric
-from ..data_structures.ablation import extract_ablation_data, empty_ablation
+from ..data_structures.surface import extract_surface_data, Fields
+from ..data_structures.electric import extract_electric_data, Electric
+from ..data_structures.ablation import extract_ablation_data, Ablation
 from ..data_structures.case import Case
 
 __all__ = ["load_openep_mat", "_load_mat", "load_opencarp", "load_circle_cvi"]
@@ -160,11 +160,11 @@ def load_opencarp(
     points_data *= scale_points
     indices_data = np.loadtxt(indices, skiprows=1, usecols=[1, 2, 3], dtype=int)  # ignore the tag for now
 
-    size = size=points_data.size // 3 if fill_fields else 0
-    fields = empty_fields(size)
-    electric = empty_electric()
-    ablation = empty_ablation()
-    notes = np.asarray([])
+    # Create empty data structures for pass to Case
+    fields = Fields()
+    electric = Electric()
+    ablation = Ablation()
+    notes = np.asarray([], dtype=object)
 
     return Case(name, points_data, indices_data, fields, electric, ablation, notes)
 
