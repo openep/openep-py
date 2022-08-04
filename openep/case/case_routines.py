@@ -453,15 +453,11 @@ class Interpolator:
 
 def interpolate_activation_time_onto_surface(
         case,
-        buffer=50,
         method=scipy.interpolate.RBFInterpolator,
         method_kws=None,
         max_distance=None,
 ):
     """Interpolate local activation times onto the points of a mesh.
-
-    Only mapping points within the window of interest, plus the buffer time,
-    are used for the interpolation.
 
     Args:
         case (openep.case.Case): case from which the activation time will be interpolated
