@@ -56,10 +56,17 @@ Identifying and analysing the free boundaries of a mesh
 .. autoclass:: FreeBoundary
     :members: separate_boundaries, calculate_lengths, calculate_areas
 
+Calculating mesh properties on a per-region basis
+-------------------------------------------------
+
+.. autofunction:: low_field_area_per_region
+
+.. autofunction:: mean_field_per_region
+
 """
 
 from attr import attrs
-from typing import Union
+from typing import Union, Optional
 
 import numpy as np
 import scipy.stats
@@ -72,11 +79,13 @@ __all__ = [
     "get_free_boundaries",
     "calculate_mesh_volume",
     "repair_mesh",
-    "calculate_per_triangle_field",
+    "point_data_to_cell_data",
     "calculate_field_area",
     "calculate_vertex_distance",
     "calculate_vertex_path",
     "voxelise",
+    "low_field_area_per_region",
+    "mean_field_per_region",
 ]
 
 
@@ -346,7 +355,7 @@ def repair_mesh(mesh: pyvista.PolyData) -> pyvista.PolyData:
     return mf.mesh
 
 
-def calculate_per_triangle_field(mesh: pyvista.PolyData, field: np.ndarray) -> np.ndarray:
+def point_data_to_cell_data(mesh: pyvista.PolyData, field: np.ndarray) -> np.ndarray:
     """
     Calculate a per-triangle field from the given per-vertex field. For each triangle the mean of the vertex values is
     calculated as the triangle value.
@@ -363,7 +372,9 @@ def calculate_per_triangle_field(mesh: pyvista.PolyData, field: np.ndarray) -> n
 
 
 def calculate_field_area(
-    mesh: pyvista.PolyData, field: np.ndarray, threshold: float
+    mesh: pyvista.PolyData,
+    field: np.ndarray,
+    threshold: float,
 ) -> float:
     """
     Calculate the total surface area of cells whose corresponding values in `field` are
@@ -380,17 +391,26 @@ def calculate_field_area(
 
     Note
     ----
-    This function makes use of :func:`openep.mesh.mesh_routines.calculate_per_triangle_field`
+    This function will add the area of each cell to the mesh as mesh.cell_data if it is not already
+    present. This is to prevent calculating cell areas every time this function is called.
+
+    Note
+    ----
+    This function makes use of :func:`openep.mesh.mesh_routines.point_data_to_cell_data`
 
     """
 
-    areas = mesh.compute_cell_sizes(
-        length=False,
-        area=True,
-        volume=False,
-    )['Area']
+    if 'Area' not in mesh.cell_data:
 
-    tri_field = calculate_per_triangle_field(mesh, field)
+        areas = mesh.compute_cell_sizes(
+            length=False,
+            area=True,
+            volume=False,
+        )['Area']
+
+        mesh.cell_data.set_array(areas, 'Area')
+
+    tri_field = point_data_to_cell_data(mesh, field)
     selection = tri_field <= threshold
     selected_areas = areas[selection]
 
@@ -603,3 +623,67 @@ def voxelise(
         voxels = voxels.extract_points(voxel_filled.astype(bool))
 
     return voxels
+
+
+def low_field_area_per_region(
+    mesh: pyvista.PolyData,
+    field: np.ndarray,
+    cell_region: np.ndarray,
+    threshold: float,
+) -> np.ndarray:
+    """
+    A per-region equivalent of :func:`openep.mesh.mesh_routines.calculate_field_area`.
+
+    For each region of the mesh, calculates the total surface area of cells whose corresponding
+    values in `field` are less than or equal to the given threshold.
+
+    Regions must be defined by unique integers, one per region.
+
+    Args:
+        mesh (PolyData): pyvista mesh
+        field (np.ndarray): scalar values that will be filtered based on the given threshold.
+            If field corresponds to point data, this will be transformed to cell data.
+        cell_region (np.ndarray): region each cell belongs to (size of array should be mesh.n_cells)
+        threshold (float): cells with values in `field` less than or equal to this value
+            will be included when calculating the surface area.
+
+    Returns:
+        np.ndarray: total area of selected cells in each region
+
+    Note
+    ----
+    This function will add the area of each cell to the mesh as mesh.cell_data if it is not already
+    present. This is to prevent calculating cell areas every time this function is called.
+
+    """
+
+    if 'Area' not in mesh.cell_data:
+
+        areas = mesh.compute_cell_sizes(
+            length=False,
+            area=True,
+            volume=False,
+        )['Area']
+
+        mesh.cell_data.set_array(areas, 'Area')
+
+    field_association = 'point' if field.size == mesh.n_points else 'cell'
+    if field_association == 'point':
+        field = point_data_to_cell_data(mesh, field)
+
+    unique_regions = np.unique(cell_region)
+    low_field_areas = np.full(unique_regions.size, fill_value=np.NaN)
+    for index, region in enumerate(unique_regions):
+
+        region_mask = cell_region == region
+        field_mask = field[region_mask] <= threshold
+
+        region_areas = mesh.cell_data['Area'][region_mask]
+        low_field_areas[index] = np.sum(region_areas[field_mask])
+
+    return low_field_areas
+
+
+def mean_field_per_region(mesh, field, cell_regions):
+    """Calculate the mean value of a field for each region of a mesh."""
+    pass
