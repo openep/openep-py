@@ -311,23 +311,27 @@ def extract_electric_data(electric_data):
         electric_data['ecg'] = electric_data['ecg'].astype(float)
 
     # Not all datasets have gain values
-    if 'egmGain' not in electric_data or electric_data['egmGain'].size == 0:
-        electric_data['egmGain'] = None
-    else:
-        electric_data['egmGain'] = electric_data['egmGain'].astype(float)
-    if 'egmUniGain' not in electric_data or electric_data['egmUniGain'].size == 0:
-        electric_data['egmUniGain'] = None
-    else:
-        electric_data['egmUniGain'] = electric_data['egmUniGain'].astype(float)
-    if 'egmRefGain' not in electric_data or electric_data['egmRefGain'].size == 0:
-        electric_data['egmRefGain'] = None
-    else:
-        electric_data['egmRefGain'] = electric_data['egmRefGain'].astype(float)
+    egm_types = ['', 'Ref', 'Uni']  # bipolar, reference, unipolar
+    default_gain_values = [1.0, -4.0, 0.0]
+    for egm_type, default_gain_value in zip(egm_types, default_gain_values):
+
+        if electric_data[f'egm{egm_type}'].size == 0:
+            electric_data[f'egm{egm_type}Gain'] = None
+        elif f'egm{egm_type}Gain' not in electric_data:
+            electric_data[f'egm{egm_type}Gain'] = np.full(
+                electric_data[f'egm{egm_type}'].shape[0],
+                fill_value=default_gain_value,
+                dtype=float,
+            )
+        else:
+            electric_data[f'egm{egm_type}Gain'] = electric_data[f'egm{egm_type}Gain'].astype(float)
+
     if 'ecgGain' not in electric_data or electric_data['ecgGain'].size == 0:
         electric_data['ecgGain'] = None
     else:
         electric_data['ecgGain'] = electric_data['ecgGain'].astype(float)
 
+    # Create objects to pass to Electric
     bipolar_egm = Electrogram(
         egm=electric_data['egm'].astype(float),
         points=electric_data['egmX'].astype(float),
