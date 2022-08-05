@@ -12,6 +12,8 @@ from openep.mesh.mesh_routines import (
     calculate_field_area,
     calculate_vertex_distance,
     calculate_vertex_path,
+    mean_field_per_region,
+    low_field_area_per_region,
 )
 from openep._datasets.simple_meshes import (
     CUBE, SPHERE, BROKEN_SPHERE, TRIANGLES
@@ -39,10 +41,22 @@ def sphere_data(sphere):
             volume=False,
         )['Area']
 
+    point_data = np.arange(sphere.n_points)
+    sphere.point_data.set_array(point_data, 'data')
+    cell_data = sphere.point_data_to_cell_data().cell_data['data']
+
+    cell_region = sphere.cell_data['cell_region']
+    unique_regions, region_weights = np.unique(cell_region, return_counts=True)
+
     return {
         "faces": faces,
         "triangles": triangles,
         "areas": areas,
+        "point_data": point_data,
+        "cell_data": cell_data,
+        "cell_region": cell_region,
+        "unique_regions": unique_regions,
+        "region_weights": region_weights,
     }
 
 
@@ -217,3 +231,35 @@ def test_calculate_vertex_path_disconnected(triangles):
 
     path = calculate_vertex_path(triangles, start_index, end_index)
     assert 0 == path.size
+
+
+def test_mean_field_per_region_point_data(sphere, sphere_data):
+    
+    mean_value_per_region = mean_field_per_region(
+        mesh=sphere,
+        field=sphere_data['point_data'],
+        cell_region=sphere_data['cell_region'],
+    )
+
+    # Check the weighted mean of the per-region data is equal to the total mean voltage
+    _, weights = np.unique(sphere_data['cell_region'], return_counts=True)
+    weighted_average = np.average(mean_value_per_region, weights=weights)
+
+    assert mean_value_per_region.size == sphere_data['unique_regions'].size
+    assert_allclose(np.nanmean(sphere_data['cell_data']), weighted_average, atol=1e-4, rtol=1e-4)
+
+
+def test_mean_field_per_region_cell_data(sphere, sphere_data):
+    
+    mean_value_per_region = mean_field_per_region(
+        mesh=sphere,
+        field=sphere_data['cell_data'],
+        cell_region=sphere_data['cell_region'],
+    )
+
+    # Check the weighted mean of the per-region data is equal to the total mean voltage
+    _, weights = np.unique(sphere_data['cell_region'], return_counts=True)
+    weighted_average = np.average(mean_value_per_region, weights=weights)
+
+    assert mean_value_per_region.size == sphere_data['unique_regions'].size
+    assert_allclose(np.nanmean(sphere_data['cell_data']), weighted_average, atol=1e-4, rtol=1e-4)
