@@ -44,6 +44,7 @@ class Fields:
     impedance: np.ndarray = None
     force: np.ndarray = None
     thickness: np.ndarray = None
+    region: np.ndarray = None
 
     def __repr__(self):
         return f"fields: {tuple(self.__dict__.keys())}"
@@ -110,13 +111,22 @@ def extract_surface_data(surface_data):
     if isinstance(thickness, np.ndarray) and thickness.size == 0:
         thickness = None
 
+    try:
+        region = surface_data['region'].astype(int)
+    except KeyError as e:
+        region = None
+
+    if isinstance(region, np.ndarray) and region.size == 0:
+        region = None
+
     fields = Fields(
-        bipolar_voltage,
-        unipolar_voltage,
-        local_activation_time,
-        impedance,
-        force,
-        thickness
+        bipolar_voltage=bipolar_voltage,
+        unipolar_voltage=unipolar_voltage,
+        local_activation_time=local_activation_time,
+        impedance=impedance,
+        force=force,
+        thickness=thickness,
+        region=region,
     )
 
     return points, indices, fields
