@@ -497,7 +497,6 @@ def _get_unreferenced_points(mesh):
 
     return unreferenced_indices
 
-
 def _determine_voxel_bins(mesh, edge_length, border=10):
     """Determine the bins to voxelise a mesh.
     
@@ -684,6 +683,31 @@ def low_field_area_per_region(
     return low_field_areas
 
 
-def mean_field_per_region(mesh, field, cell_regions):
-    """Calculate the mean value of a field for each region of a mesh."""
-    pass
+def mean_field_per_region(mesh, field, cell_region):
+    """Calculate the mean value of a field for each region of a mesh.
+
+    Regions must be defined by unique integers, one per region.
+
+    Args:
+        mesh (PolyData): pyvista mesh
+        field (np.ndarray): scalar values that will be averaged per region. If field corresponds to
+            point data, this will be transformed to cell data.
+        cell_region (np.ndarray): region each cell belongs to (size of array should be mesh.n_cells)
+
+    Returns:
+        np.ndarray: average of field in each region
+
+    """
+
+    field_association = 'point' if field.size == mesh.n_points else 'cell'
+    if field_association == 'point':
+        field = point_data_to_cell_data(mesh, field)
+
+    unique_regions = np.unique(cell_region)
+    mean_field_values = np.full(unique_regions.size, fill_value=np.NaN)
+    for index, region in enumerate(unique_regions):
+
+        region_mask = cell_region == region
+        mean_field_values[index] = np.nanmean(field[region_mask])
+
+    return mean_field_values
