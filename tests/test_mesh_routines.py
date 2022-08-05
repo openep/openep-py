@@ -233,7 +233,7 @@ def test_calculate_vertex_path_disconnected(triangles):
     assert 0 == path.size
 
 
-def test_mean_field_per_region_point_data(sphere, sphere_data):
+def test_mean_field_per_region(sphere, sphere_data):
     
     mean_value_per_region = mean_field_per_region(
         mesh=sphere,
@@ -263,3 +263,44 @@ def test_mean_field_per_region_cell_data(sphere, sphere_data):
 
     assert mean_value_per_region.size == sphere_data['unique_regions'].size
     assert_allclose(np.nanmean(sphere_data['cell_data']), weighted_average, atol=1e-4, rtol=1e-4)
+
+def test_low_field_area_per_region(sphere, sphere_data):
+
+    low_value_area_per_region = low_field_area_per_region(
+        mesh=sphere,
+        field=sphere_data['point_data'],
+        cell_region=sphere_data['cell_region'],
+        threshold=sphere.n_points // 2,
+    )
+
+    assert low_value_area_per_region.size == sphere_data['unique_regions'].size
+    assert_allclose(sphere.field_data['low_value_area'].item(), np.sum(low_value_area_per_region))
+
+def test_low_field_area_per_region_add_area(sphere, sphere_data):
+
+    sphere.cell_data.set_array(sphere_data['areas'], 'Area')
+
+    low_value_area_per_region = low_field_area_per_region(
+        mesh=sphere,
+        field=sphere_data['point_data'],
+        cell_region=sphere_data['cell_region'],
+        threshold=sphere.n_points // 2,
+    )
+
+    _ = sphere.cell_data.pop('Area')
+
+    assert low_value_area_per_region.size == sphere_data['unique_regions'].size
+    assert_allclose(sphere.field_data['low_value_area'].item(), np.sum(low_value_area_per_region))
+
+
+def test_low_field_area_per_region_cell_data(sphere, sphere_data):
+
+    low_value_area_per_region = low_field_area_per_region(
+        mesh=sphere,
+        field=sphere_data['cell_data'],
+        cell_region=sphere_data['cell_region'],
+        threshold=sphere.n_points // 2,
+    )
+
+    assert low_value_area_per_region.size == sphere_data['unique_regions'].size
+    assert_allclose(sphere.field_data['low_value_area'].item(), np.sum(low_value_area_per_region))
