@@ -4,9 +4,23 @@ from numpy.testing import assert_allclose
 import numpy as np
 import pyvista
 
+import openep
 from openep.data_structures.case import Case
 from openep.data_structures.surface import Fields
+from openep._datasets.openep_datasets import DATASET_2
+from openep._datasets.meshes import MESH_2_DENSE
 from openep._datasets.simple_meshes import CUBE
+
+
+@pytest.fixture(scope='module')
+def dataset_2():
+    return openep.load_openep_mat(DATASET_2)
+
+
+@pytest.fixture(scope='module')
+def dataset_2_mesh():
+    """This mesh has had all nodes not referenced in the triangulation removed."""
+    return pyvista.read(MESH_2_DENSE)
 
 
 @pytest.fixture(scope='module')
@@ -127,3 +141,13 @@ def test_no_field(case):
     match = f"There is no field '{missing_field}'"
     with pytest.raises(ValueError, match=match):
         case.fields[missing_field]
+
+
+def test_remove_unreferenced_points(dataset_2, dataset_2_mesh):
+
+    expected_indices = dataset_2_mesh.faces.reshape(dataset_2_mesh.n_faces, 4)[:, 1:]
+    dataset_2.remove_unreferenced_points()
+
+    assert_allclose(dataset_2_mesh.points, dataset_2.points)
+    assert_allclose(expected_indices, dataset_2.indices)
+    assert_allclose(dataset_2_mesh.point_data['LAT'], dataset_2.fields.local_activation_time)
