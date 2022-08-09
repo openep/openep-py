@@ -18,7 +18,6 @@
 
 """Module containing classes for storing surface data of a mesh."""
 
-from threading import local
 from attr import attrs
 import numpy as np
 
@@ -53,7 +52,15 @@ class Fields:
         try:
             return self.__dict__[field]
         except KeyError as e:
-            raise ValueError(f"There is no field '{field}'") from e
+            raise ValueError(f"There is no field '{field}'.") from e
+
+    def __setitem__(self, field, value):
+        if field not in self.__dict__.keys():
+            raise ValueError(f"'{field}' is not a valid field name.")
+        self.__dict__[field] = value
+
+    def __iter__(self):
+        return iter(self.__dict__.keys())
 
     def __contains__(self, field):
         return field in self.__dict__.keys()
