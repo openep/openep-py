@@ -24,14 +24,15 @@ procedure.
 
 Warning
 -------
-    This class should not be instatiated directly. Instead, a `Case` can be
-    created using :func:`openep.io.readers.load_openep_mat`.
+    This class should not be instantiated directly. Instead, a `Case` can be
+    created using :func:`openep.io.readers.load_openep_mat` or
+    :func:`openep.io.readers.load_opencarp`. 
 
 Tip
 ---
     Once you have a `Case`, you can perform analyses using the functions in
-    :mod:`openep.case.case_routines`. You can also create a 3D mesh using the
-    :func:`create_mesh` method.
+    :mod:`openep.case.case_routines`. You can also create a surface mesh using the
+    :func:`create_mesh` method, and then use functions in :mod:`openep.mesh.mesh_routines`.
 
 .. autoclass:: Case
     :members: create_mesh, get_surface_data, get_field
@@ -78,6 +79,7 @@ from attr import attrs
 from typing import Optional, Tuple, List
 
 import numpy as np
+import scipy.stats
 import pyvista
 
 from .surface import Fields
@@ -117,6 +119,23 @@ class Case:
 
     def __repr__(self):
         return f"{self.name}( nodes: {self.points.shape} indices: {self.indices.shape} {self.fields} )"
+
+    def remove_unreferenced_points(self):
+        """Remove surface points not reference in the triangulation."""
+
+        # Determine which points are referenced and remove
+        referenced_indices = np.unique(self.indices.ravel())
+        self.points = self.points[referenced_indices]
+
+        # Renumber indices to takes into account changed number of points.
+        # -1 to convert rank to index
+        self.indices = scipy.stats.rankdata(self.indices, method='dense').reshape(-1, 3) - 1
+
+        # Remove unused point data from the fields
+        for field in self.fields:
+            if self.fields[field] is None:
+                continue
+            self.fields[field] = self.fields[field][referenced_indices]
 
     def center(self):
         """Translate all 3D coordinates so that the center of geometry of `case.points` is at the origin."""
