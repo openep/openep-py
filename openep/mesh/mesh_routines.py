@@ -582,15 +582,11 @@ def voxelise(
     bin_edges, bin_centres = _determine_voxel_bins(mesh, edge_length=edge_length)
     bin_centres_x, bin_centres_y, bin_centres_z = bin_centres
 
-    XX, YY, ZZ = np.meshgrid(bin_centres_x, bin_centres_y, bin_centres_z, indexing='xy')  # must use bin centres, must use Cartesian indexing
+    XX, YY, ZZ = np.meshgrid(bin_centres_x, bin_centres_y, bin_centres_z, indexing='ij')  # use bin centres, use matrix index ordering (ij)
+
     voxels = pyvista.StructuredGrid(XX, YY, ZZ)
-
+    n_voxels_x, n_voxels_y, n_voxels_z = voxels.x.shape
     voxel_filled = np.zeros(voxels.n_points, dtype=int)  # keep track of which voxels are filled. 0: empty, 1: filled
-
-    # Determine how much to 
-    n_voxels_x = np.ptp(bin_centres_x)
-    n_voxels_y = np.ptp(bin_centres_y)
-    n_voxels_z = np.ptp(bin_centres_z)
 
     # Create a series - of open meshes and voxelise each mesh
     for shell_distance in np.linspace(0, 1, n_surfaces):
@@ -609,10 +605,11 @@ def voxelise(
 
         x_indices, y_indices, z_indices = mesh_binned.binnumber - 1
         bin_indices = np.ravel_multi_index(
-            [y_indices, x_indices, z_indices],  # we're using Cartesian indexing (as does PyVista)
-            dims=np.asarray([n_voxels_y+1, n_voxels_x+1, n_voxels_z+1], dtype=int),
-            order='F',
+            [x_indices, y_indices, z_indices],
+            dims=np.asarray([n_voxels_x, n_voxels_y, n_voxels_z], dtype=int),
+            order='F',  # pyvista uses Fortran ordering for point data
         )
+        bin_indices = np.unique(bin_indices)
 
         voxel_filled[bin_indices] = 1
 
