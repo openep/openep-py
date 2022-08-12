@@ -3,15 +3,15 @@
         
 # This file will define what the workflow consists of, that is what operations we want to perform and when. The first 
 # part names the action, the second states when the action is triggered (on push or on pull request) and on what 
-# branches (master and dev in our case).
+# branches (main and dev in our case).
 
 name: Unit Tests
 
 on:
   push:
-    branches: [ master, dev ]  # run when anything is pushed to these branches
+    branches: [ main, dev ]  # run when anything is pushed to these branches
   pull_request:
-    branches: [ master, dev ]  # run for the code submitted as a PR to these branches
+    branches: [ main, dev ]  # run for the code submitted as a PR to these branches
 
 # jobs are a series of steps which run commands in the chosen virtualized environment to perform some action
 jobs:
