@@ -31,6 +31,7 @@ autodoc_mock_imports = [
     'h5py',
     'numpy',
     'scipy',
+    'pandas',
     'matplotlib',
     'pyvista',
     'pymeshfix',
@@ -74,11 +75,6 @@ autodoc_member_order = 'bysource'
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 if not on_rtd:  # only set the theme if we're building docs locally
     html_theme = 'sphinx_rtd_theme'
-
-# Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
 
 html_use_smartypants = True
 html_last_updated_fmt = '%b %d, %Y'

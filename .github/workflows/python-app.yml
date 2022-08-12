@@ -24,10 +24,10 @@ jobs:
     - uses: actions/checkout@v2
     # Setup Python using a existing action "actions/setup-python@v2" from Github's library of actions
     # Arguments are provided to this action using the key-values under "with"
-    - name: Set up Python 3.8
+    - name: Set up Python 3.9
       uses: actions/setup-python@v2
       with:
-        python-version: 3.8
+        python-version: 3.9
     # Install the requirements for this library plus those for running out tests (flake8 and coverage)
     - name: Install dependencies
       run: |
@@ -61,10 +61,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Set up Python 3.8
+    - name: Set up Python 3.9
       uses: actions/setup-python@v2
       with:
-        python-version: 3.8
+        python-version: 3.9
 
     - name: Install dependencies
       run: |
