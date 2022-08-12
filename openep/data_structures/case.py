@@ -90,7 +90,6 @@ from ..case.case_routines import bipolar_from_unipolar_surface_points
 __all__ = []
 
 
-@attrs(auto_attribs=True, auto_detect=True)
 class Case:
     """
     The fundamental OpenEP object.
@@ -109,13 +108,25 @@ class Case:
         notes (list, optional): Notes associated with the dataset.
 
     """
-    name: str
-    points: np.ndarray
-    indices: np.ndarray
-    fields: Fields
-    electric: Electric
-    ablation: Optional[Ablation] = None
-    notes: Optional[List] = None
+
+    def __init__(
+        self,
+        name: str,
+        points: np.ndarray,
+        indices: np.ndarray,
+        fields: Fields,
+        electric: Electric,
+        ablation: Optional[Ablation] = None,
+        notes: Optional[List] = None,
+    ):
+
+        self.name = name
+        self.points = points
+        self.indices = indices
+        self.fields = fields
+        self.ablation = ablation
+        self.electric = electric
+        self.notes = notes
 
     def __repr__(self):
         return f"{self.name}( nodes: {self.points.shape} indices: {self.indices.shape} {self.fields} )"

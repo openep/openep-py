@@ -34,7 +34,7 @@ Calculating the mesh surface area and volume
 
 .. autofunction:: calculate_field_area
 
-.. autofunction:: calculate_per_triangle_field
+.. autofunction:: point_data_to_cell_data
 
 .. _distances:
 
@@ -105,7 +105,6 @@ def _create_trimesh(pyvista_mesh):
     return trimesh.Trimesh(vertices, faces, process=False)
 
 
-@attrs(auto_attribs=True, auto_detect=True)
 class FreeBoundary:
     """
     Class for storing information on the free boundaries of a mesh.
@@ -121,13 +120,20 @@ class FreeBoundary:
             were identified.
     """
 
-    points: np.ndarray
-    lines: np.ndarray
-    n_boundaries: int
-    n_points_per_boundary: np.ndarray
-    original_lines: np.ndarray
+    def __init__(
+        self,
+        points: np.ndarray,
+        lines: np.ndarray,
+        n_boundaries: int,
+        n_points_per_boundary: np.ndarray,
+        original_lines: np.ndarray
+    ):
 
-    def __attrs_post_init__(self):
+        self.points = points
+        self.lines = lines
+        self.n_boundaries = n_boundaries
+        self.n_points_per_boundary = n_points_per_boundary
+        self.original_lines = original_lines
 
         if self.n_boundaries == 0:
             self._start_indices = None
@@ -147,7 +153,7 @@ class FreeBoundary:
 
         self._boundary_meshes = None
 
-    def separate_boundaries(self, original_lines=False):
+    def separate_boundaries(self, original_lines: bool = False):
         """
         Creates a list of numpy arrays where each array contains the indices of
         node pairs in a single free boundary.
@@ -158,10 +164,10 @@ class FreeBoundary:
                 If False, `FreeBoundary.lines` will be used.
 
         Returns:
-            boundaries (list): a list of numpy arrays - one array per free boundary.
-            Each array is of shape Nx2, where N is the number of lines in a given boundary.
-            Each array contains the indices of pairs of nodes that make up each line in the
-            boundary.
+            separate_boundaries (list): a list of numpy arrays - one array per free boundary.
+                Each array is of shape Nx2, where N is the number of lines in a given boundary.
+                Each array contains the indices of pairs of nodes that make up each line in the
+                boundary.
 
         """
 
@@ -203,7 +209,7 @@ class FreeBoundary:
             points (ndarray): Nx3 array of cartesian coordinates of points along the line.
 
         Returns:
-            length (float): length of the line
+            total_distance (float): length of the line
         """
 
         distance_between_neighbours = np.sqrt(np.sum(np.square(points[:, 0, :] - points[:, 1, :]), axis=1))
