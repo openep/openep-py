@@ -124,6 +124,9 @@ def _mat_v73_transform_arrays(data):
         if key == 'userdata/electric/electrodeNames_uni':
             data[key] = data[key].reshape(2, -1).T
 
+        if 'userdata/surface/fibres' in key:
+            data[key] = data[key].reshape(3, -1).T
+
     return data
 
 
@@ -135,7 +138,7 @@ def _mat_v73_flat_to_nested(data):
     ['userdata']['electric].
 
     Args:
-        data ([type]): [description]
+        data (dict): Data loaded from a v7.3 .mat file.
     """
 
     nested_dict = lambda: defaultdict(nested_dict)  # noqa: E731
@@ -163,7 +166,7 @@ def _mat_v73_flat_to_nested(data):
             nested_data[key1][key2][key3][key4] = data[key]
 
         else:
-            raise ValueError(f"Need more leaves! {key}")
+            raise ValueError(f"Cannot make nested key from: {key}")
 
     return nested_data
 
