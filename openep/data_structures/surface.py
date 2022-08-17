@@ -18,6 +18,7 @@
 
 """Module containing classes for storing surface data of a mesh."""
 
+from syslog import LOG_INFO
 from attr import attrs
 import numpy as np
 
@@ -30,11 +31,14 @@ class Fields:
     Class for storing information about the surface of a mesh
 
     Args:
-        bipolar_voltage (np.ndarray): array of shape N
-        unipolar_voltage (np.ndarray): array of shape N
-        local_activation_time (np.ndarray): array of shape N
-        impedance (np.ndarray): array of shape N
-        force (np.ndarray): array of shape N
+        bipolar_voltage (np.ndarray): array of shape N_points
+        unipolar_voltage (np.ndarray): array of shape N_points
+        local_activation_time (np.ndarray): array of shape N_points
+        impedance (np.ndarray): array of shape N_points
+        force (np.ndarray): array of shape N_points
+        region (np.ndarray): array of shape N_cells
+        longitudinal_fibres (np.ndarray): array of shape N_cells x 3
+        transverse_fibres (np.ndarray): array of shape N_cells x 3
     """
 
     bipolar_voltage: np.ndarray = None
@@ -44,6 +48,8 @@ class Fields:
     force: np.ndarray = None
     thickness: np.ndarray = None
     region: np.ndarray = None
+    longitudinal_fibres: np.ndarray = None
+    transverse_fibres: np.ndarray = None
 
     def __repr__(self):
         return f"fields: {tuple(self.__dict__.keys())}"
@@ -118,6 +124,7 @@ def extract_surface_data(surface_data):
     if isinstance(thickness, np.ndarray) and thickness.size == 0:
         thickness = None
 
+    # This is defined on a per-cell bases
     try:
         region = surface_data['region'].astype(int)
     except KeyError as e:
@@ -125,6 +132,24 @@ def extract_surface_data(surface_data):
 
     if isinstance(region, np.ndarray) and region.size == 0:
         region = None
+
+    # Fibre orientation are vectors defined on a per-cell basis
+    try:
+        longitudinal_fibres = surface_data['fibres']['longitudinal'].astype(float)
+    except:
+        longitudinal_fibres = None
+
+    if isinstance(longitudinal_fibres, np.ndarray) and longitudinal_fibres.size == 0:
+        longitudinal_fibres = None
+
+    try:
+        transverse_fibres = surface_data['fibres']['transverse'].astype(float)
+    except:
+        transverse_fibres = None
+
+    if isinstance(transverse_fibres, np.ndarray) and transverse_fibres.size == 0:
+        transverse_fibres = None
+
 
     fields = Fields(
         bipolar_voltage=bipolar_voltage,
@@ -134,12 +159,14 @@ def extract_surface_data(surface_data):
         force=force,
         thickness=thickness,
         region=region,
+        longitudinal_fibres=longitudinal_fibres,
+        transverse_fibres=transverse_fibres,
     )
 
     return points, indices, fields
 
 
-def empty_fields(size=0):
+def empty_fields(n_points=0, n_cells=0):
     """Create an empty Fields object with empty numpy arrays.
 
     Returns:
@@ -147,12 +174,15 @@ def empty_fields(size=0):
             scalar fields
     """
 
-    local_activation_time = np.full(size, fill_value=np.NaN, dtype=float)
-    bipolar_voltage = np.full(size, fill_value=np.NaN, dtype=float)
-    unipolar_voltage = np.full(size, fill_value=np.NaN, dtype=float)
-    impedance = np.full(size, fill_value=np.NaN, dtype=float)
-    force = np.full(size, fill_value=np.NaN, dtype=float)
-    thickness = np.full(size, fill_value=np.NaN, dtype=float)
+    local_activation_time = np.full(n_points, fill_value=np.NaN, dtype=float)
+    bipolar_voltage = np.full(n_points, fill_value=np.NaN, dtype=float)
+    unipolar_voltage = np.full(n_points, fill_value=np.NaN, dtype=float)
+    impedance = np.full(n_points, fill_value=np.NaN, dtype=float)
+    force = np.full(n_points, fill_value=np.NaN, dtype=float)
+    thickness = np.full(n_points, fill_value=np.NaN, dtype=float)
+    region = np.full(n_cells, fill_value=0, dtype=int)
+    longitudinal_fibres = np.full((n_cells, 3), fill_value=np.NaN)
+    transverse_fibres = np.full((n_cells, 3), fill_value=np.NaN)
 
     fields = Fields(
         bipolar_voltage,
@@ -160,7 +190,10 @@ def empty_fields(size=0):
         local_activation_time,
         impedance,
         force,
-        thickness
+        thickness,
+        region,
+        longitudinal_fibres,
+        transverse_fibres,
     )
 
     return fields

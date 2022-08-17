@@ -127,6 +127,7 @@ def load_openep_mat(filename, name=None):
 def load_opencarp(
     points,
     indices,
+    fibres=None,
     name=None,
     scale_points=1,
 ):
@@ -137,13 +138,14 @@ def load_opencarp(
         points (str): Path to the openCARP points file.
         indices (str): Path to the openCARP element file. Currently, only triangular meshes are
             supported.
+        fibres (str, optional): Path to the openCARP fibres file.
         name (str, optional): Name of the dataset. If None, the basename of the points file
             will be used as the name.
         scale_points (float, optional): Scale the point positions by this number. Useful to scaling
             the units to be in mm rather than micrometre.
 
     Returns:
-        case (Case): an OpenEP Case object that contains the points and indices.
+        case (Case): an OpenEP Case object that contains the points, indices and fibres.
 
     Note
     ----
