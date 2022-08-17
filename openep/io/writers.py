@@ -39,23 +39,21 @@ Mesh data can be exported to openCARP format as follows:
     )
 
 This will save the mesh data from the case dataset into openCARP files, i.e.
-the points data will be stored in `dataset_2.pts` and the vertex data will be
-stored in `dataset_2.elem`.
+the points data will be stored in `dataset_2.pts`, the vertex data will be
+stored in `dataset_2.elem`, and fibre orientation will be stored in `dataset_2.lon`.
 
 Warning
 -------
-Currently, the fibre orientation is not calculated and written to file. Nor is the mesh
-processed to make it suitable for performing openCARP simulations.
+If a case has no fibre orientations (in `case.fields.longitudinal_fibres` and
+`case.fields.transverse_fibres`), then isotropic firbres will be used.
 
 .. autofunction:: export_openCARP
 
 """
 
 import pathlib
-from idna import alabel
 import numpy as np
 import scipy.io
-from pyvista import PolyData
 
 from openep.data_structures.ablation import Ablation
 from openep.data_structures.case import Case
@@ -107,6 +105,23 @@ def export_openCARP(
         elements,
         fmt="%s %d %d %d %d",
         header=str(n_triangles),
+        comments='',
+    )
+
+    # Save fibres
+    n_fibre_vectors = 2  # longitudinal and transverse
+    fibres = np.ones((n_triangles, n_fibre_vectors * 3), dtype=float)
+
+    if case.fields.longitudinal_fibres is not None:
+        fibres[:, :3] = case.fields.longitudinal_fibres
+    if case.fields.transverse_fibres is not None:
+        fibres[:, 3:] = case.fields.transverse_fibres
+
+    np.savetxt(
+        output_path.with_suffix('.lon'),
+        fibres,
+        fmt="%.6f",
+        header=str(n_fibre_vectors),
         comments='',
     )
 
