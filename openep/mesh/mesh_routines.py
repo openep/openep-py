@@ -105,18 +105,17 @@ def _create_trimesh(pyvista_mesh):
     return trimesh.Trimesh(vertices, faces, process=False)
 
 
-class FreeBoundary:
-    """
-    Class for storing information on the free boundaries of a mesh.
+class Boundary:
+    """Base class for storing information on the boundaries of a mesh.
 
     Args:
         points (np.ndarray): (N,3) array of coordinates
         lines (np.ndarray): (M, 2) array containing the indices of points connected
             by an edge. Values should be in the interval [0, N-1].
-        n_boundaries (int): the number of free boundaries
+        n_boundaries (int): the number of boundaries
         n_points_per_boundary (np.ndarray): the number of points in each boundary
         original_lines (np.ndarray): (M, 2) array. Same as `lines`, but the indices
-            should correspond to those in the original mesh from which free boundaries
+            should correspond to those in the original mesh from which boundaries
             were identified.
     """
 
@@ -138,7 +137,6 @@ class FreeBoundary:
         if self.n_boundaries == 0:
             self._start_indices = None
             self._stop_indices = None
-            self._boundary_meshes = None
             return None
 
         # We'll use the start and stop indices for separating the (N,2) ndarray
@@ -151,12 +149,10 @@ class FreeBoundary:
         stop_indices.append(None)
         self._stop_indices = np.asarray(stop_indices)
 
-        self._boundary_meshes = None
-
     def separate_boundaries(self, original_lines: bool = False):
         """
         Creates a list of numpy arrays where each array contains the indices of
-        node pairs in a single free boundary.
+        node pairs in a single boundary.
 
         Args:
             original_lines (bool):
@@ -216,6 +212,68 @@ class FreeBoundary:
         total_distance = np.sum(distance_between_neighbours)
 
         return float(total_distance)
+
+class FreeBoundary(Boundary):
+    """
+    Class for storing information on the free boundaries of a mesh.
+
+    Args:
+        points (np.ndarray): (N,3) array of coordinates
+        lines (np.ndarray): (M, 2) array containing the indices of points connected
+            by an edge. Values should be in the interval [0, N-1].
+        n_boundaries (int): the number of free boundaries
+        n_points_per_boundary (np.ndarray): the number of points in each boundary
+        original_lines (np.ndarray): (M, 2) array. Same as `lines`, but the indices
+            should correspond to those in the original mesh from which free boundaries
+            were identified.
+    """
+
+    def __init__(
+        self,
+        points: np.ndarray,
+        lines: np.ndarray,
+        n_boundaries: int,
+        n_points_per_boundary: np.ndarray,
+        original_lines: np.ndarray
+    ):
+        super().__init__(
+            points,
+            lines,
+            n_boundaries,
+            n_points_per_boundary,
+            original_lines,
+        )
+
+        self._boundary_meshes = None
+
+    def separate_boundaries(self, original_lines: bool = False):
+        """
+        Creates a list of numpy arrays where each array contains the indices of
+        node pairs in a single boundary.
+
+        Args:
+            original_lines (bool):
+                If True, `FreeBoundary.original_lines` will be used.
+                If False, `FreeBoundary.lines` will be used.
+
+        Returns:
+            separate_boundaries (list): a list of numpy arrays - one array per free boundary.
+                Each array is of shape Nx2, where N is the number of lines in a given boundary.
+                Each array contains the indices of pairs of nodes that make up each line in the
+                boundary.
+
+        """
+        return super().separate_boundaries(original_lines)
+
+    def calculate_lengths(self):
+        """
+        Calculates the length of the perimeter of each free boundary.
+
+        Returns:
+            lengths (np.ndarray): the perimeter of each free boundary
+
+        """
+        return super().calculate_lengths()
 
     def calculate_areas(self):
         """
