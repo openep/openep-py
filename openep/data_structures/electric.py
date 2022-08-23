@@ -107,16 +107,34 @@ class Electrogram:
         return self.egm.shape[0] if self.egm is not None else 0
 
     @property
+    def n_samples(self):
+        return self.egm.shape[1] if self.egm is not None else 0
+
+    @property
     def voltage(self):
         return self._voltage[self._is_electrical] if self._voltage is not None else None
+
+    @voltage.setter
+    def voltage(self, voltage):
+        if isinstance(voltage, np.ndarray) and voltage.shape[0] == self.n_points:
+            self._voltage[self._is_electrical] = voltage
+        else:
+            self._voltage = voltage
 
     @property
     def gain(self):
         return self._gain[self._is_electrical] if self._gain is not None else None
 
+    @gain.setter
+    def gain(self, gain):
+        if isinstance(gain, np.ndarray) and gain.shape[0] == self.n_points:
+            self._gain[self._is_electrical] = gain
+        else:
+            self._gain = gain
+
     @property
     def names(self):
-        return self._names[self._is_electrical] if self._gain is not None else None
+        return self._names[self._is_electrical] if self._names is not None else None
 
     def __repr__(self):
         return f"Electrograms with {self.n_points} mapping points."
@@ -141,7 +159,6 @@ class ECG:
         is_electrical: np.ndarray = None,
     ):
 
-
         # Ensure gain is present is necessary, and that is has the correct shape
         if ecg is not None and gain is None:
             n_points, n_samples, n_channels = ecg.shape
@@ -160,15 +177,34 @@ class ECG:
 
     @property
     def ecg(self):
-        return self._ecg[:, self._is_electrical, :] if self._ecg is not None else None
+        return self._ecg[self._is_electrical, :, :] if self._ecg is not None else None
+
+    @property
+    def channel_names(self):
+        return self._channel_names
 
     @property
     def n_points(self):
         return self.ecg.shape[0] if self.ecg is not None else 0
 
     @property
+    def n_samples(self):
+        return self.ecg.shape[1] if self.ecg is not None else 0
+
+    @property
+    def n_channels(self):
+        return self.ecg.shape[2] if self.ecg is not None else 0
+
+    @property
     def gain(self):
-        return self._gain[:, self._is_electrical, :] if self._gain is not None else None
+        return self._gain[self._is_electrical, :] if self._gain is not None else None
+
+    @gain.setter
+    def gain(self, gain):
+        if isinstance(gain, np.ndarray) and gain.shape[0] == self.n_points:
+            self._gain[self._is_electrical] = gain
+        else:
+            self._gain = gain
 
     def __repr__(self):
         return f"ECGs with {self.n_points} signals."
@@ -214,6 +250,9 @@ class ElectricSurface:
         self._nearest_point = nearest_point
         self._normals = normals
         self._is_electrical = is_electrical
+
+        if self._normals is None and self._nearest_point is not None:
+            self._normals = np.ones_like(self._nearest_point, dtype=float)
         
     @property
     def nearest_point(self):
@@ -301,7 +340,6 @@ class Annotations:
         return f"Annotations with {self.n_points} mapping points."
 
 
-@attrs(auto_attribs=True, auto_detect=True)
 class Electric:
     """
     Class for storing electrical data obtained during a clinical mapping procedure.
@@ -329,23 +367,36 @@ class Electric:
             activation time for each mapping point.
         frequency (float): The sample frequency of electric signals, in Hz. Defaults to 1000 Hz.
     """
+    def __init__(
+        self,
+        names: np.ndarray = None,
+        internal_names: np.ndarray = None,
+        include: np.ndarray = None,
+        is_electrical: np.ndarray = None,
+        bipolar_egm: Electrogram = None,
+        unipolar_egm: Electrogram = None,
+        reference_egm: Electrogram = None,
+        ecg: np.ndarray = None,
+        impedance: Impedance = None,
+        surface: ElectricSurface = None,
+        annotations: Annotations = None,
+        frequency: float = 1000,
+    ):
 
-    names: np.ndarray = None
-    internal_names: np.ndarray = None
-    include: np.ndarray = None
-    is_electrical: np.ndarray = None
-    bipolar_egm: Electrogram = None
-    unipolar_egm: Electrogram = None
-    reference_egm: Electrogram = None
-    ecg: np.ndarray = None
-    impedance: Impedance = None
-    surface: ElectricSurface = None
-    annotations: Annotations = None
-    frequency: float = 1000
+        self._names = names
+        self._internal_names = internal_names
+        self._include = include
+        self._is_electrical = is_electrical
+        self.bipolar_egm = bipolar_egm
+        self.unipolar_egm = unipolar_egm
+        self.reference_egm = reference_egm
+        self.ecg = ecg
+        self.impedance = impedance
+        self.surface = surface
+        self.annotations = annotations
+        self.frequency = frequency
 
-    def __attrs_post_init__(self):
-
-        if self.bipolar_egm is None:
+        if bipolar_egm is None:
             self.bipolar_egm = Electrogram()
 
         if self.unipolar_egm is None:
@@ -356,15 +407,14 @@ class Electric:
 
         # We need to extract coords of landmark points
         self._is_landmark = np.full_like(
-            self.names,
+            self._names,
             fill_value=False,
             dtype=bool,
         )
-        self._is_landmark[self.names!=''] = True
-
+        self._is_landmark[self._names!=''] = True
         self.landmark_points = LandmarkPoints(
-            points=self.bipolar_egm.points,
-            names=self.names,
+            points=self.bipolar_egm._points,
+            names=self._names,
             is_landmark=self._is_landmark,
         )
 
@@ -380,11 +430,19 @@ class Electric:
         if self.annotations is None:
             self.annotations = Annotations()
 
-        if self.bipolar_egm.egm is None or self.bipolar_egm.egm.shape[1] == 0:
-            self._time_indices = np.array([], dtype=float)
-        else:
-            n_samples = self.bipolar_egm.egm.shape[1]
-            self._time_indices = np.arange(n_samples)
+        self._time_indices = np.arange(self.n_samples)
+
+    @property
+    def names(self):
+        return self._names[self._is_electrical]
+
+    @property
+    def internal_names(self):
+        return self._internal_names[self._is_electrical]
+
+    @property
+    def include(self):
+        return self._include[self._is_electrical]
 
     @property
     def times(self):
@@ -392,15 +450,14 @@ class Electric:
 
     @property
     def n_points(self):
-        return len(self.bipolar_egm.egm) if self.bipolar_egm.egm is not None else 0
+        return self.bipolar_egm.n_points
 
     @property
-    def is_landmark(self):
-        return self._is_landmark
+    def n_samples(self):
+        return self.bipolar_egm.n_samples
 
     def __repr__(self):
-        n_points = len(self.unipolar_egm.egm) if self.unipolar_egm.egm is not None else 0
-        return f"Electric data for {n_points} mapping points."
+        return f"Electric data for {self.n_points} mapping points."
 
 
 def extract_electric_data(electric_data):
@@ -486,6 +543,10 @@ def extract_electric_data(electric_data):
             )
         else:
             electric_data[f'egm{egm_type}Gain'] = electric_data[f'egm{egm_type}Gain'].astype(float)
+
+    # we need a gain value for each electrode of the unipolar signals
+    if electric_data['egmUniGain'] is not None and electric_data['egmUniGain'].ndim == 1:
+        electric_data['egmUniGain'] = np.tile(electric_data['egmUniGain'], reps=(2, 1)).T
 
     if 'ecgGain' not in electric_data or electric_data['ecgGain'].size == 0:
         electric_data['ecgGain'] = None
