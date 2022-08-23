@@ -251,8 +251,11 @@ class ElectricSurface:
         self._normals = normals
         self._is_electrical = is_electrical
 
+        if self._nearest_point is None:
+            self._nearest_point = np.full((is_electrical.size, 3), fill_value=np.NaN, dtype=float)
+
         if self._normals is None and self._nearest_point is not None:
-            self._normals = np.ones_like(self._nearest_point, dtype=float)
+            self._normals = np.full_like(self._nearest_point, fill_value=np.NaN, dtype=float)
         
     @property
     def nearest_point(self):
