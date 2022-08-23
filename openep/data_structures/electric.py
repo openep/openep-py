@@ -390,6 +390,7 @@ class Electric:
         self._internal_names = internal_names
         self._include = include
         self._is_electrical = is_electrical
+        self._is_electrical_indices = np.nonzero(is_electrical)[0].ravel()
         self.bipolar_egm = bipolar_egm
         self.unipolar_egm = unipolar_egm
         self.reference_egm = reference_egm
