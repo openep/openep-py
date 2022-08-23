@@ -447,6 +447,13 @@ class Electric:
     def include(self):
         return self._include[self._is_electrical]
 
+    @include.setter
+    def include(self, include):
+        if isinstance(include, np.ndarray) and include.size == self.n_points:
+            self._include[self._is_electrical] = include
+        else:
+            self._include = include
+
     @property
     def times(self):
         return self._time_indices * 1000 / self.frequency  # time in ms
