@@ -247,40 +247,40 @@ def _extract_electric_data(electric: Electric):
     empty_int_array = np.array([], dtype=int)
 
     electric_data = {}
-    electric_data['tags'] = electric.names.astype(object) if electric.names is not None else empty_object_array
-    electric_data['names'] = electric.internal_names.astype(object) if electric.internal_names is not None else empty_object_array
-    electric_data['include'] = electric.include if electric.include is not None else empty_int_array
+    electric_data['tags'] = electric._names.astype(object) if electric._names is not None else empty_object_array
+    electric_data['names'] = electric._internal_names.astype(object) if electric._internal_names is not None else empty_object_array
+    electric_data['include'] = electric._include if electric._include is not None else empty_int_array
 
     electric_data['sampleFrequencu'] = float(electric.frequency)
 
-    electric_data['electrodeNames_bip'] = electric.bipolar_egm.names.astype(object) if electric.bipolar_egm.names is not None else empty_object_array
-    electric_data['egmX'] = electric.bipolar_egm.points if electric.bipolar_egm.points is not None else empty_float_array
-    electric_data['egm'] = electric.bipolar_egm.egm if electric.bipolar_egm.egm is not None else empty_float_array
-    electric_data['egmGain'] = electric.bipolar_egm.gain if electric.bipolar_egm.gain is not None else empty_float_array
+    electric_data['electrodeNames_bip'] = electric.bipolar_egm._names.astype(object) if electric.bipolar_egm._names is not None else empty_object_array
+    electric_data['egmX'] = electric.bipolar_egm._points if electric.bipolar_egm._points is not None else empty_float_array
+    electric_data['egm'] = electric.bipolar_egm._egm if electric.bipolar_egm._egm is not None else empty_float_array
+    electric_data['egmGain'] = electric.bipolar_egm._gain if electric.bipolar_egm._gain is not None else empty_float_array
 
-    electric_data['electrodeNames_uni'] = electric.unipolar_egm.names.astype(object) if electric.unipolar_egm.names is not None else empty_object_array
-    electric_data['egmUniX'] = electric.unipolar_egm.points if electric.unipolar_egm.points is not None else empty_float_array
-    electric_data['egmUni'] = electric.unipolar_egm.egm if electric.unipolar_egm.egm is not None else empty_float_array
-    electric_data['egmUniGain'] = electric.unipolar_egm.gain if electric.unipolar_egm.gain is not None else empty_float_array
+    electric_data['electrodeNames_uni'] = electric.unipolar_egm._names.astype(object) if electric.unipolar_egm._names is not None else empty_object_array
+    electric_data['egmUniX'] = electric.unipolar_egm._points if electric.unipolar_egm._points is not None else empty_float_array
+    electric_data['egmUni'] = electric.unipolar_egm._egm if electric.unipolar_egm._egm is not None else empty_float_array
+    electric_data['egmUniGain'] = electric.unipolar_egm._gain if electric.unipolar_egm._gain is not None else empty_float_array
 
-    electric_data['egmRef'] = electric.reference_egm.egm if electric.reference_egm.egm is not None else empty_float_array
-    electric_data['egmRefGain'] = electric.reference_egm.gain if electric.reference_egm.gain is not None else empty_float_array
+    electric_data['egmRef'] = electric.reference_egm._egm if electric.reference_egm._egm is not None else empty_float_array
+    electric_data['egmRefGain'] = electric.reference_egm._gain if electric.reference_egm._gain is not None else empty_float_array
 
-    electric_data['ecg'] = electric.ecg.ecg if electric.ecg.ecg is not None else empty_float_array
-    electric_data['ecgGain'] = electric.ecg.gain if electric.ecg.gain is not None else empty_float_array
+    electric_data['ecg'] = electric.ecg._ecg if electric.ecg._ecg is not None else empty_float_array
+    electric_data['ecgGain'] = electric.ecg._gain if electric.ecg._gain is not None else empty_float_array
     electric_data['ecgNames'] = electric.ecg.channel_names.astype(object) if electric.ecg.channel_names is not None else empty_object_array
 
-    electric_data['egmSurfX'] = electric.surface.nearest_point if electric.surface.nearest_point is not None else empty_float_array
-    electric_data['barDirection'] = electric.surface.normals if electric.surface.normals is not None else empty_float_array
+    electric_data['egmSurfX'] = electric.surface._nearest_point if electric.surface._nearest_point is not None else empty_float_array
+    electric_data['barDirection'] = electric.surface._normals if electric.surface._normals is not None else empty_float_array
 
     electric_data['annotations'] = {}
-    electric_data['annotations']['woi'] = electric.annotations.window_of_interest
-    electric_data['annotations']['referenceAnnot'] = electric.annotations.reference_activation_time
-    electric_data['annotations']['mapAnnot'] = electric.annotations.local_activation_time
+    electric_data['annotations']['woi'] = electric.annotations._window_of_interest_indices
+    electric_data['annotations']['referenceAnnot'] = electric.annotations._reference_activation_time_indices
+    electric_data['annotations']['mapAnnot'] = electric.annotations._local_activation_time_indices
 
     electric_data['voltages'] = {}
-    electric_data['voltages']['bipolar'] = electric.bipolar_egm.voltage if electric.bipolar_egm.voltage is not None else empty_float_array
-    electric_data['voltages']['unipolar'] = electric.unipolar_egm.voltage if electric.unipolar_egm.voltage is not None else empty_float_array
+    electric_data['voltages']['bipolar'] = electric.bipolar_egm._voltage if electric.bipolar_egm._voltage is not None else empty_float_array
+    electric_data['voltages']['unipolar'] = electric.unipolar_egm._voltage if electric.unipolar_egm._voltage is not None else empty_float_array
 
     electric_data['impedances'] = {}
     electric_data['impedances']['time'] = electric.impedance.times if electric.impedance.times is not None else empty_float_array
