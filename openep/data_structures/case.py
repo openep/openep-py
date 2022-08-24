@@ -134,8 +134,10 @@ class Case:
     def remove_unreferenced_points(self):
         """Remove surface points not reference in the triangulation."""
 
-        # Determine which points are referenced and remove
         referenced_indices = np.unique(self.indices.ravel())
+        n_points = self.points.size // 3
+
+        # Remove the unreferenced points
         self.points = self.points[referenced_indices]
 
         # Renumber indices to takes into account changed number of points.
@@ -144,7 +146,7 @@ class Case:
 
         # Remove unused point data from the fields
         for field in self.fields:
-            if self.fields[field] is None:
+            if self.fields[field] is None or self.fields[field].size != n_points:
                 continue
             self.fields[field] = self.fields[field][referenced_indices]
 
