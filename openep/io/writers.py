@@ -66,12 +66,15 @@ __all__ = ["export_openCARP", "export_openep_mat"]
 def export_openCARP(
     case: Case,
     prefix: str,
+    scale_points: float = 1,
 ):
     """Export mesh data from an OpenEP data to openCARP format.
 
     Args:
         case (Case): dataset to be exported
         prefix (str): filename prefix for writing mesh data to files
+        scale_points (float, optional): Scale the point positions by this number. Useful to scaling
+            the units to be in micrometre rather than mm (by setting scale_points=1e-3).
     """
 
     output_path = pathlib.Path(prefix).resolve()
@@ -79,7 +82,7 @@ def export_openCARP(
     # Save points info
     np.savetxt(
         output_path.with_suffix(".pts"),
-        case.points,
+        case.points * scale_points,
         fmt="%.6f",
         header=str(case.points.size),
         comments='',
@@ -88,13 +91,13 @@ def export_openCARP(
     # Save elements info
     n_triangles = case.indices.shape[0]
     cell_type = np.full(n_triangles, fill_value="Tr")
-    region = np.full(n_triangles, 100, dtype=int)
+    cell_region = case.fields.cell_region if case.fields.cell_region is not None else np.zeros(n_triangles, dtype=int)
 
     elements = np.concatenate(
         [
             cell_type[:, np.newaxis],
             case.indices,
-            region[:, np.newaxis],
+            cell_region[:, np.newaxis],
         ],
         axis=1,
         dtype=object,
@@ -110,7 +113,7 @@ def export_openCARP(
 
     # Save fibres
     n_fibre_vectors = 2  # longitudinal and transverse
-    fibres = np.ones((n_triangles, n_fibre_vectors * 3), dtype=float)
+    fibres = np.zeros((n_triangles, n_fibre_vectors * 3), dtype=float)
 
     if case.fields.longitudinal_fibres is not None:
         fibres[:, :3] = case.fields.longitudinal_fibres
@@ -225,6 +228,17 @@ def _extract_surface_data(
         )
 
     surface_data['thickness'] = fields.thickness if fields.thickness is not None else empty_float_array
+    surface_data['cell_region'] = fields.cell_region if fields.cell_region is not None else empty_int_array
+    surface_data['fibres'] = {}
+    surface_data['longitudinal'] = fields.longitudinal_fibres if fields.longitudinal_fibres is not None else empty_float_array
+    surface_data['transverse'] = fields.transverse_fibres if fields.transverse_fibres is not None else empty_float_array
+
+    # Remove arrays that are full of NaNs
+    for field_name, field in surface_data.items():
+        if isinstance(field, dict):
+            continue
+        if np.all(np.isnan(field)):
+            surface_data[field_name] = empty_float_array
 
     return surface_data
 
