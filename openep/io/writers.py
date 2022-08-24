@@ -67,6 +67,7 @@ def export_openCARP(
     case: Case,
     prefix: str,
     scale_points: float = 1,
+    export_transverse_fibres: bool = True,
 ):
     """Export mesh data from an OpenEP data to openCARP format.
 
@@ -75,6 +76,9 @@ def export_openCARP(
         prefix (str): filename prefix for writing mesh data to files
         scale_points (float, optional): Scale the point positions by this number. Useful to scaling
             the units to be in micrometre rather than mm (by setting scale_points=1e-3).
+        export_transverse_fibres (bool, optional). If True, both longitudinal and transverse
+            fibres directions will be written to the .lon file. If False, only longitudinal fibre
+            directions will be written.
     """
 
     output_path = pathlib.Path(prefix).resolve()
@@ -112,13 +116,19 @@ def export_openCARP(
     )
 
     # Save fibres
-    n_fibre_vectors = 2  # longitudinal and transverse
+    n_fibre_vectors = 2 if export_transverse_fibres else 1
     fibres = np.zeros((n_triangles, n_fibre_vectors * 3), dtype=float)
 
     if case.fields.longitudinal_fibres is not None:
         fibres[:, :3] = case.fields.longitudinal_fibres
-    if case.fields.transverse_fibres is not None:
-        fibres[:, 3:] = case.fields.transverse_fibres
+    else:
+        fibres[:, 0] = 1
+
+    if export_transverse_fibres:
+        if case.fields.transverse_fibres is not None:
+            fibres[:, 3:] = case.fields.transverse_fibres
+        else:
+            fibres[:, 3] = 1
 
     np.savetxt(
         output_path.with_suffix('.lon'),
