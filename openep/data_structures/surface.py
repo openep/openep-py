@@ -180,7 +180,7 @@ def empty_fields(n_points=0, n_cells=0):
     impedance = np.full(n_points, fill_value=np.NaN, dtype=float)
     force = np.full(n_points, fill_value=np.NaN, dtype=float)
     thickness = np.full(n_points, fill_value=np.NaN, dtype=float)
-    region = np.full(n_cells, fill_value=0, dtype=int)
+    cell_region = np.full(n_cells, fill_value=0, dtype=int)
     longitudinal_fibres = np.full((n_cells, 3), fill_value=np.NaN)
     transverse_fibres = np.full((n_cells, 3), fill_value=np.NaN)
 
@@ -191,7 +191,7 @@ def empty_fields(n_points=0, n_cells=0):
         impedance,
         force,
         thickness,
-        region,
+        cell_region,
         longitudinal_fibres,
         transverse_fibres,
     )
