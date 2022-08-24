@@ -157,7 +157,8 @@ def load_opencarp(
 
     points_data = np.loadtxt(points, skiprows=1)
     points_data *= scale_points
-    indices_data = np.loadtxt(indices, skiprows=1, usecols=[1, 2, 3], dtype=int)  # ignore the tag for now
+    indices_data = np.loadtxt(indices, skiprows=1, usecols=[1, 2, 3], dtype=int)
+    cell_region = np.loadtxt(indices, skiprows=1, usecols=4, dtype=int)
 
     longitudinal_fibres = None
     transverse_fibres = None
@@ -168,7 +169,11 @@ def load_opencarp(
             transverse_fibres = fibres_data[:, 3:]
 
     # Create empty data structures for pass to Case
-    fields = Fields(longitudinal_fibres=longitudinal_fibres, transverse_fibres=transverse_fibres)
+    fields = Fields(
+        cell_region=cell_region,
+        longitudinal_fibres=longitudinal_fibres,
+        transverse_fibres=transverse_fibres,
+    )
     electric = Electric()
     ablation = Ablation()
     notes = np.asarray([], dtype=object)
