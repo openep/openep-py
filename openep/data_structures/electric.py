@@ -251,7 +251,7 @@ class ElectricSurface:
         self._normals = normals
         self._is_electrical = is_electrical
 
-        if self._nearest_point is None:
+        if self._nearest_point is None and self._is_electrical is not None:
             self._nearest_point = np.full((is_electrical.size, 3), fill_value=np.NaN, dtype=float)
 
         if self._normals is None and self._nearest_point is not None:

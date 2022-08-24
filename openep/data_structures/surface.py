@@ -47,7 +47,7 @@ class Fields:
     impedance: np.ndarray = None
     force: np.ndarray = None
     thickness: np.ndarray = None
-    region: np.ndarray = None
+    cell_region: np.ndarray = None
     longitudinal_fibres: np.ndarray = None
     transverse_fibres: np.ndarray = None
 
@@ -126,12 +126,12 @@ def extract_surface_data(surface_data):
 
     # This is defined on a per-cell bases
     try:
-        region = surface_data['region'].astype(int)
+        cell_region = surface_data['cell_region'].astype(int)
     except KeyError as e:
-        region = None
+        cell_region = None
 
-    if isinstance(region, np.ndarray) and region.size == 0:
-        region = None
+    if isinstance(cell_region, np.ndarray) and cell_region.size == 0:
+        cell_region = None
 
     # Fibre orientation are vectors defined on a per-cell basis
     try:
@@ -158,7 +158,7 @@ def extract_surface_data(surface_data):
         impedance=impedance,
         force=force,
         thickness=thickness,
-        region=region,
+        cell_region=cell_region,
         longitudinal_fibres=longitudinal_fibres,
         transverse_fibres=transverse_fibres,
     )
