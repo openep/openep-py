@@ -53,7 +53,9 @@ def test_openep_mat_export(case, exported_case):
     assert exported_case.fields.force is None
     assert exported_case.fields.impedance is None
     assert exported_case.fields.thickness is None
-    assert exported_case.fields.region is None
+    assert exported_case.fields.cell_region is None
+    assert exported_case.longitudinal_fibres is None
+    assert exported_case.transverse_fibres is None
 
     assert np.all(case.electric.names == exported_case.electric.names)
     assert np.all(case.electric.internal_names == exported_case.electric.internal_names)
