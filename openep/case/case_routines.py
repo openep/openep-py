@@ -456,6 +456,7 @@ def interpolate_activation_time_onto_surface(
         method=scipy.interpolate.RBFInterpolator,
         method_kws=None,
         max_distance=None,
+        include=None,
 ):
     """Interpolate local activation times onto the points of a mesh.
 
@@ -471,6 +472,8 @@ def interpolate_activation_time_onto_surface(
             further than this distance to all mapping coordinates will have their
             interpolated activation times set NaN. The default it None, in which case
             the distance from surface points to mapping points is not considered.
+        include (np.ndarray, optional): Flag for which mapping points to include when creating
+            the interpolator. If None, `case.electric.include` will be used.
 
     Returns:
         interpolated_lat (ndarray): local activation times interpolated onto the surface of the mesh,
@@ -482,7 +485,7 @@ def interpolate_activation_time_onto_surface(
     points = case.electric.bipolar_egm.points
     local_activation_times = case.electric.annotations.local_activation_time - case.electric.annotations.reference_activation_time
 
-    include = case.electric.include.astype(bool)
+    include = case.electric.include.astype(bool) if include is None else include
     points = points[include]
     local_activation_times = local_activation_times[include]
 
@@ -508,6 +511,7 @@ def interpolate_voltage_onto_surface(
         method=scipy.interpolate.RBFInterpolator,
         method_kws=None,
         max_distance=None,
+        include=None,
         bipolar=True,
 ):
     """Interpolate voltage onto the points of a mesh.
@@ -526,6 +530,8 @@ def interpolate_voltage_onto_surface(
             further than this distance to all mapping coordinates will have their
             interpolated voltages set NaN. The default it None, in which case
             the distance from surface points to mapping points is not considered.
+        include (np.ndarray, optional): Flag for which mapping points to include when creating
+            the interpolator. If None, `case.electric.include` will be used.
         bipolar (bool, optional): If True, the bipolar voltage will be interpolated onto the
             surface. If False, the unipolar voltage will be used instead.
 
@@ -535,7 +541,7 @@ def interpolate_voltage_onto_surface(
     """
 
     surface_points = case.points
-    include = case.electric.include.astype(bool)
+    include = case.electric.include.astype(bool) if include is None else include
 
     if bipolar:
         points = case.electric.bipolar_egm.points[include]
