@@ -88,7 +88,7 @@ def export_openCARP(
         output_path.with_suffix(".pts"),
         case.points * scale_points,
         fmt="%.6f",
-        header=str(case.points.size),
+        header=str(case.points.size//3),
         comments='',
     )
 
