@@ -84,6 +84,12 @@ class Electrogram:
         if egm is not None and gain is None:
             gain = np.ones(egm.shape[0])
 
+        if egm is not None and voltage is None:
+            voltage = np.full(egm.shape[0], fill_value=np.NaN)
+
+        if egm is not None and is_electrical is None:
+            is_electrical = np.ones(egm.shape[0], fill_value=True, dtype=bool)
+
         self._egm = egm
         self._points = points
         self._voltage = voltage
