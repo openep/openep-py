@@ -270,6 +270,12 @@ def _extract_electric_data(electric: Electric):
     empty_float_array = np.array([], dtype=float)
     empty_int_array = np.array([], dtype=int)
 
+    # Voltages are added when loading a dataset if egms are present but voltages are not
+    # These should be removed before saving
+    for egm in [electric.bipolar_egm, electric.unipolar_egm, electric.reference_egm]:
+        if all(np.isnan(egm.voltage)):
+            egm.voltage = None
+
     electric_data = {}
     electric_data['tags'] = electric._names.astype(object) if electric._names is not None else empty_object_array
     electric_data['names'] = electric._internal_names.astype(object) if electric._internal_names is not None else empty_object_array
