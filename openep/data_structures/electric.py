@@ -35,18 +35,21 @@ class LandmarkPoints:
 
     Args:
         points (np.ndarray): 3D coordinates of all mapping points.
-        names (np.ndarray): Name of electrode for each mapping point.
+        names (np.ndarray): User-defined tag for electrode for each mapping point.
+        internal_names (np.ndarray): Internal name of each electrode.
     """
 
     def __init__(
         self,
         points: np.ndarray = None,
         names: np.ndarray = None,
+        internal_names: np.ndarray = None,
         is_landmark: np.ndarray = None,
     ):
 
         self._points = points
         self._names = names
+        self._internal_names = internal_names
         self._is_landmark = is_landmark
 
     @property
@@ -54,8 +57,16 @@ class LandmarkPoints:
         return self._points[self._is_landmark] if self._points is not None else None
 
     @property
+    def n_points(self):
+        return self.points.shape[0] if self.points is not None else 0
+
+    @property
     def names(self):
         return self._names[self._is_landmark] if self._names is not None else None
+
+    @property
+    def names(self):
+        return self._internal_names[self._is_landmark] if self._internal_names is not None else None
 
 
 class Electrogram:
@@ -422,9 +433,11 @@ class Electric:
             dtype=bool,
         )
         self._is_landmark[self._names!=''] = True
+
         self.landmark_points = LandmarkPoints(
             points=self.bipolar_egm._points,
             names=self._names,
+            internal_names=self._internal_names,
             is_landmark=self._is_landmark,
         )
 
