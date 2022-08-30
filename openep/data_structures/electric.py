@@ -65,8 +65,11 @@ class LandmarkPoints:
         return self._names[self._is_landmark] if self._names is not None else None
 
     @property
-    def names(self):
+    def internal_names(self):
         return self._internal_names[self._is_landmark] if self._internal_names is not None else None
+
+    def __repr__(self):
+        return f"Landmarks with {self.n_points} landmark points."
 
 
 class Electrogram:
