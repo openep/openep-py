@@ -18,7 +18,6 @@
 
 """Module containing classes for storing surface data of a mesh."""
 
-from syslog import LOG_INFO
 from attr import attrs
 import numpy as np
 
