@@ -499,7 +499,7 @@ class Electric:
         return f"Electric data for {self.n_points} mapping points."
 
 
-    def add_landmark(
+    def _add_landmark(
         self,
         name: str,
         internal_name: str,
@@ -574,7 +574,7 @@ class Electric:
             self.bipolar_egm._points = np.vstack([self.bipolar_egm._points, point])
             self.bipolar_egm._voltage = np.hstack([self.bipolar_egm._voltage, [np.NaN]])
             self.bipolar_egm._gain = np.hstack([self.bipolar_egm._gain, [1]])
-            self.bipolar_egm._names = np.hstack([self.bipolar_egm._names, [' ']])
+            self.bipolar_egm._names = np.hstack([self.bipolar_egm._names, ['']])
             self.bipolar_egm._is_electrical = self._is_electrical
 
         # Add all landmarks
@@ -670,7 +670,7 @@ def extract_electric_data(electric_data):
 
     # Older versions of OpenEP datasets did not have unipolar data or electrode names. Add deafult ones here.
     if 'electrodeNames_bip' not in electric_data:
-        electric_data['electrodeNames_bip'] = np.full_like(internal_names, fill_value="", dtype=str)
+        electric_data['electrodeNames_bip'] = np.full_like(internal_names, fill_value=" ", dtype=str)
     if 'egmUni' not in electric_data:
         electric_data['egmUni'] = None
         electric_data['egmUniX'] = None
@@ -681,7 +681,6 @@ def extract_electric_data(electric_data):
         electric_data['egmUniX'] = electric_data['egmUniX'].astype(float)
         electric_data['voltages']['unipolar'] = electric_data['voltages']['unipolar'].astype(float)
         electric_data['electrodeNames_uni'] = electric_data['electrodeNames_uni'].astype(str)
-        
 
     # Make ecgs correct shape
     ecg_dims = electric_data['ecg'].ndim
