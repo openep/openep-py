@@ -164,18 +164,30 @@ class Case:
         * case.electric.bipolar_egm.points
         * case.electric.unipolar_egm.points
         * case.electric.surface.nearest_point
+        * case.electric.landmark_points.points
 
         Args:
             translate_by (np.ndarray): 3D coordinates by which to translate the case
         """
 
         self.points += translate_by
-        if self.electric.bipolar_egm.points is not None:
+        if self.electric.bipolar_egm._points is not None:
             self.electric.bipolar_egm._points += translate_by
-        if self.electric.unipolar_egm.points is not None:
+        elif self.electric.landmark_points._points is not None:
+            self.electric.landmark_points._points += translate_by
+        if self.electric.unipolar_egm._points is not None:
             self.electric.unipolar_egm._points += translate_by[:, np.newaxis]
-        if self.electric.surface.nearest_point is not None:
+        if self.electric.surface._nearest_point is not None:
             self.electric.surface._nearest_point += translate_by
+
+    def add_landmark(
+        self,
+        tag: str,
+        name: str,
+        point: np.ndarray,
+    ):
+        """Add a landmark to a case."""
+        self.electric.add_landmark(tag, name, point)
 
     def create_mesh(
         self,

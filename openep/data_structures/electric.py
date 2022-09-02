@@ -18,6 +18,7 @@
 
 """Module containing classes for storing electrogram data."""
 
+from threading import local
 from attr import attrs, field
 import numpy as np
 
@@ -100,6 +101,9 @@ class Electrogram:
 
         if egm is not None and voltage is None:
             voltage = np.full(egm.shape[0], fill_value=np.NaN)
+
+        if egm is not None and names is None:
+            names = np.full(egm.shape[0], fill_value='', dtype=str)
 
         if egm is not None and is_electrical is None:
             is_electrical = np.ones(egm.shape[0], fill_value=True, dtype=bool)
@@ -430,12 +434,14 @@ class Electric:
             self.reference_egm = Electrogram()
 
         # We need to extract coords of landmark points
-        self._is_landmark = np.full_like(
-            self._names,
-            fill_value=False,
-            dtype=bool,
-        )
-        self._is_landmark[self._names!=''] = True
+        self._is_landmark = None
+        if self._names is not None:
+            self._is_landmark = np.full_like(
+                self._names,
+                fill_value=False,
+                dtype=bool,
+            )
+            self._is_landmark[self._names!=''] = True
 
         self.landmark_points = LandmarkPoints(
             points=self.bipolar_egm._points,
@@ -460,15 +466,15 @@ class Electric:
 
     @property
     def names(self):
-        return self._names[self._is_electrical]
+        return self._names[self._is_electrical] if self._names is not None else None
 
     @property
     def internal_names(self):
-        return self._internal_names[self._is_electrical]
+        return self._internal_names[self._is_electrical] if self._internal_names is not None else None
 
     @property
     def include(self):
-        return self._include[self._is_electrical]
+        return self._include[self._is_electrical] if self._include is not None else None
 
     @include.setter
     def include(self, include):
@@ -491,6 +497,138 @@ class Electric:
 
     def __repr__(self):
         return f"Electric data for {self.n_points} mapping points."
+
+
+    def add_landmark(
+        self,
+        name: str,
+        internal_name: str,
+        point: np.ndarray,
+    ):
+        """Add a landmark point."""
+
+        # We need to add rows to **all** all signals
+        # Not necessary for openep-py, but it is for openep-matlab
+
+        if isinstance(internal_name, str):
+            internal_name = np.array([internal_name], dtype=str)
+        if isinstance(name, str):
+            name = np.array([name], dtype=str)
+
+        is_electrical = np.array([False], dtype=bool)
+        is_landmark = np.array([True], dtype=bool)
+        include = np.array([False], dtype=int)
+
+        if self._names is None:
+            self._names = name
+        else:
+            self._names = np.hstack([self._names, name])
+
+        if self._internal_names is None:
+            self._internal_names = internal_name
+        else:
+            self._internal_names = np.hstack([self._internal_names, internal_name])
+
+        if self._is_electrical is None:
+            self._is_electrical = is_electrical
+        else:
+            self._is_electrical = np.hstack([self._is_electrical, is_electrical])
+
+        self._is_electrical_indices = np.nonzero(self._is_electrical)[0].ravel()
+
+        if self._is_landmark is None:
+            self._is_landmark = is_landmark
+        else:
+            self._is_landmark = np.hstack([self._is_landmark, is_landmark])
+
+        if self._include is None:
+            self._include = include
+        else:
+            self._include = np.hstack([self._include, include])
+
+        point = np.asarray(point)
+        if point.ndim == 1:
+            point = point[np.newaxis, :]
+
+        # set n_samples to 1 if we have no electrical data
+        n_samples = self.bipolar_egm.n_samples or self.unipolar_egm.n_samples or self.ecg.n_samples or 1
+        egm = np.full(n_samples, fill_value=np.NaN, dtype=float)
+
+        # We need to create bipolar egm data if it does not exist
+        # This is because openep-matlab stores landmark data with the bipolar data
+        if self.bipolar_egm._points is None:
+
+            self.bipolar_egm = Electrogram(
+                egm=egm,
+                points=point,
+                is_electrical=self._is_electrical,
+            )
+
+        else:
+            self.bipolar_egm._egm = np.vstack([self.bipolar_egm._egm, egm])
+            self.bipolar_egm._points = np.vstack([self.bipolar_egm._points, point])
+            self.bipolar_egm._voltage = np.hstack([self.bipolar_egm._voltage, [np.NaN]])
+            self.bipolar_egm._gain = np.hstack([self.bipolar_egm._gain, [1]])
+            self.bipolar_egm._names = np.hstack([self.bipolar_egm._names, [' ']])
+            self.bipolar_egm._is_electrical = self._is_electrical
+
+        # Add all landmarks
+        self.landmark_points = LandmarkPoints(
+            points=self.bipolar_egm._points,
+            names=self._names,
+            internal_names=self._internal_names,
+            is_landmark=self._is_landmark,
+        )
+
+        # Update unipolar data if necessary
+        if self.unipolar_egm._egm is not None:
+            
+            unipolar_egm = np.full((1, n_samples, 2), fill_value=np.NaN, dtype=float)
+            unipolar_point = np.full((1, 3, 2), fill_value=np.NaN, dtype=float)
+            unipolar_gain = np.zeros((1, 2))
+            unipolar_name = np.full((1, 2), fill_value=' ', dtype=str)
+
+            self.unipolar_egm._egm = np.vstack([self.unipolar_egm._egm, unipolar_egm])
+            self.unipolar_egm._points = np.vstack([self.unipolar_egm._points, unipolar_point])
+            self.unipolar_egm._voltage = np.hstack([self.unipolar_egm._voltage, [np.NaN]])
+            self.unipolar_egm._gain = np.vstack([self.unipolar_egm._gain, unipolar_gain])
+            self.unipolar_egm._names = np.vstack([self.unipolar_egm._names, unipolar_name])
+            self.unipolar_egm._is_electrical = self._is_electrical
+
+        # Update reference data if necessary
+        if self.reference_egm._egm is not None:
+            self.reference_egm._egm = np.vstack([self.reference_egm._egm, egm])
+            self.reference_egm._voltage = np.hstack([self.reference_egm._voltage, [np.NaN]])
+            self.reference_egm._gain = np.hstack([self.reference_egm._gain, [1]])
+            self.reference_egm._names = np.hstack([self.reference_egm._names, ['']])
+            self.reference_egm._is_electrical = self._is_electrical
+
+        # Update ecg data if necessary
+        if self.ecg._ecg is not None:
+            ecg = np.full((1, self.ecg.n_samples, self.ecg.n_channels), fill_value=np.NaN, dtype=float)
+            ecg_gain = np.ones((1, self.ecg.n_channels), dtype=float)
+
+            self.ecg._ecg = np.vstack([self.ecg._ecg, ecg])
+            self.ecg._gain = np.vstack([self.ecg._gain, ecg_gain])
+            self.ecg._is_electrical = self._is_electrical
+
+        # Update annotations if necesary
+        if self.annotations._window_of_interest_indices is not None:
+
+            woi = np.array([[-8000, 8000]], dtype=int)
+            reference_activation_time = [0]
+            local_activation_time = [0]
+
+            self.annotations._window_of_interest_indices = np.vstack([
+                self.annotations._window_of_interest_indices, woi,
+            ])
+            self.annotations._reference_activation_time_indices = np.hstack([
+                self.annotations._reference_activation_time_indices, reference_activation_time,
+            ])
+            self.annotations._local_activation_time_indices = np.hstack([
+                self.annotations._local_activation_time_indices, local_activation_time,
+            ])
+            self.annotations._is_electrical = self._is_electrical
 
 
 def extract_electric_data(electric_data):

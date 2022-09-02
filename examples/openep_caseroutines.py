@@ -21,7 +21,16 @@ import matplotlib.pyplot as plt
 import openep
 from openep._datasets.openep_datasets import DATASET_2
 
+case = openep.load_openep_mat(
+    '/home/ps21/Downloads/2021-08-05_13-21-51_PL_L465_15_RA_LAT_WT_Abl - RA_Map_Remap1_1_1_1_1_1_1_1.mat'
+)
+case.add_landmark('a', 'b', point=np.array([0, 0, 0]))
+
 case = openep.load_openep_mat(DATASET_2)
+case.add_landmark('a', 'b', point=np.array([0, 0, 0]))
+openep.export_openep_mat(case, 'test-add-landmark.mat')
+case2 = openep.load_openep_mat('test-add-landmark.mat')
+
 openep.case.get_woi_times(case)
 mesh = case.create_mesh()
 
