@@ -20,10 +20,11 @@ import numpy as np
 import openep
 
 carp = openep.load_opencarp(
-    points="/Users/paul/github/openep-misc/examples/data/pig21_endo_coarse.pts",
-    indices="/Users/paul/github/openep-misc/examples/data/pig21_endo_coarse.elem",
-    scale=1000,
+    points="/home/ps21/github/openep-misc/examples/data/pig21_endo_coarse.pts",
+    indices="/home/ps21/github/openep-misc/examples/data/pig21_endo_coarse.elem",
+    scale_points=1000,
 )
+carp.add_landmark('a', 'b', point=np.array([0, 0, 0]))
 unipolar = np.loadtxt("/Users/paul/github/openep-misc/examples/data/pig21_endo_coarse_phie.dat")
 carp.add_unipolar_electrograms(unipolar=unipolar)
 
