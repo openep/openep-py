@@ -83,9 +83,12 @@ import scipy.stats
 import pyvista
 
 from .surface import Fields
-from .electric import Electric, Electrogram, Annotations, ECG
+from .electric import Electric, Electrogram, Annotations, ElectricSurface
 from .ablation import Ablation
-from ..case.case_routines import bipolar_from_unipolar_surface_points
+from ..case.case_routines import (
+    bipolar_from_unipolar_surface_points,
+    calculate_distance,
+)
 
 __all__ = []
 
@@ -185,9 +188,48 @@ class Case:
         name: str,
         internal_name: str,
         point: np.ndarray,
+        mesh: pyvista.PolyData = None,
     ):
-        """Add a landmark to a case."""
-        self.electric.add_landmark(name, internal_name, point)
+        """Add a landmark to a case.
+
+        Args:
+            name (str): User-defined name of the landmark
+            internal_name (str): Name given by a mapping system
+            point (np.ndarray): 3D position of the landmark
+            mesh (pyvista.PolyData, optional): If provided, this mesh will be used
+                to update case.electric.surface.nearest_point and
+                case.electric.surface.normals
+        """
+
+        self.electric._add_landmark(name, internal_name, point)
+
+        # We also need to update the case.electric.surface data (nearest surface point and normals)
+        # Create a mesh if one is not provided
+        mesh = self.create_mesh() if mesh is None else mesh
+        if 'Normals' not in mesh.point_data:
+            mesh.compute_normals(cell_normals=False, point_normals=True, inplace=True)
+
+        self._create_electric_surface(mesh=mesh)
+
+    def _create_electric_surface(self, mesh: pyvista.PolyData):
+        """Add ElectricSurface data."""
+
+        # can't find nearest point if we have no mapping/landmark points!
+        if self.electric.bipolar_egm._points is None:
+            return
+
+        surface_points = mesh.points
+        distance_to_surface = calculate_distance(
+            origin=self.electric.bipolar_egm._points,
+            destination=surface_points,
+        )
+        nearest_point_indices = np.argmin(distance_to_surface, axis=1)
+
+        self.electric.surface = ElectricSurface(
+            nearest_point=mesh.points[nearest_point_indices],
+            normals=mesh.point_normals[nearest_point_indices],
+            is_electrical=self.electric._is_electrical
+        )
 
     def create_mesh(
         self,
