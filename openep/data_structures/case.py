@@ -182,12 +182,12 @@ class Case:
 
     def add_landmark(
         self,
-        tag: str,
         name: str,
+        internal_name: str,
         point: np.ndarray,
     ):
         """Add a landmark to a case."""
-        self.electric.add_landmark(tag, name, point)
+        self.electric.add_landmark(name, internal_name, point)
 
     def create_mesh(
         self,
