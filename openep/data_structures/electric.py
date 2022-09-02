@@ -510,6 +510,11 @@ class Electric:
         # We need to add rows to **all** all signals
         # Not necessary for openep-py, but it is for openep-matlab
 
+        if name == '':
+            raise ValueError("name cannot be an empty string.")
+        if internal_name == '':
+            raise ValueError("internal_name cannot be an empty string.")
+
         if isinstance(internal_name, str):
             internal_name = np.array([internal_name], dtype=str)
         if isinstance(name, str):
