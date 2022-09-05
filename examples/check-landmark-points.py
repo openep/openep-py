@@ -32,9 +32,9 @@ carp = openep.load_opencarp(
     indices="/Users/paul/github/openep-misc/examples/data/pig21_endo_coarse.elem",
     scale_points=1e-3,
 )
-carp.add_landmark('a', 'b', point=np.array([0, 0, 0]))
 unipolar = np.loadtxt("/Users/paul/github/openep-misc/examples/data/pig21_endo_coarse_phie.dat")
 carp.add_unipolar_electrograms(unipolar=unipolar)
+carp.add_landmark('a', 'b', point=np.array([0, 0, 0]))
 
 openep.export_openep_mat(carp, 'test-add-landmark-carp.mat')
 carp_with_landmark = openep.load_openep_mat('test-add-landmark-carp.mat')
