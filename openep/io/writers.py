@@ -306,7 +306,7 @@ def _extract_electric_data(electric: Electric):
     electric_data['voltages']['bipolar'] = electric.bipolar_egm._voltage if electric.bipolar_egm._voltage is not None else empty_float_array
     electric_data['voltages']['unipolar'] = electric.unipolar_egm._voltage if electric.unipolar_egm._voltage is not None else empty_float_array
 
-    # Voltages are added when loading a dataset if egms are present but voltages are not
+    # Voltages are added when loading a dataset if egms are present
     # These should be removed before saving
     for channel, voltage in electric_data['voltages'].items():
         if all(np.isnan(voltage)):

@@ -103,10 +103,10 @@ class Electrogram:
             voltage = np.full(egm.shape[0], fill_value=np.NaN)
 
         if egm is not None and names is None:
-            names = np.full(egm.shape[0], fill_value='', dtype=str)
+            names = np.full(egm.shape[0], fill_value=' ', dtype=str)
 
         if egm is not None and is_electrical is None:
-            is_electrical = np.ones(egm.shape[0], fill_value=True, dtype=bool)
+            is_electrical = np.ones(egm.shape[0], dtype=bool)
 
         self._egm = egm
         self._points = points
@@ -574,7 +574,7 @@ class Electric:
             self.bipolar_egm._points = np.vstack([self.bipolar_egm._points, point])
             self.bipolar_egm._voltage = np.hstack([self.bipolar_egm._voltage, [np.NaN]])
             self.bipolar_egm._gain = np.hstack([self.bipolar_egm._gain, [1]])
-            self.bipolar_egm._names = np.hstack([self.bipolar_egm._names, ['']])
+            self.bipolar_egm._names = np.hstack([self.bipolar_egm._names, [' ']])
             self.bipolar_egm._is_electrical = self._is_electrical
 
         # Add all landmarks
@@ -605,7 +605,7 @@ class Electric:
             self.reference_egm._egm = np.vstack([self.reference_egm._egm, egm])
             self.reference_egm._voltage = np.hstack([self.reference_egm._voltage, [np.NaN]])
             self.reference_egm._gain = np.hstack([self.reference_egm._gain, [1]])
-            self.reference_egm._names = np.hstack([self.reference_egm._names, ['']])
+            self.reference_egm._names = np.hstack([self.reference_egm._names, [' ']])
             self.reference_egm._is_electrical = self._is_electrical
 
         # Update ecg data if necessary
@@ -670,12 +670,12 @@ def extract_electric_data(electric_data):
 
     # Older versions of OpenEP datasets did not have unipolar data or electrode names. Add deafult ones here.
     if 'electrodeNames_bip' not in electric_data:
-        electric_data['electrodeNames_bip'] = np.full_like(internal_names, fill_value=" ", dtype=str)
+        electric_data['electrodeNames_bip'] = np.full_like(internal_names, fill_value="", dtype=str)
     if 'egmUni' not in electric_data:
-        electric_data['egmUni'] = None
-        electric_data['egmUniX'] = None
-        electric_data['voltages']['unipolar'] = None
-        electric_data['electrodeNames_uni'] = None
+        electric_data['egmUni'] =  np.array([])
+        electric_data['egmUniX'] = np.array([])
+        electric_data['voltages']['unipolar'] = np.array([])
+        electric_data['electrodeNames_uni'] = np.array([])
     else:
         electric_data['egmUni'] = electric_data['egmUni'].astype(float)
         electric_data['egmUniX'] = electric_data['egmUniX'].astype(float)

@@ -233,8 +233,6 @@ def _load_mat_below_v73(filename):
     )['userdata']
 
     data['electric']['tags'] = _decode_tags(data['electric']['tags'])
-    if 'electrodeNames_bip' in data['electric']:
-        data['electric']['electrodeNames_bip'] = _decode_string(data['electric']['electrodeNames_bip'])
 
     data['electric']['impedances']['time'] = _cast_to_float(data['electric']['impedances']['time'])
     data['electric']['impedances']['value'] = _cast_to_float(data['electric']['impedances']['value'])
