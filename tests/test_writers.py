@@ -77,7 +77,7 @@ def test_openep_mat_export(case, exported_case):
     assert_allclose(case.electric.reference_egm.gain, exported_case.electric.reference_egm.gain)
     assert exported_case.electric.reference_egm.points is None
     assert_allclose(case.electric.reference_egm.voltage, exported_case.electric.reference_egm.voltage, equal_nan=True)
-    assert all(exported_case.electric.reference_egm.names == '')
+    assert all(exported_case.electric.reference_egm.names == ' ')
 
     assert_allclose(case.electric.ecg.ecg, exported_case.electric.ecg.ecg)
     assert_allclose(case.electric.ecg.gain, exported_case.electric.ecg.gain)
