@@ -365,7 +365,7 @@ class Case:
             egm=np.concatenate([unipolar_A[:, :, np.newaxis], unipolar_B[:, :, np.newaxis]], axis=2),
             points=np.concatenate([points_A[:, :, np.newaxis], points_B[:, :, np.newaxis]], axis=2),
             voltage=np.ptp(unipolar[pair_indices], axis=2)[:, 0],  # axis=2 because of the shape of unipolar[pairs_indices]
-            names=np.asarray(['_'.join(pair) for pair in names[pair_indices]]),
+            names=names[pair_indices],
             gain=np.zeros((len(unipolar), 2)),
         )
 
