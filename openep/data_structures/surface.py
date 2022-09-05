@@ -97,9 +97,9 @@ def extract_surface_data(surface_data):
     else:
         local_activation_time, bipolar_voltage = surface_data['act_bip'].T.astype(float)
 
-    if all(np.isnan(local_activation_time)):
+    if isinstance(local_activation_time, np.ndarray) and all(np.isnan(local_activation_time)):
         local_activation_time = None
-    if all(np.isnan(bipolar_voltage)):
+    if isinstance(bipolar_voltage, np.ndarray) and all(np.isnan(bipolar_voltage)):
         bipolar_voltage = None
 
     if surface_data['uni_imp_frc'].size == 0:
