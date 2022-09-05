@@ -38,6 +38,7 @@ class Fields:
         region (np.ndarray): array of shape N_cells
         longitudinal_fibres (np.ndarray): array of shape N_cells x 3
         transverse_fibres (np.ndarray): array of shape N_cells x 3
+        pacing_site (np.ndarray): array of shape N_points
     """
 
     bipolar_voltage: np.ndarray = None
@@ -49,6 +50,7 @@ class Fields:
     cell_region: np.ndarray = None
     longitudinal_fibres: np.ndarray = None
     transverse_fibres: np.ndarray = None
+    pacing_site: np.ndarray = None
 
     def __repr__(self):
         return f"fields: {tuple(self.__dict__.keys())}"
@@ -149,6 +151,14 @@ def extract_surface_data(surface_data):
     if isinstance(transverse_fibres, np.ndarray) and transverse_fibres.size == 0:
         transverse_fibres = None
 
+    # Pacing site point ids (-1 is not pacing site)
+    try:
+        pacing_site = surface_data['pacing_site'].astype(int)
+    except KeyError as e:
+        pacing_site = None
+
+    if isinstance(pacing_site, np.ndarray) and pacing_site.size == 0:
+        pacing_site = None
 
     fields = Fields(
         bipolar_voltage=bipolar_voltage,
@@ -160,6 +170,7 @@ def extract_surface_data(surface_data):
         cell_region=cell_region,
         longitudinal_fibres=longitudinal_fibres,
         transverse_fibres=transverse_fibres,
+        pacing_site=pacing_site,
     )
 
     return points, indices, fields
@@ -182,6 +193,7 @@ def empty_fields(n_points=0, n_cells=0):
     cell_region = np.full(n_cells, fill_value=0, dtype=int)
     longitudinal_fibres = np.full((n_cells, 3), fill_value=np.NaN)
     transverse_fibres = np.full((n_cells, 3), fill_value=np.NaN)
+    pacing_site = np.full(n_points, fill_value=-1, dtype=int)
 
     fields = Fields(
         bipolar_voltage,
@@ -193,6 +205,7 @@ def empty_fields(n_points=0, n_cells=0):
         cell_region,
         longitudinal_fibres,
         transverse_fibres,
+        pacing_site,
     )
 
     return fields

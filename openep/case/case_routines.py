@@ -366,6 +366,9 @@ def calculate_points_within_distance(origin, destination, max_distance, return_d
         and each test_point.
     """
 
+    origin = origin[np.newaxis, :] if origin.ndim == 1 else origin
+    destination = destination[np.newaxis, :] if destination.ndim == 1 else destination
+
     distances = calculate_distance(origin, destination)
     within_max_distance = distances <= max_distance
 
