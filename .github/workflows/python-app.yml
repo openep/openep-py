@@ -53,6 +53,7 @@ jobs:
         file: ./coverage.xml
         fail_ci_if_error: true
         verbose: true
+        version: "v0.1.15"
   
   build_docs:
     if: "github.repository == 'openep/openep-py'"
