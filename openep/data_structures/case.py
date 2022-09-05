@@ -331,6 +331,10 @@ class Case:
                 annotations will all be set to 0 ms.
         """
 
+        # TODO: This method assumes that all mapping points are on the surface, and that there is
+        #       one electrogram for each point on the surface. Should optionally take xyz coordinates
+        #       for the egm recordings
+
         if len(unipolar) != len(self.points):
             raise ValueError(
                 "There must be one electrogram per point in the surface. "
@@ -339,8 +343,11 @@ class Case:
             )
 
         names = np.asarray([f'P{index}' for index in range(len(unipolar))], dtype=str)
-        self.electric.internal_names = names
-        self.electric.names = names
+        self.electric._internal_names = names
+        self.electric._names = np.full_like(names, fill_value='', dtype=str)
+        self.electric._is_electrical = np.zeros_like(names, dtype=bool)
+        self.electric._is_landmark = np.zeros_like(names, dtype=bool)
+        self.electric._include = np.ones_like(names, dtype=int)
 
         bipolar, pair_indices = bipolar_from_unipolar_surface_points(
             unipolar=unipolar,
@@ -357,15 +364,12 @@ class Case:
         unipolar_egm = Electrogram(
             egm=np.concatenate([unipolar_A[:, :, np.newaxis], unipolar_B[:, :, np.newaxis]], axis=2),
             points=np.concatenate([points_A[:, :, np.newaxis], points_B[:, :, np.newaxis]], axis=2),
-            voltage=np.ptp(unipolar[pair_indices], axis=2),  # axis=2 because of the shape of unipolar[pairs_indices]
-            names=np.asarray(['_'.join(pair) for pair in names[pair_indices]])
+            voltage=np.ptp(unipolar[pair_indices], axis=2)[:, 0],  # axis=2 because of the shape of unipolar[pairs_indices]
+            names=np.asarray(['_'.join(pair) for pair in names[pair_indices]]),
+            gain=np.zeros((len(unipolar), 2)),
         )
 
         self.electric.unipolar_egm = unipolar_egm
-
-        # TODO: This assumes that all mapping points are on the surface, and that there is
-        #       one electrogram for each point on the surface.
-        # TODO: Calculate the normals of the surface at these points.
         self.electric.surface.nearest_point = self.points.copy()
 
         if add_bipolar:
@@ -380,11 +384,16 @@ class Case:
             )
             self.electric.bipolar_egm = bipolar_egm
 
+            # Update electric surface data
+            mesh = self.create_mesh()
+            mesh.compute_normals(cell_normals=False, point_normals=True, inplace=True)
+            self._create_electric_surface(mesh=mesh)
+
         if add_reference:
 
             reference_egm = Electrogram(
                 egm=np.zeros_like(bipolar),
-                gain=np.ones(len(unipolar), dtype=float),
+                gain=np.full(len(unipolar), dtype=float, fill_value=-4),
             )
             self.electric.reference_egm = reference_egm
 
@@ -399,7 +408,3 @@ class Case:
                 reference_activation_time=np.zeros_like(woi[:, 0], dtype=int)
             )
             self.electric.annotations = annotations
-
-        # whether the mapping points have been rejected (include==False)
-        include = np.ones_like(names, dtype=bool)
-        self.electric.include = include
