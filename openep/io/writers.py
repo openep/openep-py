@@ -168,6 +168,7 @@ def export_openCARP(
 def export_openep_mat(
     case: Case,
     filename: str,
+    separate_regions: bool = False,
 ):
     """Export data in OpenEP format.
 
@@ -186,8 +187,8 @@ def export_openep_mat(
     )
 
     userdata['electric'] = _extract_electric_data(electric=case.electric)
-    userdata['rf'] = _export_ablation_data(ablation=case.ablation)
 
+    userdata['rf'] = _export_ablation_data(ablation=case.ablation)
     scipy.io.savemat(
         file_name=filename,
         mdict={'userdata': userdata},
@@ -195,6 +196,7 @@ def export_openep_mat(
         do_compression=True,
         oned_as='column',
     )
+
 
 def _extract_surface_data(
     points : np.ndarray,
