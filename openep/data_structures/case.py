@@ -231,6 +231,64 @@ class Case:
             is_electrical=self.electric._is_electrical
         )
 
+    def separate_regions(self):
+        """Create a list of Case objects by separating regions defined in case.fields.cell_regions."""
+
+        if self.fields.cell_region is None:
+            return [self]
+
+        region_ids = np.unique(self.fields.cell_region)
+        if region_ids.size == 1:
+            return [self]
+
+        mesh = self.create_mesh()
+        for field in self.fields:
+            if self.fields[field] is None:
+                continue
+            if len(self.fields[field]) == mesh.n_points:
+                mesh.point_data[field] = self.fields[field]
+            elif len(self.fields[field]) == mesh.n_cells:
+                mesh.cell_data[field] = self.fields[field]
+
+        region_cases = []
+        for region_id in region_ids:
+            
+            cells_to_extract = mesh.cell_data['cell_region'] == region_id
+            region = mesh.extract_cells(cells_to_extract)
+
+            fields = Fields()
+            for point_data in region.point_data:
+                if point_data not in fields:
+                    continue
+                fields[point_data] = region.point_data[point_data]
+            for cell_data in region.cell_data:
+                if cell_data not in fields:
+                    continue
+                fields[cell_data] = region.cell_data[cell_data]
+
+            case = self.copy()
+            case.points = region.points
+            case.indices = region.cells.reshape(region.n_cells, 4)[:, 1:]
+            case.fields = fields
+            region_cases.append(case)
+
+        return region_cases
+
+    def copy(self):
+        """Create a deep copy of a Case."""
+
+        case = Case(
+            name=self.name,
+            points=np.array(self.points),
+            indices=np.array(self.indices),
+            fields=self.fields.copy(),
+            electric=self.electric.copy(),
+            ablation=self.ablation.copy(),
+            notes=np.array(self.notes) if self.notes is not None else None,        
+        )
+
+        return case
+
     def create_mesh(
         self,
         back_faces: bool = False,

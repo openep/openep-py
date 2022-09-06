@@ -163,6 +163,20 @@ class Electrogram:
     def __repr__(self):
         return f"Electrograms with {self.n_points} mapping points."
 
+    def copy(self):
+        """Return a deep copy of Electrogram"""
+
+        egm = Electrogram(
+            egm=np.array(self._egm) if self._egm is not None else None,
+            points=np.array(self._points) if self._points is not None else None,
+            voltage=np.array(self._voltage) if self._voltage is not None else None,
+            gain=np.array(self._gain) if self._gain is not None else None,
+            names=np.array(self._names) if self._names is not None else None,
+            is_electrical=np.array(self._is_electrical) if self._is_electrical is not None else None,
+        )
+
+        return egm
+
 
 class ECG:
     """
@@ -233,6 +247,18 @@ class ECG:
     def __repr__(self):
         return f"ECGs with {self.n_points} signals."
 
+    def copy(self):
+        """Return a deep copy of ECG"""
+
+        ecg = ECG(
+            ecg=np.array(self._ecg) if self._ecg is not None else None,
+            channel_names=np.array(self._channel_names) if self._channel_names is not None else None,
+            gain=np.array(self._gain) if self._gain is not None else None,
+            is_electrical=np.array(self._is_electrical) if self._is_electrical is not None else None,
+        )
+
+        return ecg
+
 
 @attrs(auto_attribs=True, auto_detect=True)
 class Impedance:
@@ -251,6 +277,14 @@ class Impedance:
     def __repr__(self):
         n_traces = len(self.values) if self.values is not None else 0
         return f"Impedance measurements with {n_traces} traces."
+
+    def copy(self):
+        """Create a deep copy of Impedance"""
+
+        impedance = Impedance(
+            times=np.array(self.times) if self.times is not None else None,
+            values=np.array(self.values) if self.values is not None else None,
+        )
 
 
 class ElectricSurface:
@@ -310,6 +344,17 @@ class ElectricSurface:
     def __repr__(self):
         return f"ElectricSurface with {self.n_points} mapping points."
 
+    def copy(self):
+        """Return a deep copy of ElectricSurface"""
+
+        electric_surface = ElectricSurface(
+            nearest_point=np.array(self._nearest_point) if self._nearest_point is not None else None,
+            normals=np.array(self._normals) if self._normals is not None else None,
+            is_electrical=np.array(self._is_electrical) if self._is_electrical is not None else None,
+        )
+
+        return electric_surface
+
 
 class Annotations:
     """
@@ -363,8 +408,25 @@ class Annotations:
     def n_points(self):
         return len(self.window_of_interest) if self.window_of_interest is not None else 0
 
+    @property
+    def frequency(self):
+        return self._frequency
+
     def __repr__(self):
         return f"Annotations with {self.n_points} mapping points."
+
+    def copy(self):
+        """Return a deep copy of Annotations"""
+
+        annotations = Annotations(
+            window_of_interest=np.array(self._window_of_interest_indices) if self._window_of_interest_indices is not None else None,
+            local_activation_time=np.array(self._local_activation_time_indices) if self._local_activation_time_indices is not None else None,
+            reference_activation_time=np.array(self._reference_activation_time_indices) if self._reference_activation_time_indices is not None else None,
+            is_electrical=np.array(self._is_electrical) if self._is_electrical is not None else None,
+            frequency=self._frequency,
+        )
+
+        return annotations
 
 
 class Electric:
@@ -634,6 +696,46 @@ class Electric:
                 self.annotations._local_activation_time_indices, local_activation_time,
             ])
             self.annotations._is_electrical = self._is_electrical
+
+    def copy(self):
+        """Create a deep copy of Electric."""
+
+        names = np.array(self._names) if self._names is not None else None
+        internal_names = np.array(self._internal_names) if self._internal_names is not None else None
+        include = np.array(self._include) if self._include is not None else None
+        is_electrical = np.array(self._is_electrical) if self._is_electrical is not None else None        
+        bipolar_egm = self.bipolar_egm.copy()
+        unipolar_egm = self.unipolar_egm.copy()
+        reference_egm = self.reference_egm.copy()
+        ecg = self.ecg.copy()
+        impedance = self.impedance.copy()
+        surface = self.surface.copy()
+        annotations = self.annotations.copy()
+        frequency = self.frequency
+
+        bipolar_egm._is_electrical = is_electrical if bipolar_egm._is_electrical is not None else None
+        unipolar_egm._is_electrical = is_electrical if unipolar_egm._is_electrical is not None else None
+        reference_egm._is_electrical = is_electrical if reference_egm._is_electrical is not None else None
+        ecg._is_electrical = is_electrical if ecg._is_electrical is not None else None
+        surface._is_electrical = is_electrical if surface._is_electrical is not None else None
+        annotations._is_electrical = is_electrical if annotations._is_electrical is not None else None
+
+        electric = Electric(
+            names=names,
+            internal_names=internal_names,
+            include=include,
+            is_electrical=is_electrical,
+            bipolar_egm=bipolar_egm,
+            unipolar_egm=unipolar_egm,
+            reference_egm=reference_egm,
+            ecg=ecg,
+            impedance=impedance,
+            surface=surface,
+            annotations=annotations,
+            frequency=frequency,
+        )
+
+        return electric
 
 
 def extract_electric_data(electric_data):
