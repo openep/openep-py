@@ -41,4 +41,4 @@ carp_with_landmark = openep.load_openep_mat('test-add-landmark-carp.mat')
 
 print(case, case_with_landmark)
 print(kodex_case, kodex_case_with_landmark)
-print(carp, carp_with_landmark)
+print(carp, carp_with_landmark.electric.landmark_points)

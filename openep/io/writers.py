@@ -71,6 +71,14 @@ def export_openCARP(
 ):
     """Export mesh data from an OpenEP data to openCARP format.
 
+    The following data are written to file:
+        - `case.points` is used to write f'{prefix}'.pts
+        - `case.indices` is used to write f'{prefix}'.elem
+        - `case.fields.cell_region` is used to define the regions in f'{prefix}'.elem
+        - `case.fields.longitudinal_fibres` and `case.fields.transverse_fibres` are
+          used to write f'{prefix}'.lon
+        - `case.fields.pacing_site` is used to write f'{pacing_site}'.vtx
+
     Args:
         case (Case): dataset to be exported
         prefix (str): filename prefix for writing mesh data to files
@@ -137,6 +145,24 @@ def export_openCARP(
         header=str(n_fibre_vectors),
         comments='',
     )
+
+    # Saving pacing sites if they exist
+    if case.fields.pacing_site is None:
+        return
+
+    # Ignore all -1 values, as these points do not belong to any pacing site
+    for site_index in np.unique(case.fields.pacing_site)[1:]:
+        
+        pacing_site_points = np.nonzero(case.fields.pacing_site == site_index)[0]
+        n_points = pacing_site_points.size
+
+        np.savetxt(
+            output_path.with_name(f'{output_path.name}_pacing_site_{site_index}.vtx'),
+            pacing_site_points,
+            header=f'{n_points}\nintra',
+            comments='',
+            fmt='%d',
+        )
 
 
 def export_openep_mat(
