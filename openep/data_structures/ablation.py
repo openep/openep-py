@@ -45,6 +45,18 @@ class AblationForce:
     def __repr__(self):
         return f"Ablation forces with {len(self.times)} sites."
 
+    def copy(self):
+        """Create a deep copy of AblationForce"""
+
+        ablation_force = AblationForce(
+            times=np.array(self.times) if self.times is not None else None,
+            force=np.array(self.force) if self.force is not None else None,
+            axial_angle=np.array(self.axial_angle) if self.axial_angle is not None else None,
+            lateral_angle=np.array(self.lateral_angle) if self.lateral_angle is not None else None,
+            points=np.array(self.points) if self.points is not None else None,
+        )
+
+        return ablation_force
 
 @attrs(auto_attribs=True, auto_detect=True)
 class Ablation:
@@ -75,6 +87,19 @@ class Ablation:
     def __repr__(self):
         n_sites = {len(self.times)} if self.times is not None else 0
         return f"Ablations with {n_sites} ablation sites."
+
+    def copy(self):
+        """Create a deep copy of Ablation"""
+
+        ablation = Ablation(
+            times=np.array(self.times) if self.times is not None else None,
+            power=np.array(self.power) if self.power is not None else None,
+            impedance=np.array(self.impedance) if self.impedance is not None else None,
+            temperature=np.array(self.temperature) if self.temperature is not None else None,
+            force=self.force.copy(),
+        )
+
+        return ablation
 
 
 def extract_ablation_data(ablation_data):

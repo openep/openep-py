@@ -72,6 +72,17 @@ class Fields:
     def __contains__(self, field):
         return field in self.__dict__.keys()
 
+    def copy(self):
+        """Create a deep copy of Fields"""
+
+        fields = Fields()
+        for field in self:
+            if self[field] is None:
+                continue
+            fields[field] = np.array(self[field])
+
+        return fields
+
 
 def extract_surface_data(surface_data):
     """Extract surface data from a dictionary.
