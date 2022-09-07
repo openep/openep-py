@@ -56,6 +56,7 @@ import os
 import scipy.io
 
 import numpy as np
+import pyvista
 
 from . import _circle_cvi
 from .matlab import _load_mat_v73, _load_mat_below_v73
@@ -64,7 +65,7 @@ from ..data_structures.electric import extract_electric_data, Electric
 from ..data_structures.ablation import extract_ablation_data, Ablation
 from ..data_structures.case import Case
 
-__all__ = ["load_openep_mat", "_load_mat", "load_opencarp", "load_circle_cvi"]
+__all__ = ["load_openep_mat", "_load_mat", "load_opencarp", "load_circle_cvi", "load_vtk"]
 
 
 def _check_mat_version_73(filename):
@@ -179,6 +180,37 @@ def load_opencarp(
     notes = np.asarray([], dtype=object)
 
     return Case(name, points_data, indices_data, fields, electric, ablation, notes)
+
+
+def load_vtk(filename, name=None):
+    """
+    Load data from a VTK file.
+
+    Args:
+        filename (str): path to VTK file to be loaded (including the .vtk
+            extension.)
+        name (str): name to give this dataset. The default is `None`, in which case
+            the filename is used at the name.
+
+    Returns:
+        case (Case): an OpenEP Case object that contains the surface, electric and
+            ablation data.
+    """
+
+    name = name if name is not None else os.path.basename(filename)
+    mesh = pyvista.read(filename)
+
+    case = Case(
+        name=name,
+        points=mesh.points,
+        indices=np.array(mesh.faces).reshape(mesh.n_cells, 4)[:, 1:],
+        fields=Fields.from_pyvista(mesh),
+        electric = Electric(),
+        ablation = Ablation(),
+        notes = np.asarray([], dtype=object),
+    )
+
+    return case
 
 
 def load_circle_cvi(filename, dicoms_directory, extract_epi=True, extract_endo=True, return_dicoms_data=False):
