@@ -59,7 +59,7 @@ class LandmarkPoints:
 
     @property
     def n_points(self):
-        return self.points.shape[0] if self.points is not None else 0
+        return self.points.shape[0] if self._points is not None else 0
 
     @property
     def names(self):
@@ -128,11 +128,11 @@ class Electrogram:
 
     @property
     def n_points(self):
-        return self.egm.shape[0] if self.egm is not None else 0
+        return self.egm.shape[0] if self._egm is not None else 0
 
     @property
     def n_samples(self):
-        return self.egm.shape[1] if self.egm is not None else 0
+        return self.egm.shape[1] if self.n_points > 0 else 0
 
     @property
     def voltage(self):
@@ -223,15 +223,15 @@ class ECG:
 
     @property
     def n_points(self):
-        return self.ecg.shape[0] if self.ecg is not None else 0
+        return self.ecg.shape[0] if self._ecg is not None else 0
 
     @property
     def n_samples(self):
-        return self.ecg.shape[1] if self.ecg is not None else 0
+        return self.ecg.shape[1] if self.n_points > 0 else 0
 
     @property
     def n_channels(self):
-        return self.ecg.shape[2] if self.ecg is not None else 0
+        return self.ecg.shape[2] if self.n_points > 0 else 0
 
     @property
     def gain(self):
