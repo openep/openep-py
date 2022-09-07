@@ -403,9 +403,11 @@ class Case:
         names = np.asarray([f'P{index}' for index in range(len(unipolar))], dtype=str)
         self.electric._internal_names = names
         self.electric._names = np.full_like(names, fill_value='', dtype=str)
-        self.electric._is_electrical = np.zeros_like(names, dtype=bool)
+        self.electric._is_electrical = np.ones_like(names, dtype=bool)
+        self.electric._is_electrical_indices = np.arange(names.size).astype(int)
         self.electric._is_landmark = np.zeros_like(names, dtype=bool)
         self.electric._include = np.ones_like(names, dtype=int)
+        self.electric.frequency = 1000
 
         bipolar, pair_indices = bipolar_from_unipolar_surface_points(
             unipolar=unipolar,
@@ -425,8 +427,10 @@ class Case:
             voltage=np.ptp(unipolar[pair_indices], axis=2)[:, 0],  # axis=2 because of the shape of unipolar[pairs_indices]
             names=names[pair_indices],
             gain=np.zeros((len(unipolar), 2)),
+            is_electrical=self.electric._is_electrical,
         )
 
+        self.electric._time_indices = np.arange(unipolar_egm.n_samples)
         self.electric.unipolar_egm = unipolar_egm
         self.electric.surface.nearest_point = self.points.copy()
 
@@ -439,6 +443,7 @@ class Case:
                 voltage=voltage,
                 gain=np.ones_like(voltage, dtype=float),
                 names=names,
+                is_electrical=self.electric._is_electrical,
             )
             self.electric.bipolar_egm = bipolar_egm
 
@@ -452,6 +457,7 @@ class Case:
             reference_egm = Electrogram(
                 egm=np.zeros_like(bipolar),
                 gain=np.full(len(unipolar), dtype=float, fill_value=-4),
+                is_electrical=self.electric._is_electrical,
             )
             self.electric.reference_egm = reference_egm
 
@@ -463,6 +469,8 @@ class Case:
             annotations = Annotations(
                 window_of_interest=woi,
                 local_activation_time=np.zeros_like(woi[:, 0], dtype=int),  # TODO: calculate local activation times
-                reference_activation_time=np.zeros_like(woi[:, 0], dtype=int)
+                reference_activation_time=np.zeros_like(woi[:, 0], dtype=int),
+                is_electrical=self.electric._is_electrical,
+                frequency=self.electric.frequency,
             )
             self.electric.annotations = annotations

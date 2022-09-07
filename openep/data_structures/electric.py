@@ -751,7 +751,7 @@ def extract_electric_data(electric_data):
     """
 
     if electric_data['egm'].size == 0 and electric_data['egmUni'].size == 0:
-        return empty_electric()
+        return Electric()
 
     names = electric_data['tags'].astype(str)
     internal_names = electric_data['names'].astype(str)
