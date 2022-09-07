@@ -60,7 +60,11 @@ from openep.data_structures.case import Case
 from openep.data_structures.surface import Fields
 from openep.data_structures.electric import Electric
 
-__all__ = ["export_openCARP", "export_openep_mat"]
+__all__ = [
+    "export_openCARP",
+    "export_openep_mat",
+    "export_vtk",
+]
 
 
 def export_openCARP(
@@ -196,6 +200,31 @@ def export_openep_mat(
         do_compression=True,
         oned_as='column',
     )
+
+
+def export_vtk(
+    case: Case,
+    filename: str,
+):
+    """Export data in vtk format.
+
+    Saves all field data.
+
+    Args:
+        case (Case): dataset to be exported
+        filename (str): name of file to be written
+    """
+
+    mesh = case.create_mesh()
+    for field in case.fields:
+        if case.fields[field] is None:
+            continue
+        if len(case.fields[field]) == mesh.n_points:
+            mesh.point_data[field] = case.fields[field]
+        elif len(case.fields[field]) == mesh.n_cells:
+            mesh.cell_data[field] = case.fields[field]
+
+    mesh.save(filename)
 
 
 def _extract_surface_data(

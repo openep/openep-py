@@ -83,6 +83,26 @@ class Fields:
 
         return fields
 
+    @classmethod
+    def from_pyvista(cls, mesh):
+        """Create a Fields object from a pyvista.PolyData mesh.
+
+        Args:
+            mesh (pyvista.PolyData): mesh from which Fields will be created.
+        """
+
+        fields = cls()
+        for point_data in mesh.point_data:
+            if point_data not in fields:
+                continue
+            fields[point_data] = np.asarray(mesh.point_data[point_data])
+        for cell_data in mesh.cell_data:
+            if cell_data not in fields:
+                continue
+            fields[cell_data] = np.asarray(mesh.cell_data[cell_data])
+
+        return fields
+
 
 def extract_surface_data(surface_data):
     """Extract surface data from a dictionary.
