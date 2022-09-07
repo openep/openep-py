@@ -333,7 +333,7 @@ def _extract_electric_data(electric: Electric):
     electric_data['names'] = electric._internal_names.astype(object) if electric._internal_names is not None else empty_object_array
     electric_data['include'] = electric._include if electric._include is not None else empty_int_array
 
-    electric_data['sampleFrequencu'] = float(electric.frequency)
+    electric_data['sampleFrequency'] = float(electric.frequency)
 
     electric_data['electrodeNames_bip'] = electric.bipolar_egm._names.astype(object) if electric.bipolar_egm._names is not None else empty_object_array
     electric_data['egmX'] = electric.bipolar_egm._points if electric.bipolar_egm._points is not None else empty_float_array
@@ -355,10 +355,11 @@ def _extract_electric_data(electric: Electric):
     electric_data['egmSurfX'] = electric.surface._nearest_point if electric.surface._nearest_point is not None else empty_float_array
     electric_data['barDirection'] = electric.surface._normals if electric.surface._normals is not None else empty_float_array
 
+    annotations = electric.annotations
     electric_data['annotations'] = {}
-    electric_data['annotations']['woi'] = electric.annotations._window_of_interest_indices
-    electric_data['annotations']['referenceAnnot'] = electric.annotations._reference_activation_time_indices
-    electric_data['annotations']['mapAnnot'] = electric.annotations._local_activation_time_indices
+    electric_data['annotations']['woi'] = annotations._window_of_interest_indices if annotations._window_of_interest_indices is not None else empty_int_array
+    electric_data['annotations']['referenceAnnot'] = annotations._reference_activation_time_indices if annotations._reference_activation_time_indices is not None else empty_int_array
+    electric_data['annotations']['mapAnnot'] = annotations._local_activation_time_indices if annotations._local_activation_time_indices is not None else empty_int_array
 
     electric_data['voltages'] = {}
     electric_data['voltages']['bipolar'] = electric.bipolar_egm._voltage if electric.bipolar_egm._voltage is not None else empty_float_array

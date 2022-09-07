@@ -27,9 +27,9 @@ This module contains functions to convert OpenEP datasets to/from PyVista PolyDa
 import numpy as np
 import pyvista
 
-from ..data_structures.surface import empty_fields
-from ..data_structures.electric import empty_electric
-from ..data_structures.ablation import empty_ablation
+from ..data_structures.surface import Fields
+from ..data_structures.electric import Electric
+from ..data_structures.ablation import Ablation
 from ..data_structures.case import Case
 
 __all__ = ["to_pyvista", "from_pyvista"]
@@ -38,7 +38,6 @@ __all__ = ["to_pyvista", "from_pyvista"]
 def from_pyvista(
     mesh: pyvista.PolyData,
     name: str = None,
-    fill_fields: bool = False,
     scale_points: float = 1,
 ) -> Case:
     """Convert a pyvista mesh to an OpenEP dataset.
@@ -46,8 +45,6 @@ def from_pyvista(
     Args:
         mesh (pyvista.PolyData): Mesh to convert.
         name (str, optional): Name of the dataset. If None, will be set to the memory address of the case object.
-        fill_fields (bool, optional): If True, will create scalar fields filled with NaN values
-            (one value per point). Default is False.
         scale_points (float, optional): Scale the point positions by this number. Useful to e.g. scale
             the units to be in mm rather than micrometre. Default is 1.
 
@@ -59,16 +56,18 @@ def from_pyvista(
     All other attributes of the Case object will be empty numpy arrays.
 
     """
-    points = mesh.points * scale_points
-    indices = mesh.faces.reshape(mesh.n_faces, 4)[:, 1:]
 
-    size = mesh.n_points if fill_fields else 0
-    fields = empty_fields(size)
-    electric = empty_electric()
-    ablation = empty_ablation()
-    notes = np.asarray([])
+    case = Case(
+        name=name,
+        points=mesh.points * scale_points,
+        indices=np.array(mesh.faces).reshape(mesh.n_cells, 4)[:, 1:],
+        fields=Fields.from_pyvista(mesh),
+        electric = Electric(),
+        ablation = Ablation(),
+        notes = np.asarray([], dtype=object),
+    )
 
-    return Case(name, points, indices, fields, electric, ablation, notes)
+    return case
 
 
 def to_pyvista(
