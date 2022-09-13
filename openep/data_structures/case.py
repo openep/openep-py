@@ -183,6 +183,37 @@ class Case:
         if self.electric.surface._nearest_point is not None:
             self.electric.surface._nearest_point += translate_by
 
+    def transform(self, transform_matrix):
+        """Apply a transformation to all coordinates.
+
+        This will modify the 3D coordinates of:
+        * case.points
+        * case.electric.bipolar_egm.points
+        * case.electric.unipolar_egm.points
+        * case.electric.surface.nearest_point
+        * case.electric.landmark_points.points
+
+        Args:
+            transform_matrix (np.ndarray): 4x4 transformation matrix
+        """
+
+        rotation_matrix = transform_matrix[:3, :3]
+        translation_vector = transform_matrix[:3, 3]
+
+        self.points[:] = np.dot(self.points, rotation_matrix.T) + translation_vector
+        if self.electric.bipolar_egm._points is not None:
+            self.electric.bipolar_egm._points[:] = np.dot(self.electric.bipolar_egm._points, rotation_matrix.T) + translation_vector
+        elif self.electric.landmark_points._points is not None:
+            self.electric.landmark_points._points[:] = np.dot(self.electric.landmark_points._points, rotation_matrix.T) + translation_vector
+        if self.electric.unipolar_egm._points is not None:
+            proximal_points, distal_points = self.electric.unipolar_egm._points.T
+            self.electric.unipolar_egm._points[:, :, 0] = np.dot(proximal_points.T, rotation_matrix.T) + translation_vector
+            self.electric.unipolar_egm._points[:, :, 1] = np.dot(distal_points.T, rotation_matrix.T) + translation_vector
+        if self.electric.surface._nearest_point is not None:
+            self.electric.surface._nearest_point[:] = np.dot(self.electric.surface._nearest_point, rotation_matrix.T) + translation_vector
+        if self.electric.surface._normals is not None:
+            self.electric.surface._normals[:] = np.dot(self.electric.surface._normals, rotation_matrix.T)
+
     def add_landmark(
         self,
         name: str,
