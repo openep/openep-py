@@ -7,8 +7,7 @@ dependencies:
   - ipywidgets=7.6.5
   - ipygany=0.5
   - jupyter_core=4.9.1
-  - matplotlib=3.5.1
-  
+  - matploblib=3.5.1  
   - pip:
-    - git+https://github.com/openep/openep-py@docs
+    - git+https://github.com/openep/openep-py@dev
 
