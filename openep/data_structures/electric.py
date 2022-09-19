@@ -737,6 +737,15 @@ class Electric:
 
         return electric
 
+def _decode_string_arrays(arr):
+    """
+    Convert empty arrays into empty strings. Leave strings unchanged.
+
+    An empty array corresponds to there being no tag for that point.
+    """
+
+    return np.asarray([item if isinstance(item, str) else item.tobytes().decode('utf-16') for item in arr])
+
 
 def extract_electric_data(electric_data):
     """Extract electric data from a dictionary.
@@ -773,6 +782,9 @@ def extract_electric_data(electric_data):
     # Older versions of OpenEP datasets did not have unipolar data or electrode names. Add deafult ones here.
     if 'electrodeNames_bip' not in electric_data:
         electric_data['electrodeNames_bip'] = np.full_like(internal_names, fill_value="", dtype=str)
+    electric_data['electrodeNames_bip'] = _decode_string_arrays(electric_data['electrodeNames_bip'])
+    electric_data['electrodeNames_bip'] =  electric_data['electrodeNames_bip'].astype(str)
+
     if 'egmUni' not in electric_data:
         electric_data['egmUni'] =  np.array([])
         electric_data['egmUniX'] = np.array([])
@@ -784,7 +796,9 @@ def extract_electric_data(electric_data):
         electric_data['voltages']['unipolar'] = electric_data['voltages']['unipolar'].astype(float)
     if 'electrodeNames_uni' not in electric_data:
             electric_data['electrodeNames_uni'] = np.full((len(electric_data['egmUni']), 2), fill_value="", dtype=str)
-    electric_data['electrodeNames_uni'] = electric_data['electrodeNames_uni'].astype(str)
+    electric_data['electrodeNames_uni'][:, 0] = _decode_string_arrays(electric_data['electrodeNames_uni'][:, 0])
+    electric_data['electrodeNames_uni'][:, 1] = _decode_string_arrays(electric_data['electrodeNames_uni'][:, 1])
+    electric_data['electrodeNames_uni'] =  electric_data['electrodeNames_uni'].astype(str)
 
     # Make ecgs correct shape
     ecg_dims = electric_data['ecg'].ndim
