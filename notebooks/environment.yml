@@ -1,0 +1,14 @@
+name: openep-tutorials
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9.7
+  - pip=21.3.1
+  - ipywidgets=7.6.5
+  - ipygany=0.5
+  - jupyter_core=4.9.1
+  - matploblib=3.5.1
+  
+  - pip:
+    - git+https://github.com/openep/openep-py@dev
+
