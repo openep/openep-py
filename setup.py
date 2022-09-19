@@ -1,4 +1,5 @@
 import os
+import glob
 from setuptools import setup, find_packages
 from pkg_resources import parse_requirements
 
@@ -20,6 +21,7 @@ setup(
     author="Steven Williams",
     author_email="steven.williams@ed.ac.uk",
     packages=find_packages(),
+    py_modules=[os.path.splitext(os.path.basename(path))[0] for path in glob.glob('openep/*.py')],
     install_requires=requirements,
     url='https://github.com/openep/openep-gui',
     project_urls={
@@ -27,4 +29,8 @@ setup(
         'Issue Tracker': 'https://github.com/openep/openep-py/issues',
     },
     python_requires='>=3.8',
+    include_package_data=True,
+    package_data={
+        'openep/_datasets/OpenEP-MATLAB': ['_datasets/OpenEP-MATLAB/*.mat']
+    }
 )
