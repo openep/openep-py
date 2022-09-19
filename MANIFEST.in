@@ -1,0 +1,22 @@
+graft docs
+graft openep
+graft tests
+graft notebooks
+graft .github
+
+prune docs/_build/**/*
+
+include .coveragerc
+include .readthedocs.yaml
+
+include LICENSE
+include README.rst
+include requirements.txt
+
+include openep/_datasets/**/*.mat
+
+global-exclude *.py[cod] __pycache__/* *.so *.dylib
+global-exclude tags
+global-exclude *.swp
+global-exclude .openep.* *.debug
+global-exclude examples/**/*
