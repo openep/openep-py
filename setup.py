@@ -22,4 +22,9 @@ setup(
     packages=find_packages(),
     install_requires=requirements,
     url='https://github.com/openep/openep-gui',
+    project_urls={
+        'Documentation': 'https://openep-py.readthedocs.io/en/latest/',
+        'Issue Tracker': 'https://github.com/openep/openep-py/issues',
+    },
+    python_requires='>=3.8',
 )
