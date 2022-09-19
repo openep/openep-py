@@ -21,4 +21,5 @@ setup(
     author_email="steven.williams@ed.ac.uk",
     packages=find_packages(),
     install_requires=requirements,
+    url='https://github.com/openep/openep-gui',
 )
