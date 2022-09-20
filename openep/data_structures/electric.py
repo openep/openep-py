@@ -796,8 +796,9 @@ def extract_electric_data(electric_data):
         electric_data['voltages']['unipolar'] = electric_data['voltages']['unipolar'].astype(float)
     if 'electrodeNames_uni' not in electric_data:
             electric_data['electrodeNames_uni'] = np.full((len(electric_data['egmUni']), 2), fill_value="", dtype=str)
-    electric_data['electrodeNames_uni'][:, 0] = _decode_string_arrays(electric_data['electrodeNames_uni'][:, 0])
-    electric_data['electrodeNames_uni'][:, 1] = _decode_string_arrays(electric_data['electrodeNames_uni'][:, 1])
+    if electric_data['electrodeNames_uni'].ndim == 2:
+        electric_data['electrodeNames_uni'][:, 0] = _decode_string_arrays(electric_data['electrodeNames_uni'][:, 0])
+        electric_data['electrodeNames_uni'][:, 1] = _decode_string_arrays(electric_data['electrodeNames_uni'][:, 1])
     electric_data['electrodeNames_uni'] =  electric_data['electrodeNames_uni'].astype(str)
 
     # Make ecgs correct shape
