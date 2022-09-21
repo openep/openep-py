@@ -799,7 +799,7 @@ def extract_electric_data(electric_data):
     if electric_data['electrodeNames_uni'].ndim == 2:
         electric_data['electrodeNames_uni'][:, 0] = _decode_string_arrays(electric_data['electrodeNames_uni'][:, 0])
         electric_data['electrodeNames_uni'][:, 1] = _decode_string_arrays(electric_data['electrodeNames_uni'][:, 1])
-    electric_data['electrodeNames_uni'] =  electric_data['electrodeNames_uni'].astype(str)
+    electric_data['electrodeNames_uni'] = electric_data['electrodeNames_uni'].astype(str)
 
     # Make ecgs correct shape
     ecg_dims = electric_data['ecg'].ndim
