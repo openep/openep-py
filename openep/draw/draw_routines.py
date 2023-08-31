@@ -96,6 +96,7 @@ def draw_free_boundaries(
             color=colours[boundary_index],
             width=width,
             name=names[boundary_index],
+            connected=True,
         )
 
     return plotter
