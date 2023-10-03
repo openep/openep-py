@@ -60,10 +60,10 @@ def run_cv (openep_file_name,cv_method, visualsiation):
 
 if __name__=="__main__":
     file_path = '/Users/aligharaviri/Downloads/LAWT_CartoAF_ EP_Studies/'
-    file_name = '517_cv_cv.mat'
+    file_name = '521.mat'
     openep_file_name = f"{file_path}{file_name}"
     out_put_file_name = f"{file_name[:-4]}_cv.mat"
-    method = "RBF" ######## methods are Plane, RBF, and Tri
+    method = "Plane" ######## methods are Plane, RBF, and Tri
     visulaisation = True
     case = run_cv (openep_file_name,method, visulaisation)
     openep.export_openep_mat(case,out_put_file_name)
