@@ -50,6 +50,8 @@ def run_cv (openep_file_name,cv_method, visualsiation):
         cv = cv_tri
     ######## Save the CV data as openep #######
     case.fields['conduction_velocity'] = cv
+    case.fields['mesh_normals'] = mesh_original.point_normals
+    
     return case
     
 
@@ -60,7 +62,7 @@ def run_cv (openep_file_name,cv_method, visualsiation):
 
 if __name__=="__main__":
     file_path = '/Users/aligharaviri/Downloads/LAWT_CartoAF_ EP_Studies/'
-    file_name = '521.mat'
+    file_name = '521_cv_cv.mat'
     openep_file_name = f"{file_path}{file_name}"
     out_put_file_name = f"{file_name[:-4]}_cv.mat"
     method = "Plane" ######## methods are Plane, RBF, and Tri

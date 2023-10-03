@@ -301,7 +301,7 @@ def _extract_surface_data(
     surface_data['transverse'] = fields.transverse_fibres if fields.transverse_fibres is not None else empty_float_array
     surface_data['pacing_site'] = fields.pacing_site if fields.pacing_site is not None else empty_int_array
     surface_data['conduction_velocity'] = fields.conduction_velocity if fields.conduction_velocity is not None else empty_int_array
-    
+    surface_data['mesh_normals'] = fields.mesh_normals if fields.mesh_normals is not None else empty_int_array
 
     # Remove arrays that are full of NaNs
     for field_name, field in surface_data.items():
