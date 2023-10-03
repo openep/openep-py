@@ -85,9 +85,9 @@ class CV:
                 alpha = np.arctan((tOB * OA - tOA * OB * np.cos(theta)) / (tOA * OB * np.sin(theta)))
                 cv_temp = (OA/tOA) * np.cos(alpha)
                 cv.append(cv_temp)
-                cv_centers_x.append(O[0][0])
-                cv_centers_y.append(O[0][1])
-                cv_centers_z.append(O[0][2])
+                cv_centers_x.append((O[0][0] + A[0][0] + B[0][0])/3)
+                cv_centers_y.append((O[0][1] + A[0][1] + B[0][1])/3)
+                cv_centers_z.append((O[0][2] + A[0][2] + B[0][2])/3)
                 cv_centers_id.append(vtx_id[id_lat_sorted[0]])
                 #if cv_temp >= 0.2 and cv_temp <=2:
                 #    cv.append(cv_temp)
@@ -95,13 +95,17 @@ class CV:
                 #    cv_centers_y.append(O[0][1])
                 #    cv_centers_z.append(O[0][2])
                 #    cv_centers_id.append(vtx_id[id_lat_sorted[0]])
-            #else:
+            else:
             #    cv_temp = (OA/tOA) * np.cos(alpha)
             #    cv_centers_x.append(O[0][0])
             #    cv_centers_y.append(O[0][1])
             #    cv_centers_z.append(O[0][2])
             #    cv_centers_id.append(vtx_id[id_lat_sorted[0]])
-            #    cv.append(cv_temp)
+                cv.append(np.nan)
+                cv_centers_x.append((O[0][0] + A[0][0] + B[0][0])/3)
+                cv_centers_y.append((O[0][1] + A[0][1] + B[0][1])/3)
+                cv_centers_z.append((O[0][2] + A[0][2] + B[0][2])/3)
+                cv_centers_id.append(vtx_id[id_lat_sorted[0]])
             ####### Create a triangulation mesh from egmX pointcloud #####
         cv_centers = [cv_centers_x, cv_centers_y, cv_centers_z]
         print('---> CV calculation ended')
