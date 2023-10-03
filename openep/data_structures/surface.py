@@ -51,6 +51,7 @@ class Fields:
     longitudinal_fibres: np.ndarray = None
     transverse_fibres: np.ndarray = None
     pacing_site: np.ndarray = None
+    conduction_velocity: np.ndarray = None
 
     def __repr__(self):
         return f"fields: {tuple(self.__dict__.keys())}"
@@ -190,6 +191,11 @@ def extract_surface_data(surface_data):
 
     if isinstance(pacing_site, np.ndarray) and pacing_site.size == 0:
         pacing_site = None
+    
+    try:
+        conduction_velocity = surface_data['conduction_velocity'].astype(float)
+    except KeyError as e:
+        conduction_velocity = None
 
     fields = Fields(
         bipolar_voltage=bipolar_voltage,
@@ -202,6 +208,7 @@ def extract_surface_data(surface_data):
         longitudinal_fibres=longitudinal_fibres,
         transverse_fibres=transverse_fibres,
         pacing_site=pacing_site,
+        conduction_velocity = conduction_velocity,
     )
 
     return points, indices, fields
@@ -237,6 +244,7 @@ def empty_fields(n_points=0, n_cells=0):
         longitudinal_fibres,
         transverse_fibres,
         pacing_site,
+        conudction_vlocity,
     )
 
     return fields
