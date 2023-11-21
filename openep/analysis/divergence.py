@@ -1,5 +1,4 @@
 import openep
-from openep.analysis.run import run_cv
 import sys
 import os
 import math

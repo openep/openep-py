@@ -1,5 +1,4 @@
 import openep
-from openep.analysis.run import run_cv
 import sys
 import os
 import math
@@ -76,14 +75,6 @@ class ConductionVelocity():
         LAT_clean = np.delete(LAT, np.where(LAT == -10000))
 
         return egmX_clean, LAT_clean
-
-    def method_trial(self, method):
-        filename = r'C:\Users\VINUS\Documents\45_OPEN_EP\openep-py\openep-py\openep\_datasets\OpenEP-MATLAB\openep_dataset_2.mat'
-        case, x_mesh, cv = run_cv(openep_file_name=filename,
-                                  cv_method=method,
-                                  visualisation=True)
-        return x_mesh.point_data.active_scalars
-
 
     def calculate_with_triangualtion(self, method_kws=dict()):
 
