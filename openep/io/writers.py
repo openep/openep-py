@@ -198,7 +198,8 @@ def export_openep_mat(
     userdata['electric'] = _extract_electric_data(electric=case.electric)
     userdata['electric'] = _add_electric_signal_props(
         electric_data=userdata['electric'],
-        conduction_velocity=case.analyse.conduction_velocity
+        conduction_velocity=case.analyse.conduction_velocity,
+        divergence=case.analyse.divergence
     )
 
     userdata['rf'] = _export_ablation_data(ablation=case.ablation)
@@ -218,6 +219,7 @@ def _add_surface_maps(surface_data, **kwargs):
         surface_data['signalMaps'] = {}
 
     # TODO: connect propSetting from user setting
+    # TODO: handle with None values as matlab cannot handle
     if cv_field is not None:
         surface_data['signalMaps']['conduction_velocity_field'] = {
             'name' : 'Conduction Velocity Field',
@@ -236,6 +238,7 @@ def _add_surface_maps(surface_data, **kwargs):
 
 def _add_electric_signal_props(electric_data, **kwargs):
     conduction_velocity = kwargs.get('conduction_velocity')
+    divergence = kwargs.get('divergence')
 
     if not electric_data.get('annotations'):
         electric_data['annotations'] = {}
@@ -255,6 +258,14 @@ def _add_electric_signal_props(electric_data, **kwargs):
             'name' : 'Conduction Velocity Coordinates',
             'value': conduction_velocity.points,
         }
+
+    if divergence:
+        #TODO: connect propSetting from user setting
+        signal_props['divergence'] = {
+            'name' : 'Divergence Values',
+            'value': divergence.values,
+        }
+
     return electric_data
 
 def export_vtk(

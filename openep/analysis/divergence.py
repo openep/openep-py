@@ -20,12 +20,6 @@ from ..case.case_routines import (
     interpolate_activation_time_onto_surface
 )
 
-_AVAILABLE_CV_METHODS = {
-    "triangulation",
-    "plane_fitting",
-    "rbf",
-}
-
 class Divergence():
 
 
@@ -34,7 +28,7 @@ class Divergence():
         self.include = None,
         self.direction = None,
         self.mesh_original = None,
-        self.div_value = None
+        self.values = None
         self.divergence_per_point=None
 
     def calculate(
@@ -128,4 +122,4 @@ class Divergence():
         self.case.fields.divergence = div_value
         self.divergence_per_point=divergence_per_point
 
-        self.direction, self.mesh_original, self.div_value = direction, mesh_original, div_value
+        self.direction, self.mesh_original, self.values = direction, mesh_original, div_value
