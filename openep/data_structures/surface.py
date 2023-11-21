@@ -52,6 +52,7 @@ class Fields:
     transverse_fibres: np.ndarray = None
     pacing_site: np.ndarray = None
     conduction_velocity: np.ndarray = None
+    divergence: np.ndarray = None
     mesh_normals : np.ndarray = None
 
     def __repr__(self):
@@ -251,7 +252,7 @@ def empty_fields(n_points=0, n_cells=0):
         longitudinal_fibres,
         transverse_fibres,
         pacing_site,
-        conudction_vlocity,
+        conduction_velocity,
         mesh_normals,
     )
 
