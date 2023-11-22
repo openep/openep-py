@@ -25,16 +25,17 @@ class Divergence():
 
     def __init__(self, case):
         self.case = case #.copy() change to copy later
-        self.include = None,
-        self.direction = None,
-        self.mesh_original = None,
+        self.include = None
+        self.direction = None
+        self.mesh_original = None
         self.values = None
         self.divergence_per_point=None
 
     def calculate(
             self,
             output_binary_field=False,
-            method_kws=dict()
+            method_kws=dict(),
+            include=None,
     ):
         """Calculate conduction velocity and interpolates each point on a mesh,
             stores in conduction_velocity fields.
@@ -45,6 +46,8 @@ class Divergence():
                 - 'plane_fitting'
                 - 'rbf'
         """
+        if include is not None:
+            self.include=include
 
         out = self.calculate_divergence(method_kws)
 
@@ -56,8 +59,15 @@ class Divergence():
             focal_threshold = method_kws.get("collision_threshold", 1)
 
         surface = self.case.create_mesh()
-        egmX=self.case.electric.bipolar_egm.points
-        LAT=self.case.electric.annotations.local_activation_time - self.case.electric.annotations.reference_activation_time
+
+        if self.include is None:
+            egmX = self.case.electric.bipolar_egm.points
+            LAT = self.case.electric.annotations.local_activation_time - self.case.electric.annotations.reference_activation_time
+        else:
+            egmX=self.case.electric.bipolar_egm.points[self.include]
+            LAT=self.case.electric.annotations.local_activation_time[self.include] - self.case.electric.annotations.reference_activation_time[self.include]
+        print("len_div:", len(egmX))
+
         points=surface.points
         face=surface.faces
 

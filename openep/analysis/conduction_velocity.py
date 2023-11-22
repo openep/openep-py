@@ -24,15 +24,16 @@ class ConductionVelocity():
 
     def __init__(self, case):
         self.case = case
-        self.prep_egmX, self.prep_LAT = self._preprocess_data()
         self.include = None
         self.values = None
         self.points = None
+        self.prep_egmX, self.prep_LAT = self._preprocess_data()
 
     def calculate(
             self,
             method='triangulation',
-            method_kws=dict()
+            method_kws=dict(),
+            include=None
         ):
 
         """Calculate conduction velocity and interpolates each point on a mesh,
@@ -44,6 +45,10 @@ class ConductionVelocity():
                 - 'plane_fitting'
                 - 'rbf'
         """
+        if include is not None:
+            self.include=include
+            self.prep_egmX, self.prep_LAT = self._preprocess_data()
+
         NAME_TO_FUNC = {
             "triangulation": self.calculate_with_triangualtion,
             "plane_fitting": self.calculate_with_plane_fitting,
@@ -65,9 +70,18 @@ class ConductionVelocity():
         return out
 
     def _preprocess_data(self):
-        egmX = self.case.electric.bipolar_egm.points
-        voltage = self.case.electric.bipolar_egm.voltage
-        LAT = self.case.electric.annotations.local_activation_time - self.case.electric.annotations.reference_activation_time
+        if self.include is None:
+            egmX = self.case.electric.bipolar_egm.points
+            #TODO: voltage is not even used!
+            voltage = self.case.electric.bipolar_egm.voltage
+            LAT = self.case.electric.annotations.local_activation_time - self.case.electric.annotations.reference_activation_time
+        else:
+            egmX = self.case.electric.bipolar_egm.points[self.include]
+            voltage = self.case.electric.bipolar_egm.voltage[self.include]
+            LAT = self.case.electric.annotations.local_activation_time[self.include] - self.case.electric.annotations.reference_activation_time[self.include]
+
+
+        print('len_cv:', len(egmX))
         surface = self.case.create_mesh()
 
         valid_id, invalid_id = np.where(LAT != -10000), np.where(LAT == -10000)
