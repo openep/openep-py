@@ -53,7 +53,6 @@ class Fields:
     pacing_site: np.ndarray = None
     conduction_velocity: np.ndarray = None
     cv_divergence: np.ndarray = None
-    mesh_normals : np.ndarray = None
 
     def __repr__(self):
         return f"fields: {tuple(self.__dict__.keys())}"
@@ -204,11 +203,6 @@ def extract_surface_data(surface_data):
     except KeyError as e:
         cv_divergence = None
 
-    try:
-        mesh_normals = surface_data['mesh_normals'].astype(float)
-    except KeyError as e:
-        mesh_normals = None
-
     fields = Fields(
         bipolar_voltage=bipolar_voltage,
         unipolar_voltage=unipolar_voltage,
@@ -222,7 +216,6 @@ def extract_surface_data(surface_data):
         pacing_site=pacing_site,
         conduction_velocity=conduction_velocity,
         cv_divergence=cv_divergence,
-        mesh_normals=mesh_normals
     )
 
     return points, indices, fields
