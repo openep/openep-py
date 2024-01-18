@@ -222,6 +222,6 @@ class Divergence:
         )
 
         if apply_scalar_field:
-            self._case.fields.divergence = self.values
+            self._case.fields.cv_divergence = self.values
 
         return self.direction, self.values

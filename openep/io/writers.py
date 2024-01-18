@@ -192,7 +192,7 @@ def export_openep_mat(
     userdata['surface'] = _add_surface_maps(
         surface_data=userdata['surface'],
         cv_field=case.fields.conduction_velocity,
-        divergence_field=case.fields.divergence
+        divergence_field=case.fields.cv_divergence
     )
 
     userdata['electric'] = _extract_electric_data(electric=case.electric)

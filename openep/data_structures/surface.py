@@ -52,7 +52,7 @@ class Fields:
     transverse_fibres: np.ndarray = None
     pacing_site: np.ndarray = None
     conduction_velocity: np.ndarray = None
-    divergence: np.ndarray = None
+    cv_divergence: np.ndarray = None
     mesh_normals : np.ndarray = None
 
     def __repr__(self):
@@ -215,8 +215,9 @@ def extract_surface_data(surface_data):
         longitudinal_fibres=longitudinal_fibres,
         transverse_fibres=transverse_fibres,
         pacing_site=pacing_site,
-        conduction_velocity = conduction_velocity,
-        mesh_normals = mesh_normals
+        conduction_velocity=conduction_velocity,
+        cv_divergence=cv_divergence,
+        mesh_normals=mesh_normals
     )
 
     return points, indices, fields
