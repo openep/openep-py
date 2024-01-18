@@ -195,10 +195,15 @@ def extract_surface_data(surface_data):
         pacing_site = None
     
     try:
-        conduction_velocity = surface_data['conduction_velocity'].astype(float)
+        conduction_velocity = surface_data['signalMaps']['conduction_velocity_field']['value'].astype(float)
     except KeyError as e:
         conduction_velocity = None
-        
+
+    try:
+        cv_divergence = surface_data['signalMaps']['divergence_field']['value'].astype(float)
+    except KeyError as e:
+        cv_divergence = None
+
     try:
         mesh_normals = surface_data['mesh_normals'].astype(float)
     except KeyError as e:
@@ -253,8 +258,6 @@ def empty_fields(n_points=0, n_cells=0):
         longitudinal_fibres,
         transverse_fibres,
         pacing_site,
-        conduction_velocity,
-        mesh_normals,
     )
 
     return fields

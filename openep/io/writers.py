@@ -211,6 +211,7 @@ def export_openep_mat(
         oned_as='column',
     )
 
+
 def _add_surface_maps(surface_data, **kwargs):
     cv_field = kwargs.get('cv_field')
     div_field = kwargs.get('divergence_field')
@@ -218,23 +219,23 @@ def _add_surface_maps(surface_data, **kwargs):
     if not surface_data.get('signalMaps'):
         surface_data['signalMaps'] = {}
 
-    # TODO: connect propSetting from user setting
-    # TODO: handle with None values as matlab cannot handle
+    # TODO: connect propSetting from user setting in UI
     if cv_field is not None:
         surface_data['signalMaps']['conduction_velocity_field'] = {
-            'name' : 'Conduction Velocity Field',
+            'name': 'Conduction Velocity Field',
             'value': cv_field,
-            # 'propSettings':None,
+            'propSettings': {},
         }
 
     if div_field is not None:
         surface_data['signalMaps']['divergence_field'] = {
-            'name' : 'Divergence Field',
+            'name': 'Divergence Field',
             'value': div_field,
-            # 'propSettings':None,
+            'propSettings': {},
         }
 
     return surface_data
+
 
 def _add_electric_signal_props(electric_data, **kwargs):
     conduction_velocity = kwargs.get('conduction_velocity')
@@ -249,7 +250,6 @@ def _add_electric_signal_props(electric_data, **kwargs):
     signal_props = electric_data['annotations']['signalProps']
 
     if conduction_velocity:
-        #TODO: connect propSetting from user setting
         signal_props['conduction_velocity'] = {
             'name' : 'Conduction Velocity Values',
             'value': conduction_velocity.values,
@@ -260,13 +260,13 @@ def _add_electric_signal_props(electric_data, **kwargs):
         }
 
     if divergence:
-        #TODO: connect propSetting from user setting
         signal_props['divergence'] = {
             'name' : 'Divergence Values',
             'value': divergence.values,
         }
 
     return electric_data
+
 
 def export_vtk(
     case: Case,
@@ -366,7 +366,6 @@ def _extract_surface_data(
     surface_data['longitudinal'] = fields.longitudinal_fibres if fields.longitudinal_fibres is not None else empty_float_array
     surface_data['transverse'] = fields.transverse_fibres if fields.transverse_fibres is not None else empty_float_array
     surface_data['pacing_site'] = fields.pacing_site if fields.pacing_site is not None else empty_int_array
-    surface_data['conduction_velocity'] = fields.conduction_velocity if fields.conduction_velocity is not None else empty_int_array
     surface_data['mesh_normals'] = fields.mesh_normals if fields.mesh_normals is not None else empty_int_array
 
     # Remove arrays that are full of NaNs
