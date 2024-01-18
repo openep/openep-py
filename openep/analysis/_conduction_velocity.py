@@ -294,8 +294,8 @@ def divergence(
         output_binary_field=False
 ):
 
-    case = case.copy()
-    original_mesh = case.create_mesh()
+    temp_mesh = case.create_mesh()
+    basic_mesh = pv.PolyData(temp_mesh.points, temp_mesh.faces)
 
     interpolated_scalar = interpolate_general_cloud_points_onto_surface(
         case=case,
@@ -303,15 +303,15 @@ def divergence(
         cloud_points=bipolar_egm_pts,
     )
 
-    original_mesh['LAT_scalar'] = interpolated_scalar
-    derivative = original_mesh.compute_derivative(scalars='LAT_scalar')
+    basic_mesh['LAT_scalar'] = interpolated_scalar
+    derivative = basic_mesh.compute_derivative(scalars='LAT_scalar')
 
     cv_direction = derivative['gradient'] / np.sum(derivative['gradient'] ** 2, axis=1)[:, np.newaxis]
     magnitude = np.sqrt(np.sum(cv_direction ** 2, axis=1))
     norm_cv_direction = cv_direction / magnitude[:, np.newaxis]
 
-    original_mesh['activation_direction'] = cv_direction
-    div = original_mesh.compute_derivative(scalars='activation_direction', divergence=True)
+    basic_mesh['activation_direction'] = cv_direction
+    div = basic_mesh.compute_derivative(scalars='activation_direction', divergence=True)
     divergence = div['divergence']
 
     if output_binary_field:
