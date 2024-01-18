@@ -64,14 +64,14 @@ class ConductionVelocity:
 
     @property
     def values(self):
-        if not self._values:
+        if self._values is None:
             raise ValueError('Before accessing ``conduction_velocity.values`` '
                              'run ``divergence.calculate_divergence()``')
         return self._values
 
     @property
     def points(self):
-        if not self._points:
+        if self._points is None:
             raise ValueError('Before accessing ``conduction_velocity.points`` '
                              'run ``divergence.calculate_divergence()``')
         return self._points
@@ -166,13 +166,13 @@ class Divergence:
 
     @property
     def values(self):
-        if not self._values:
+        if self._values is None:
             raise ValueError('Before accessing ``..divergence.values`` run ``..divergence.calculate_divergence()``')
         return self._values
 
     @property
     def direction(self):
-        if not self._direction:
+        if self._direction is None:
             raise ValueError('Before accessing ``divergence.direction`` run ``divergence.calculate_divergence()``')
         return self._direction
 
