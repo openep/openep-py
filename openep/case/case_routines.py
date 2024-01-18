@@ -453,6 +453,7 @@ class Interpolator:
     def __repr__(self):
         return f"Interpolator: method={self.method}, kws={self.method_kws}"
 
+
 def interpolate_general_cloud_points_onto_surface(
         case,
         cloud_values,
@@ -465,7 +466,9 @@ def interpolate_general_cloud_points_onto_surface(
     """Interpolate general point data onto the points of a mesh.
 
     Args:
-        case (openep.case.Case): case from which the conduction velocity will be interpolated
+        case (openep.case.Case): case from which the cloud values and points will be interpolated
+        cloud_values (ndarray): Array of values to be interpolated, corresponding to cloud_points.
+        cloud_points (ndarray): Array of points where cloud_values are defined.
         method (callable): method to use for interpolation. The default is
             scipy.interpolate.RBFInterpolator.
         method_kws (dict): dictionary of keyword arguments to pass to `method`
@@ -497,7 +500,7 @@ def interpolate_general_cloud_points_onto_surface(
 
     interpolated = interpolator(surface_points, max_distance=max_distance)
 
-    # Any points that are not part of the mesh faces should have CV set to NaN
+    # Any points that are not part of the mesh faces should have its value set to NaN
     n_surface_points = surface_points.shape[0]
     not_on_surface = ~np.in1d(np.arange(n_surface_points), case.indices)
     interpolated[not_on_surface] = np.NaN
