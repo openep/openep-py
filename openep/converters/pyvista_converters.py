@@ -94,6 +94,6 @@ def to_pyvista(
         mesh.point_data["Impedance"] = case.fields.impedance
         mesh.point_data["Force"] = case.fields.force
         mesh.point_data["Conduction Velocity"] = case.fields.conduction_velocity
-        mesh.point_data["Divergence"] = case.fields.divergence
+        mesh.point_data["Divergence"] = case.fields.cv_divergence
 
     return mesh
