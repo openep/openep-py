@@ -52,7 +52,7 @@ class ConductionVelocity:
     Attributes:
         _case (Case): Internal reference to the case data.
         values (np.ndarray): The calculated conduction velocity values.
-        points (np.ndarray): The points corresponding to the conduction velocity values.
+        centers (np.ndarray): The centers corresponding to the conduction velocity values.
 
     Parameters:
         case (Case): The case data from which conduction velocity is to be calculated.
@@ -60,7 +60,7 @@ class ConductionVelocity:
     def __init__(self, case):
         self._case = case
         self._values = None
-        self._points = None
+        self._centers = None
 
     @property
     def values(self):
@@ -70,11 +70,11 @@ class ConductionVelocity:
         return self._values
 
     @property
-    def points(self):
-        if self._points is None:
-            raise ValueError('Before accessing ``conduction_velocity.points`` '
+    def centers(self):
+        if self._centers is None:
+            raise ValueError('Before accessing ``conduction_velocity.centers`` '
                              'run ``divergence.calculate_divergence()``')
-        return self._points
+        return self._centers
 
     def calculate_cv(
             self,
@@ -109,14 +109,14 @@ class ConductionVelocity:
         Returns:
             tuple: A tuple containing two elements:
                    - values (np.ndarray): An array of calculated conduction velocity values.
-                   - points (np.ndarray): An array of points corresponding to the calculated values.
+                   - centers (np.ndarray): An array of centers corresponding to the calculated values.
 
         Raises:
             ValueError: If the specified method is not among the available options.
 
         Example:
             >> cv = ConductionVelocity(case)
-            >> values, points = cv.calculate(method='plane_fitting', apply_scalar_field=True)
+            >> values, centers = cv.calculate(method='plane_fitting', apply_scalar_field=True)
         """
 
         supported_cv_methods = {
@@ -132,16 +132,16 @@ class ConductionVelocity:
         lat, bipolar_egm_pts = preprocess_lat_egm(self._case, include)
 
         cv_method = supported_cv_methods[method]
-        self._values, self._points = cv_method(bipolar_egm_pts, lat, **kwargs)
+        self._values, self._centers = cv_method(bipolar_egm_pts, lat, **kwargs)
 
         if apply_scalar_field:
             self._case.fields.conduction_velocity = interpolate_general_cloud_points_onto_surface(
                 case=self._case,
                 cloud_values=self.values,
-                cloud_points=self.points,
+                cloud_points=self.centers,
             )
 
-        return self.values, self.points
+        return self.values, self.centers
 
 
 class Divergence:
