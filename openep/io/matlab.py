@@ -51,6 +51,7 @@ def _visit_mat_v73_(file_pointer):
         'userdata/electric/electrodeNames_uni',
         'userdata/electric/names',
         'userdata/electric/tags',
+        'userdata/electric/ecgNames'
     }
 
     strings_to_decode = {
