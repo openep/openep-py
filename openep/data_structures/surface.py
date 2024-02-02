@@ -145,7 +145,7 @@ def extract_surface_data(surface_data):
     elif surface_data['uni_imp_frc'].size == 2:
         unipolar_voltage, impedance = surface_data['uni_imp_frc'].T.astype(float)
         force = None
-        warnings.warn("force data was not detected in surface_data, force=None", UserWarning)
+        warnings.warn("Force data was not detected in surface_data, force=None", UserWarning)
     else:
         unipolar_voltage, impedance, force = surface_data['uni_imp_frc'].T.astype(float)
 
