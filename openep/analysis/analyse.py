@@ -81,8 +81,9 @@ class ConductionVelocity:
             method='triangulation',
             include=None,
             apply_scalar_field=True,
-            **kwargs
-        ):
+            interpolation_kws=None,
+            **method_kwargs
+    ):
         """
         Calculate the conduction velocity and interpolate points onto a mesh.
 
@@ -104,7 +105,12 @@ class ConductionVelocity:
             apply_scalar_field (bool, optional): If True, applies the calculated conduction velocity
                                                  values as a scalar field on the case object's mesh.
                                                  Defaults to True.
-            **kwargs: Additional keyword arguments specific to the chosen calculation method.
+
+            interpolation_kws (dict, optional): Keyword arguments for interpolation function.
+                                    > interpolate_general_cloud_points_onto_surface(**interpolation_kws)
+                                    Defaults to None.
+
+            **method_kwargs: Additional keyword arguments specific to the chosen calculation method.
 
         Returns:
             tuple: A tuple containing two elements:
@@ -128,17 +134,19 @@ class ConductionVelocity:
         if method.lower() not in supported_cv_methods:
             raise ValueError(f"`method` must be one of {supported_cv_methods.keys()}.")
 
+        interpolation_kws = dict() if interpolation_kws is None else interpolation_kws
         include = self._case.electric.include.astype(bool) if include is None else include
         lat, bipolar_egm_pts = preprocess_lat_egm(self._case, include)
 
         cv_method = supported_cv_methods[method]
-        self._values, self._centers = cv_method(bipolar_egm_pts, lat, **kwargs)
+        self._values, self._centers = cv_method(bipolar_egm_pts, lat, **method_kwargs)
 
         if apply_scalar_field:
             self._case.fields.conduction_velocity = interpolate_general_cloud_points_onto_surface(
                 case=self._case,
                 cloud_values=self.values,
                 cloud_points=self.centers,
+                **interpolation_kws
             )
 
         return self.values, self.centers
@@ -180,7 +188,8 @@ class Divergence:
         self,
         include=None,
         output_binary_field=False,
-        apply_scalar_field=True
+        apply_scalar_field=True,
+        interpolation_kws=None,
     ):
         """
         Calculate the divergence of conduction velocity and optionally apply the result as a scalar field.
@@ -198,6 +207,10 @@ class Divergence:
                                                  'output_binary_field' is True) are applied as a scalar field to
                                                  the case object.
                                                  Defaults to True.
+
+            interpolation_kws (dict, optional): Keyword arguments for interpolation function.
+                                    > interpolate_general_cloud_points_onto_surface(**interpolation_kws)
+                                    Defaults to None.
 
         Returns:
             tuple of (np.ndarray, np.ndarray): A tuple containing the divergence direction and divergence values.
@@ -218,7 +231,8 @@ class Divergence:
             case=self._case,
             bipolar_egm_pts=bipolar_egm_pts,
             local_activation_time=lat,
-            output_binary_field=output_binary_field
+            output_binary_field=output_binary_field,
+            interpolation_kws=interpolation_kws,
         )
 
         if apply_scalar_field:

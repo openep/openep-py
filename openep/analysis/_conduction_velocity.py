@@ -160,10 +160,10 @@ def triangulation(
     Perform triangulation on electrogram data to calculate conduction velocities.
 
     Args:
-        bipolar_egm_pts (array-like):
+        bipolar_egm_pts (array):
             Array of bipolar electrogram points of size Nx3
 
-        local_activation_time (array-like):
+        local_activation_time (array):
             Local activation times corresponding to bipolar_egm_pts.
 
         min_theta (float):
@@ -291,16 +291,54 @@ def divergence(
         local_activation_time,
         collision_threshold=-1,
         focal_threshold=1,
-        output_binary_field=False
+        output_binary_field=False,
+        interpolation_kws=None,
 ):
+    """
+    Calculate divergence of the conduction velocity (CV) field to identify regions of collision and
+    focal activation within cardiac tissue based on local activation times (LATs) and electrogram points.
+
+    Args:
+        case (Case): The case object containing cardiac geometry and electrogram data.
+
+        bipolar_egm_pts (np.ndarray): An array of coordinates for bipolar electrogram points.
+
+        local_activation_time (np.ndarray): An array of local activation times corresponding to
+                                            bipolar electrogram points.
+
+        collision_threshold (float, optional): Divergence value below which regions are considered
+                                               as collision fronts. Defaults to -1.
+
+        focal_threshold (float, optional): Divergence value above which regions are considered as
+                                           focal activation fronts. Defaults to 1.
+
+        output_binary_field (bool, optional): If True, the output divergence field is binary, with 1
+                                              indicating regions meeting the collision or focal threshold,
+                                              and 0 otherwise. If False, the continuous divergence field
+                                              is returned. Defaults to False.
+
+        interpolation_kws (dict, optional): Keyword arguments for interpolation function.
+                                            > interpolate_general_cloud_points_onto_surface(**interpolation_kws)
+                                            Defaults to None.
+
+    Returns:
+        tuple: A tuple containing two elements:
+               - norm_cv_direction (np.ndarray): The normalized direction of conduction velocity
+                 across the cardiac tissue surface.
+               - divergence (np.ndarray): The divergence of the activation direction field. This
+                 can either be a continuous field or a binary field indicating focal and collision
+                 regions based on the 'output_binary_field' parameter.
+    """
 
     temp_mesh = case.create_mesh()
     basic_mesh = pv.PolyData(temp_mesh.points, temp_mesh.faces)
+    interpolation_kws = dict() if interpolation_kws is None else interpolation_kws
 
     interpolated_scalar = interpolate_general_cloud_points_onto_surface(
         case=case,
         cloud_values=local_activation_time,
         cloud_points=bipolar_egm_pts,
+        **interpolation_kws
     )
 
     basic_mesh['LAT_scalar'] = interpolated_scalar
