@@ -195,11 +195,13 @@ def export_openep_mat(
     )
 
     userdata['electric'] = _extract_electric_data(electric=case.electric)
-    userdata['electric'] = _add_electric_signal_props(
-        electric_data=userdata['electric'],
-        conduction_velocity=case.analyse.conduction_velocity,
-        divergence=case.analyse.divergence
-    )
+
+    if case.analyse.conduction_velocity.values is not None:
+        userdata['electric'] = _add_electric_signal_props(
+            electric_data=userdata['electric'],
+            conduction_velocity=case.analyse.conduction_velocity,
+            divergence=case.analyse.divergence
+        )
 
     userdata['rf'] = _export_ablation_data(ablation=case.ablation)
     scipy.io.savemat(
@@ -255,7 +257,7 @@ def _add_electric_signal_props(electric_data, **kwargs):
         }
         signal_props['cvX'] = {
             'name' : 'Conduction Velocity Coordinates',
-            'value': conduction_velocity.points,
+            'value': conduction_velocity.centers,
         }
 
     if divergence:
