@@ -172,7 +172,6 @@ def export_openCARP(
 def export_openep_mat(
     case: Case,
     filename: str,
-    separate_regions: bool = False,
 ):
     """Export data in OpenEP format.
 
@@ -189,8 +188,18 @@ def export_openep_mat(
         indices=case.indices,
         fields=case.fields,
     )
+    userdata['surface'] = _add_surface_maps(
+        surface_data=userdata['surface'],
+        cv_field=case.fields.conduction_velocity,
+        divergence_field=case.fields.cv_divergence
+    )
 
     userdata['electric'] = _extract_electric_data(electric=case.electric)
+    userdata['electric'] = _add_electric_signal_props(
+        electric_data=userdata['electric'],
+        conduction_velocity=case.analyse.conduction_velocity,
+        divergence=case.analyse.divergence
+    )
 
     userdata['rf'] = _export_ablation_data(ablation=case.ablation)
     scipy.io.savemat(
@@ -200,6 +209,62 @@ def export_openep_mat(
         do_compression=True,
         oned_as='column',
     )
+
+
+def _add_surface_maps(surface_data, **kwargs):
+    cv_field = kwargs.get('cv_field')
+    div_field = kwargs.get('divergence_field')
+
+    if not surface_data.get('signalMaps'):
+        surface_data['signalMaps'] = {}
+
+    # TODO: connect propSetting from user setting in UI
+    if cv_field is not None:
+        surface_data['signalMaps']['conduction_velocity_field'] = {
+            'name': 'Conduction Velocity Field',
+            'value': cv_field,
+            'propSettings': {},
+        }
+
+    if div_field is not None:
+        surface_data['signalMaps']['divergence_field'] = {
+            'name': 'Divergence Field',
+            'value': div_field,
+            'propSettings': {},
+        }
+
+    return surface_data
+
+
+def _add_electric_signal_props(electric_data, **kwargs):
+    conduction_velocity = kwargs.get('conduction_velocity')
+    divergence = kwargs.get('divergence')
+
+    if not electric_data.get('annotations'):
+        electric_data['annotations'] = {}
+
+    if not electric_data['annotations'].get('signalProps'):
+        electric_data['annotations']['signalProps'] = {}
+
+    signal_props = electric_data['annotations']['signalProps']
+
+    if conduction_velocity:
+        signal_props['conduction_velocity'] = {
+            'name' : 'Conduction Velocity Values',
+            'value': conduction_velocity.values,
+        }
+        signal_props['cvX'] = {
+            'name' : 'Conduction Velocity Coordinates',
+            'value': conduction_velocity.points,
+        }
+
+    if divergence:
+        signal_props['divergence'] = {
+            'name' : 'Divergence Values',
+            'value': divergence.values,
+        }
+
+    return electric_data
 
 
 def export_vtk(

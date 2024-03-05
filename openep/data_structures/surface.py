@@ -20,6 +20,7 @@
 
 from attr import attrs
 import numpy as np
+import warnings
 
 __all__ = []
 
@@ -51,6 +52,8 @@ class Fields:
     longitudinal_fibres: np.ndarray = None
     transverse_fibres: np.ndarray = None
     pacing_site: np.ndarray = None
+    conduction_velocity: np.ndarray = None
+    cv_divergence: np.ndarray = None
 
     def __repr__(self):
         return f"fields: {tuple(self.__dict__.keys())}"
@@ -139,31 +142,28 @@ def extract_surface_data(surface_data):
         unipolar_voltage = None
         impedance = None
         force = None
+    elif surface_data['uni_imp_frc'].size == 2:
+        unipolar_voltage, impedance = surface_data['uni_imp_frc'].T.astype(float)
+        force = None
+        warnings.warn("Force data was not detected in surface_data, force=None", UserWarning)
     else:
         unipolar_voltage, impedance, force = surface_data['uni_imp_frc'].T.astype(float)
-        if all(np.isnan(unipolar_voltage)):
-            unipolar_voltage = None
-        if all(np.isnan(impedance)):
-            impedance = None
-        if all(np.isnan(force)):
-            force = None
 
-    try:
-        thickness = surface_data['thickness'].astype(float)
-    except KeyError as e:
-        thickness = None
+    if isinstance(force, np.ndarray) and all(np.isnan(unipolar_voltage)):
+        unipolar_voltage = None
+    if isinstance(force, np.ndarray) and all(np.isnan(impedance)):
+        impedance = None
+    if isinstance(force, np.ndarray) and all(np.isnan(force)):
+        force = None
 
-    if isinstance(thickness, np.ndarray) and thickness.size == 0:
-        thickness = None
+    thickness = surface_data.get('thickness', None)
+    if isinstance(thickness, np.ndarray):
+        thickness = None if thickness.size == 0 else thickness.astype(float)
 
     # This is defined on a per-cell bases
-    try:
-        cell_region = surface_data['cell_region'].astype(int)
-    except KeyError as e:
-        cell_region = None
-
-    if isinstance(cell_region, np.ndarray) and cell_region.size == 0:
-        cell_region = None
+    cell_region = surface_data.get('cell_region', None)
+    if isinstance(cell_region, np.ndarray):
+        cell_region = None if cell_region.size == 0 else cell_region.astype(int)
 
     # Fibre orientation are vectors defined on a per-cell basis
     try:
@@ -183,13 +183,23 @@ def extract_surface_data(surface_data):
         transverse_fibres = None
 
     # Pacing site point ids (-1 is not pacing site)
-    try:
-        pacing_site = surface_data['pacing_site'].astype(int)
-    except KeyError as e:
-        pacing_site = None
+    pacing_site = surface_data.get('pacing_site', None)
+    if isinstance(pacing_site, np.ndarray):
+        pacing_site = None if pacing_site.size == 0 else pacing_site.astype(int)
 
-    if isinstance(pacing_site, np.ndarray) and pacing_site.size == 0:
-        pacing_site = None
+    try:
+        conduction_velocity = surface_data['signalMaps']['conduction_velocity_field'].get('value', None)
+        if isinstance(conduction_velocity, np.ndarray):
+            conduction_velocity = None if conduction_velocity.size == 0 else conduction_velocity.astype(float)
+    except KeyError:
+        conduction_velocity = None
+
+    try:
+        cv_divergence = surface_data['signalMaps']['divergence_field'].get('value', None)
+        if isinstance(cv_divergence, np.ndarray):
+            cv_divergence = None if cv_divergence.size == 0 else cv_divergence.astype(float)
+    except KeyError:
+        cv_divergence = None
 
     fields = Fields(
         bipolar_voltage=bipolar_voltage,
@@ -202,6 +212,8 @@ def extract_surface_data(surface_data):
         longitudinal_fibres=longitudinal_fibres,
         transverse_fibres=transverse_fibres,
         pacing_site=pacing_site,
+        conduction_velocity=conduction_velocity,
+        cv_divergence=cv_divergence,
     )
 
     return points, indices, fields
