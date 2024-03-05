@@ -17,7 +17,6 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 """Module containing analysis classes"""
-
 from ._conduction_velocity import *
 from ..case.case_routines import interpolate_general_cloud_points_onto_surface
 
@@ -59,22 +58,8 @@ class ConductionVelocity:
     """
     def __init__(self, case):
         self._case = case
-        self._values = None
-        self._centers = None
-
-    @property
-    def values(self):
-        if self._values is None:
-            raise ValueError('Before accessing ``conduction_velocity.values`` '
-                             'run ``divergence.calculate_divergence()``')
-        return self._values
-
-    @property
-    def centers(self):
-        if self._centers is None:
-            raise ValueError('Before accessing ``conduction_velocity.centers`` '
-                             'run ``divergence.calculate_divergence()``')
-        return self._centers
+        self.values = None
+        self.centers = None
 
     def calculate_cv(
             self,
@@ -134,12 +119,19 @@ class ConductionVelocity:
         if method.lower() not in supported_cv_methods:
             raise ValueError(f"`method` must be one of {supported_cv_methods.keys()}.")
 
+        if include is None and self._case.electric.include is None:
+            raise TypeError(f"include object is of 'NoneType'")
+        else:
+            include = self._case.electric.include.astype(bool) if include is None else include
+
         interpolation_kws = dict() if interpolation_kws is None else interpolation_kws
-        include = self._case.electric.include.astype(bool) if include is None else include
-        lat, bipolar_egm_pts = preprocess_lat_egm(self._case, include)
+
+        bipolar_egm_pts = self._case.electric.bipolar_egm.points[include]
+        lat = (self._case.electric.annotations.local_activation_time[include]
+               - self._case.electric.annotations.reference_activation_time[include])
 
         cv_method = supported_cv_methods[method]
-        self._values, self._centers = cv_method(bipolar_egm_pts, lat, **method_kwargs)
+        self.values, self.centers = cv_method(bipolar_egm_pts, lat, **method_kwargs)
 
         if apply_scalar_field:
             self._case.fields.conduction_velocity = interpolate_general_cloud_points_onto_surface(
@@ -169,20 +161,8 @@ class Divergence:
     """
     def __init__(self, case):
         self._case = case
-        self._direction = None
-        self._values = None
-
-    @property
-    def values(self):
-        if self._values is None:
-            raise ValueError('Before accessing ``..divergence.values`` run ``..divergence.calculate_divergence()``')
-        return self._values
-
-    @property
-    def direction(self):
-        if self._direction is None:
-            raise ValueError('Before accessing ``divergence.direction`` run ``divergence.calculate_divergence()``')
-        return self._direction
+        self.direction = None
+        self.values = None
 
     def calculate_divergence(
         self,
@@ -224,10 +204,16 @@ class Divergence:
             direction, values = cv.calculate_divergence(output_binary_field=True, apply_scalar_field=True)
         """
 
-        include = self._case.electric.include.astype(bool) if include is None else include
-        lat, bipolar_egm_pts = preprocess_lat_egm(self._case, include, lat_threshold=None)
+        if include is None and self._case.electric.include is None:
+            raise TypeError(f"include object is of 'NoneType'")
+        else:
+            include = self._case.electric.include.astype(bool) if include is None else include
 
-        self._direction, self._values = divergence(
+        bipolar_egm_pts = self._case.electric.bipolar_egm.points[include]
+        lat = (self._case.electric.annotations.local_activation_time[include]
+               - self._case.electric.annotations.reference_activation_time[include])
+
+        self.direction, self.values = divergence(
             case=self._case,
             bipolar_egm_pts=bipolar_egm_pts,
             local_activation_time=lat,
