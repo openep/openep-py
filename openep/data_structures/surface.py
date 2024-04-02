@@ -142,6 +142,7 @@ def extract_surface_data(surface_data):
         unipolar_voltage = None
         impedance = None
         force = None
+
     elif surface_data['uni_imp_frc'].size == 2:
         unipolar_voltage, impedance = surface_data['uni_imp_frc'].T.astype(float)
         force = None
@@ -191,14 +192,14 @@ def extract_surface_data(surface_data):
         conduction_velocity = surface_data['signalMaps']['conduction_velocity_field'].get('value', None)
         if isinstance(conduction_velocity, np.ndarray):
             conduction_velocity = None if conduction_velocity.size == 0 else conduction_velocity.astype(float)
-    except KeyError:
+    except (KeyError, IndexError):
         conduction_velocity = None
 
     try:
         cv_divergence = surface_data['signalMaps']['divergence_field'].get('value', None)
         if isinstance(cv_divergence, np.ndarray):
             cv_divergence = None if cv_divergence.size == 0 else cv_divergence.astype(float)
-    except KeyError:
+    except (KeyError, IndexError):
         cv_divergence = None
 
     fields = Fields(
