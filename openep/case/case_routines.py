@@ -76,6 +76,7 @@ __all__ = [
     'interpolate_activation_time_onto_surface',
     'interpolate_voltage_onto_surface',
     'bipolar_from_unipolar_surface_points',
+    'interpolate_general_cloud_points_onto_surface'
 ]
 
 
@@ -453,6 +454,59 @@ class Interpolator:
     def __repr__(self):
         return f"Interpolator: method={self.method}, kws={self.method_kws}"
 
+
+def interpolate_general_cloud_points_onto_surface(
+        case,
+        cloud_values,
+        cloud_points,
+        method=scipy.interpolate.RBFInterpolator,
+        method_kws=None,
+        max_distance=None,
+        include=None,
+):
+    """Interpolate general point data onto the points of a mesh.
+
+    Args:
+        case (openep.case.Case): case from which the cloud values and points will be interpolated
+        cloud_values (ndarray): Array of values to be interpolated, corresponding to cloud_points.
+        cloud_points (ndarray): Array of points where cloud_values are defined.
+        method (callable): method to use for interpolation. The default is
+            scipy.interpolate.RBFInterpolator.
+        method_kws (dict): dictionary of keyword arguments to pass to `method`
+            when creating the interpolator.
+        max_distance (float, optional): If provided, any points on the surface of the mesh
+            further than this distance to all mapping coordinates will have their
+            interpolated activation times set NaN. The default it None, in which case
+            the distance from surface points to mapping points is not considered.
+        include (np.ndarray, optional): Flag for which mapping points to include when creating
+            the interpolator. If None, `case.electric.include` will be used.
+
+    Returns:
+        interpolated_lat (ndarray): local activation times interpolated onto the surface of the mesh,
+            one value per point on the mesh.
+    """
+
+    surface_points = case.points
+
+    include = [not np.isnan(x) for x in cloud_values] if include is None else include
+    cloud_points = cloud_points[include]
+    cloud_values = cloud_values[include]
+
+    interpolator = Interpolator(
+        cloud_points,
+        cloud_values,
+        method=method,
+        method_kws=method_kws,
+    )
+
+    interpolated = interpolator(surface_points, max_distance=max_distance)
+
+    # Any points that are not part of the mesh faces should have its value set to NaN
+    n_surface_points = surface_points.shape[0]
+    not_on_surface = ~np.in1d(np.arange(n_surface_points), case.indices)
+    interpolated[not_on_surface] = np.NaN
+
+    return interpolated
 
 def interpolate_activation_time_onto_surface(
         case,

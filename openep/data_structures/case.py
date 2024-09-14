@@ -83,8 +83,10 @@ import scipy.stats
 import pyvista
 
 from .surface import Fields
+from .arrows import Arrows
 from .electric import Electric, Electrogram, Annotations, ElectricSurface
 from .ablation import Ablation
+from ..analysis.analyse import Analyse
 from ..case.case_routines import (
     bipolar_from_unipolar_surface_points,
     calculate_distance,
@@ -121,6 +123,7 @@ class Case:
         electric: Electric,
         ablation: Optional[Ablation] = None,
         notes: Optional[List] = None,
+        arrows: Optional[Arrows] = None,
     ):
 
         self.name = name
@@ -130,6 +133,8 @@ class Case:
         self.ablation = ablation
         self.electric = electric
         self.notes = notes
+        self.arrows = Arrows() if arrows is None else arrows
+        self.analyse = Analyse(case=self)
 
     def __repr__(self):
         return f"{self.name}( nodes: {self.points.shape} indices: {self.indices.shape} {self.fields} )"

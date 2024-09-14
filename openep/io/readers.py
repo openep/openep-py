@@ -53,6 +53,7 @@ and methods of `Case`.
 """
 
 import os
+import re
 import scipy.io
 
 import numpy as np
@@ -63,9 +64,10 @@ from .matlab import _load_mat_v73, _load_mat_below_v73
 from ..data_structures.surface import extract_surface_data, Fields
 from ..data_structures.electric import extract_electric_data, Electric
 from ..data_structures.ablation import extract_ablation_data, Ablation
+from ..data_structures.arrows import Arrows
 from ..data_structures.case import Case
 
-__all__ = ["load_openep_mat", "_load_mat", "load_opencarp", "load_circle_cvi", "load_vtk"]
+__all__ = ["load_openep_mat", "_load_mat", "load_opencarp", "load_circle_cvi", "load_vtk", "load_igb"]
 
 
 def _check_mat_version_73(filename):
@@ -158,28 +160,43 @@ def load_opencarp(
 
     points_data = np.loadtxt(points, skiprows=1)
     points_data *= scale_points
-    indices_data = np.loadtxt(indices, skiprows=1, usecols=[1, 2, 3], dtype=int)
-    cell_region = np.loadtxt(indices, skiprows=1, usecols=4, dtype=int)
+    fibres_data = None if fibres is None else np.loadtxt(fibres)
 
-    longitudinal_fibres = None
-    transverse_fibres = None
-    if fibres is not None:
-        fibres_data = np.loadtxt(fibres, skiprows=1, dtype=float)
-        longitudinal_fibres = fibres_data[:, :3]
-        if fibres_data.shape[1] == 6:
-            transverse_fibres = fibres_data[:, 3:]
+    indices_data, cell_region_data = [], []
+    linear_connection_data, linear_connection_regions = [], []
 
-    # Create empty data structures for pass to Case
+    with open(indices) as elem_file:
+        data = elem_file.readlines()
+        for elem in data:
+            parts = elem.strip().split()
+            if parts[0] == 'Tr':
+                indices_data.append(list(map(int, parts[1:4])))
+                cell_region_data.append(int(parts[4]))
+            elif parts[0] == 'Ln':
+                linear_connection_data.append(list(map(int, parts[1:3])))
+                linear_connection_regions.append(int(parts[3]))
+
+    indices_data = np.array(indices_data)
+    cell_region = np.array(cell_region_data)
+    linear_connection_data = np.array(linear_connection_data)
+    linear_connection_regions = np.array(linear_connection_regions)
+
+    arrows = Arrows(
+        fibres=fibres_data,
+        linear_connections=linear_connection_data,
+        linear_connection_regions=linear_connection_regions
+    )
+
     fields = Fields(
         cell_region=cell_region,
-        longitudinal_fibres=longitudinal_fibres,
-        transverse_fibres=transverse_fibres,
+        longitudinal_fibres=None,
+        transverse_fibres=None,
     )
     electric = Electric()
     ablation = Ablation()
     notes = np.asarray([], dtype=object)
 
-    return Case(name, points_data, indices_data, fields, electric, ablation, notes)
+    return Case(name, points_data, indices_data, fields, electric, ablation, notes, arrows)
 
 
 def load_vtk(filename, name=None):
@@ -281,3 +298,43 @@ def load_circle_cvi(filename, dicoms_directory, extract_epi=True, extract_endo=T
         return epi_mesh
     elif extract_endo:
         return endo_mesh
+
+
+def load_igb(igb_filepath):
+    """
+    Reads an .igb file, returning the data and header information.
+
+    Args:
+        igb_filepath (str): Path to the .igb file.
+
+    Returns:
+        tuple:
+            - numpy.ndarray: 2D array of the file's data.
+            - dict: Contents of the header including 't' value (time steps) and other parameters.
+    """
+    with open(igb_filepath, 'rb') as file:
+        header = file.read(1024).decode('utf-8')
+        header = header.replace('\r', ' ').replace('\n', ' ').replace('\0', ' ')
+        hdr_content = {}
+
+        # Parse the header to dict format
+        for part in header.split():
+            key, value = part.split(':')
+            if key in ['x', 'y', 'z', 't', 'bin', 'num', 'lut', 'comp']:
+                hdr_content[key] = int(value)
+            elif key in ['facteur','zero','epais'] or key.startswith('org_') or key.startswith('dim_') or key.startswith('inc_'):
+                hdr_content[key] = float(value)
+            else:
+                hdr_content[key] = value
+
+        # Process file data
+        words = header.split()
+        word = [int(re.split(r"(\d+)", w)[1]) for w in words[:4]]
+        nnode = word[0] * word[1] * word[2]
+        size = os.path.getsize(igb_filepath) // 4 // nnode
+
+        file.seek(1024)
+        data = np.fromfile(file, dtype=np.float32, count=size * nnode)
+        data = data.reshape((size, nnode)).transpose()
+
+    return data, hdr_content

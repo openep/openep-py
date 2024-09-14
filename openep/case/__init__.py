@@ -9,5 +9,6 @@ from .case_routines import (
     Interpolator,
     interpolate_activation_time_onto_surface,
     interpolate_voltage_onto_surface,
+    interpolate_general_cloud_points_onto_surface,
     bipolar_from_unipolar_surface_points,
 )
