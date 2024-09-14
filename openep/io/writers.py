@@ -51,9 +51,10 @@ If a case has no fibre orientations (in `case.fields.longitudinal_fibres` and
 
 """
 
-import pathlib
+import pandas as pd
 import numpy as np
 import scipy.io
+import pathlib
 
 from openep.data_structures.ablation import Ablation
 from openep.data_structures.case import Case
@@ -64,6 +65,8 @@ __all__ = [
     "export_openCARP",
     "export_openep_mat",
     "export_vtk",
+    "export_vtx",
+    "export_csv"
 ]
 
 
@@ -72,6 +75,7 @@ def export_openCARP(
     prefix: str,
     scale_points: float = 1,
     export_transverse_fibres: bool = True,
+    export_pacing_site: bool = True,
 ):
     """Export mesh data from an OpenEP data to openCARP format.
 
@@ -104,59 +108,58 @@ def export_openCARP(
         comments='',
     )
 
-    # Save elements info
+    # Total number of lines
     n_triangles = case.indices.shape[0]
+    n_lin_conns = 0 if case.arrows.linear_connections is None else case.arrows.linear_connections.shape[0]
+    n_lines = n_triangles + n_lin_conns
+
+    # Save triangulation elements info
     cell_type = np.full(n_triangles, fill_value="Tr")
     cell_region = case.fields.cell_region if case.fields.cell_region is not None else np.zeros(n_triangles, dtype=int)
 
-    elements = np.concatenate(
-        [
-            cell_type[:, np.newaxis],
-            case.indices,
-            cell_region[:, np.newaxis],
-        ],
-        axis=1,
-        dtype=object,
-    )
+    combined_cell_data = [cell_type[:, np.newaxis], case.indices, cell_region[:, np.newaxis]]
+    combined_cell_data = np.concatenate(combined_cell_data, axis=1, dtype=object)
 
     np.savetxt(
         output_path.with_suffix(".elem"),
-        elements,
+        combined_cell_data,
         fmt="%s %d %d %d %d",
-        header=str(n_triangles),
+        header=str(n_lines),
         comments='',
     )
+
+    # Save linear connections info
+    if case.arrows.linear_connections is not None:
+        conn_type = np.full(n_lin_conns, fill_value="Ln")
+        ln_region = case.arrows.linear_connection_regions if case.arrows.linear_connection_regions is not None else np.zeros(n_lin_conns, dtype=int)
+
+        combined_ln_conn_data = [conn_type[:, np.newaxis], case.arrows.linear_connections, ln_region[:, np.newaxis]]
+        combined_ln_conn_data = np.concatenate(combined_ln_conn_data, axis=1, dtype=object)
+
+        # append to the elem file
+        with open(output_path.with_suffix(".elem"), 'a') as elem_file:
+            np.savetxt(
+                elem_file,
+                combined_ln_conn_data,
+                fmt="%s %d %d %d",
+            )
 
     # Save fibres
-    n_fibre_vectors = 2 if export_transverse_fibres else 1
-    fibres = np.zeros((n_triangles, n_fibre_vectors * 3), dtype=float)
-
-    if case.fields.longitudinal_fibres is not None:
-        fibres[:, :3] = case.fields.longitudinal_fibres
-    else:
-        fibres[:, 0] = 1
-
-    if export_transverse_fibres:
-        if case.fields.transverse_fibres is not None:
-            fibres[:, 3:] = case.fields.transverse_fibres
-        else:
-            fibres[:, 3] = 1
-
-    np.savetxt(
-        output_path.with_suffix('.lon'),
-        fibres,
-        fmt="%.6f",
-        header=str(n_fibre_vectors),
-        comments='',
-    )
+    if case.arrows.fibres is not None:
+        np.savetxt(
+            output_path.with_suffix('.lon'),
+            case.arrows.fibres,
+            fmt="%.6f",
+            comments='',
+        )
 
     # Saving pacing sites if they exist
-    if case.fields.pacing_site is None:
+    if case.fields.pacing_site is None or not export_pacing_site:
         return
 
     # Ignore all -1 values, as these points do not belong to any pacing site
     for site_index in np.unique(case.fields.pacing_site)[1:]:
-        
+
         pacing_site_points = np.nonzero(case.fields.pacing_site == site_index)[0]
         n_points = pacing_site_points.size
 
@@ -167,6 +170,58 @@ def export_openCARP(
             comments='',
             fmt='%d',
         )
+
+
+def export_vtx(
+    case: Case,
+    prefix: str,
+    pacing_site_internal_name: str
+):
+    """
+    Export vertex indices for a specified pacing site to a .vtx file.
+
+    Args:
+    - case (Case): The case object containing the pacing site and landmark information.
+    - prefix (str): The file path prefix for saving the output .vtx file.
+    - pacing_site_internal_name (str): The tag of the pacing site to export.
+
+    Returns:
+    - pathlib.Path: The path to the created .vtx file, or None if the pacing site is not found.
+
+    Raises:
+    - IndexError: If the specified pacing site name is not found within the case landmarks.
+    """
+    # TODO: Need to improve indexing method to find pacing site from landmarks,
+    #  currently finds pacing sites using tag string.
+
+    output_path = pathlib.Path(prefix).resolve()
+
+    if case.fields.pacing_site is None:
+        return
+
+    # This extracts the pacing sites from all landmarks by checking if the tag is of the form "Pacing site 1"
+    landmarks = case.electric.landmark_points
+    try:
+        landmark_index = np.where(landmarks.internal_names == pacing_site_internal_name)[0][0]
+    except IndexError:
+        raise IndexError(f"Pacing site: Expecting {landmarks.internal_names}, received \"{pacing_site_internal_name}\".")
+
+    landmark_name = landmarks.names[landmark_index]
+    site_index = int(landmark_name.replace('Pacing site ', ''))
+
+    pacing_site_points = np.nonzero(case.fields.pacing_site == site_index)[0]
+    n_points = pacing_site_points.size
+
+    output_path_with_suffix = output_path.with_name(f'{output_path.name}_{pacing_site_internal_name}.vtx')
+
+    np.savetxt(
+        output_path_with_suffix,
+        pacing_site_points,
+        header=f'{n_points}\nintra',
+        comments='',
+        fmt='%d',
+    )
+    return output_path_with_suffix
 
 
 def export_openep_mat(
@@ -203,7 +258,9 @@ def export_openep_mat(
             divergence=case.analyse.divergence
         )
 
-    userdata['rf'] = _export_ablation_data(ablation=case.ablation)
+    if case.ablation is not None:
+        userdata['rf'] = _export_ablation_data(ablation=case.ablation)
+
     scipy.io.savemat(
         file_name=filename,
         mdict={'userdata': userdata},
@@ -236,6 +293,56 @@ def _add_surface_maps(surface_data, **kwargs):
         }
 
     return surface_data
+
+
+def export_csv(
+        system,
+        filename: str,
+        selections: dict,
+):
+
+    """Export data in CSV format.
+
+    Saves selected field data.
+
+    Args:
+        system (model.system_manager.System): System with dataset to be exported
+        filename (str): name of file to be written
+        selections (dict): the data field name and flag whether to export or not
+    """
+    case = system.case
+    mesh = system.mesh
+
+    point_region = _convert_cell_to_point(
+        cell_data=case.fields.cell_region,
+        mesh=mesh
+    )
+
+    available_exports = {
+        'Bipolar voltage': case.fields.bipolar_voltage,
+        'Unipolar voltage': case.fields.unipolar_voltage,
+        'LAT': case.fields.local_activation_time,
+        'Force': case.fields.force,
+        'Impedance': case.fields.impedance,
+        'Thickness': case.fields.thickness,
+        'Cell region': point_region,
+        'Pacing site': case.fields.pacing_site,
+        'Conduction velocity': case.fields.conduction_velocity,
+        'Divergence': case.fields.cv_divergence,
+        'Histogram': case.fields.histogram,
+    }
+
+    df = pd.DataFrame()
+
+    for field_name, checked in selections.items():
+        if checked:
+            field_data = available_exports.get(field_name)
+            if field_data is not None:
+                df[field_name] = pd.Series(field_data)
+            else:
+                df[field_name] = pd.NA
+
+    df.to_csv(filename, index=False, encoding='utf-8')
 
 
 def _add_electric_signal_props(electric_data, **kwargs):
@@ -477,3 +584,18 @@ def _export_ablation_data(ablation: Ablation):
     ablation_data['originaldata']['force']['position'] = ablation.force.points if ablation.force.points is not None else empty_float_array
 
     return ablation_data
+
+
+def _convert_cell_to_point(cell_data, mesh):
+    """Convert cell data to point data by applying the cell value to its vertices"""
+    point_data = np.zeros(mesh.n_points, dtype=int)
+    for cell_i in range(mesh.n_cells):
+
+        cell_value = cell_data[cell_i]
+        point_ids = mesh.get_cell(cell_i).point_ids
+
+        # Add cell value to point ids
+        for pid in point_ids:
+            point_data[pid] = cell_value
+
+    return point_data
