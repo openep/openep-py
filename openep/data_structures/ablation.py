@@ -114,7 +114,13 @@ def extract_ablation_data(ablation_data):
             as well as the force applied.
     """
 
-    if isinstance(ablation_data, np.ndarray) or ablation_data['originaldata']['ablparams']['time'].size == 0:
+    if isinstance(ablation_data, np.ndarray):
+        return Ablation()
+
+    try:
+        if not ablation_data['originaldata']['ablparams']['time'].size:
+            return Ablation()
+    except KeyError as e:
         return Ablation()
 
     times = ablation_data['originaldata']['ablparams']['time'].astype(float)
