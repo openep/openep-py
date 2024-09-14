@@ -63,9 +63,10 @@ def draw_free_boundaries(
     width: int = 5,
     plotter: pyvista.Plotter = None,
     names: List[str] = None,
+    combine: bool = False
 ):
     """
-    Draw the freeboundaries of a mesh.
+    Draw the free boundaries of a mesh.
 
     Args:
         free_boundaries (FreeBoundary): `FreeBoundary` object. Can be generated using
@@ -76,14 +77,15 @@ def draw_free_boundaries(
             If None, a new plotting object will be created.
         names (List(str)): List of names to associated with the actors. Default is None, in which
             case actors will be called 'free_boundary_n', where n is the index of the boundary.
+        combine (bool): Combines all free boundaries into one Actor (faster load time).
 
     Returns:
         plotter (pyvista.Plotter): Plotting object with the free boundaries added.
-
     """
-
+    combined_lines = pyvista.PolyData() if combine else None
     plotter = pyvista.Plotter() if plotter is None else plotter
     colours = [colour] * free_boundaries.n_boundaries if isinstance(colour, str) else colour
+
     if names is None:
         names = [f"free_boundary_{boundary_index:d}" for boundary_index in range(free_boundaries.n_boundaries)]
 
@@ -91,13 +93,31 @@ def draw_free_boundaries(
 
         points = free_boundaries.points[boundary[:, 0]]
         points = np.vstack([points, points[:1]])  # we need to close the loop
-        plotter.add_lines(
-            points,
-            color=colours[boundary_index],
-            width=width,
-            name=names[boundary_index],
-            connected=True
-        )
+
+        # store the lines to be added in later
+        if combine:
+            lines = pyvista.lines_from_points(points)
+            combined_lines = combined_lines.merge(lines)
+
+        # add each line one-by-one
+        else:
+            plotter.add_lines(
+                points,
+                color=colours[boundary_index],
+                width=width,
+                name=names[boundary_index],
+                connected=True
+            )
+
+    if combine:
+        # add the combined lines as a single Actor manually (modified code of add_lines)
+        actor = pyvista.Actor(mapper=pyvista.DataSetMapper(combined_lines))
+        actor.prop.line_width = width
+        actor.prop.show_edges = True
+        actor.prop.edge_color = colour
+        actor.prop.color = colour
+        actor.prop.lighting = False
+        plotter.add_actor(actor, reset_camera=False, name=names[0], pickable=False)
 
     return plotter
 

@@ -18,7 +18,7 @@
 
 __all__ = ['case', 'mesh', 'draw']
 
-from .io.readers import load_openep_mat, load_opencarp, load_circle_cvi, load_vtk
+from .io.readers import load_openep_mat, load_opencarp, load_circle_cvi, load_vtk, load_igb
 from .io.writers import export_openCARP, export_openep_mat, export_vtk
 from .converters.pyvista_converters import from_pyvista, to_pyvista
 from . import case, mesh, draw
