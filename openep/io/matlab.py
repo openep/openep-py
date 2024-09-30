@@ -140,10 +140,10 @@ def _mat_v73_flat_to_nested(data):
     Args:
         data (dict): Data loaded from a v7.3 .mat file.
     """
+    nested_data = {}
+    #nested_dict = lambda: defaultdict(nested_dict)  # noqa: E731
 
-    nested_dict = lambda: defaultdict(nested_dict)  # noqa: E731
-
-    nested_data = nested_dict()
+    #nested_data = nested_dict()
     for key in data:
 
         nested_keys = key.split('/')[1:]
@@ -155,20 +155,33 @@ def _mat_v73_flat_to_nested(data):
 
         elif len(nested_keys) == 2:
             key1, key2 = nested_keys
+            if not key1 in nested_data.keys():
+                nested_data[key1] = {}
             nested_data[key1][key2] = data[key]
 
         elif len(nested_keys) == 3:
             key1, key2, key3 = nested_keys
+            if not key1 in nested_data.keys():
+                nested_data[key1] = {}
+            if not key2 in nested_data[key1].keys():
+                nested_data[key1][key2] = {}
             nested_data[key1][key2][key3] = data[key]
 
         elif len(nested_keys) == 4:
             key1, key2, key3, key4 = nested_keys
+            if not key1 in nested_data.keys():
+                nested_data[key1] = {}
+            if not key2 in nested_data[key1].keys():
+                nested_data[key1][key2] = {}
+            if not key3 in nested_data[key1][key2].keys():
+                nested_data[key1][key2][key3] = {}
             nested_data[key1][key2][key3][key4] = data[key]
 
         else:
             raise ValueError(f"Cannot make nested key from: {key}")
 
     return nested_data
+
 
 
 def _load_mat_v73(filename):
